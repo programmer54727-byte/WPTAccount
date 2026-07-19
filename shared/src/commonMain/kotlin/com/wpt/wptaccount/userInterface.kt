@@ -19,6 +19,7 @@ import kotlinx.serialization.json.put
 data class Company(
     val id: String,
     val name: String,
+    val address: String,
     val owner_id: String
 )
 
@@ -32,6 +33,7 @@ fun UserDashboard(
     var error by remember { mutableStateOf<String?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var newCompanyName by remember { mutableStateOf("") }
+    var companyAddress by remember { mutableStateOf("") }
     var isCreating by remember { mutableStateOf(false) }
     
     val scope = rememberCoroutineScope()
@@ -69,6 +71,13 @@ fun UserDashboard(
                     label = { Text("Company Name") },
                     modifier = Modifier.fillMaxWidth()
                 )
+                OutlinedTextField(
+                    value = companyAddress,
+                    onValueChange = { companyAddress = it },
+                    label = {Text("Company Address")},
+                    modifier = Modifier.fillMaxWidth()
+                )
+
             },
             confirmButton = {
                 Button(
@@ -81,6 +90,7 @@ fun UserDashboard(
                                     supabase.from("companies").insert(
                                         buildJsonObject {
                                             put("name", newCompanyName)
+                                            put("address", companyAddress)
                                             put("owner_id", user.id)
                                         }
                                     )

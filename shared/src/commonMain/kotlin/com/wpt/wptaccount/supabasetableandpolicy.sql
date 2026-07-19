@@ -17,6 +17,7 @@ create policy "Users can view own profile"
 create table if not exists public.companies (
   id uuid primary key default gen_random_uuid(),
   name text not null,
+  address text not null,
   owner_id uuid not null references auth.users(id) on delete cascade,
   created_at timestamp with time zone default now() not null
 );

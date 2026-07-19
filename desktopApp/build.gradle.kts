@@ -22,9 +22,16 @@ compose.desktop {
         mainClass = "com.wpt.wptaccount.MainKt"
 
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.wpt.wptaccount"
+            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Exe)
+            packageName = "WPT Account"
             packageVersion = "1.0.0"
+            description = "WPT Account Management System"
+            copyright = "© 2026 WPT"
+            vendor = "WPT"
+            
+            windows {
+                iconFile.set(project.file("src/main/resources/icon.png"))
+            }
         }
     }
 }
