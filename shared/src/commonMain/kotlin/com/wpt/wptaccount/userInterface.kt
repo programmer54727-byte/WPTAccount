@@ -3,6 +3,8 @@ package com.wpt.wptaccount
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,8 +20,23 @@ import kotlinx.serialization.json.put
 @Serializable
 data class Company(
     val id: String,
-    val name: String,
-    val address: String,
+    val company_name: String,
+    val mailing_name: String? = null,
+    val address: String? = null,
+    val state: String? = null,
+    val country: String? = null,
+    val pincode: String? = null,
+    val telephone: String? = null,
+    val mobile: String? = null,
+    val fax: String? = null,
+    val email: String? = null,
+    val website: String? = null,
+    val financial_year_beginning: String? = null,
+    val books_beginning: String? = null,
+    val tally_vault_password_enabled: String? = null,
+    val control_user_access_enabled: String? = null,
+    val base_currency_symbol: String? = null,
+    val formal_name: String? = null,
     val owner_id: String
 )
 
@@ -31,9 +48,27 @@ fun UserDashboard(
     var companies by remember { mutableStateOf<List<Company>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    
+    // Form States
     var showCreateDialog by remember { mutableStateOf(false) }
-    var newCompanyName by remember { mutableStateOf("") }
-    var companyAddress by remember { mutableStateOf("") }
+    var companyName by remember { mutableStateOf("") }
+    var mailingName by remember { mutableStateOf("") }
+    var address by remember { mutableStateOf("") }
+    var state by remember { mutableStateOf("") }
+    var country by remember { mutableStateOf("") }
+    var pincode by remember { mutableStateOf("") }
+    var telephone by remember { mutableStateOf("") }
+    var mobile by remember { mutableStateOf("") }
+    var fax by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var website by remember { mutableStateOf("") }
+    var financialYearStart by remember { mutableStateOf("2024-04-01") }
+    var booksStart by remember { mutableStateOf("2024-04-01") }
+    var tallyVaultEnabled by remember { mutableStateOf("No") }
+    var controlAccessEnabled by remember { mutableStateOf("No") }
+    var currencySymbol by remember { mutableStateOf("₹") }
+    var formalName by remember { mutableStateOf("INR") }
+    
     var isCreating by remember { mutableStateOf(false) }
     
     val scope = rememberCoroutineScope()
@@ -65,19 +100,49 @@ fun UserDashboard(
             onDismissRequest = { showCreateDialog = false },
             title = { Text("Create New Company") },
             text = {
-                OutlinedTextField(
-                    value = newCompanyName,
-                    onValueChange = { newCompanyName = it },
-                    label = { Text("Company Name") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = companyAddress,
-                    onValueChange = { companyAddress = it },
-                    label = {Text("Company Address")},
-                    modifier = Modifier.fillMaxWidth()
-                )
+                val scrollState = rememberScrollState()
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp)
+                        .verticalScroll(scrollState),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(value = companyName, onValueChange = { companyName = it }, label = { Text("Company Name *") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = mailingName, onValueChange = { mailingName = it }, label = { Text("Mailing Name") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = address, onValueChange = { address = it }, label = { Text("Address") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = state, onValueChange = { state = it }, label = { Text("State") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = country, onValueChange = { country = it }, label = { Text("Country") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = pincode, onValueChange = { pincode = it }, label = { Text("Pincode") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = telephone, onValueChange = { telephone = it }, label = { Text("Telephone") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = mobile, onValueChange = { mobile = it }, label = { Text("Mobile") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = fax, onValueChange = { fax = it }, label = { Text("Fax") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = website, onValueChange = { website = it }, label = { Text("Website") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = financialYearStart, onValueChange = { financialYearStart = it }, label = { Text("Financial Year Beginning (YYYY-MM-DD)") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = booksStart, onValueChange = { booksStart = it }, label = { Text("Books Beginning (YYYY-MM-DD)") }, modifier = Modifier.fillMaxWidth())
+                    
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Tally Vault Password:")
+                        Spacer(Modifier.width(8.dp))
+                        RadioButton(selected = tallyVaultEnabled == "Yes", onClick = { tallyVaultEnabled = "Yes" })
+                        Text("Yes")
+                        RadioButton(selected = tallyVaultEnabled == "No", onClick = { tallyVaultEnabled = "No" })
+                        Text("No")
+                    }
 
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Control User Access:")
+                        Spacer(Modifier.width(8.dp))
+                        RadioButton(selected = controlAccessEnabled == "Yes", onClick = { controlAccessEnabled = "Yes" })
+                        Text("Yes")
+                        RadioButton(selected = controlAccessEnabled == "No", onClick = { controlAccessEnabled = "No" })
+                        Text("No")
+                    }
+
+                    OutlinedTextField(value = currencySymbol, onValueChange = { currencySymbol = it }, label = { Text("Base Currency Symbol") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = formalName, onValueChange = { formalName = it }, label = { Text("Formal Name") }, modifier = Modifier.fillMaxWidth())
+                }
             },
             confirmButton = {
                 Button(
@@ -89,13 +154,30 @@ fun UserDashboard(
                                 if (user != null) {
                                     supabase.from("companies").insert(
                                         buildJsonObject {
-                                            put("name", newCompanyName)
-                                            put("address", companyAddress)
+                                            put("company_name", companyName)
+                                            put("mailing_name", mailingName)
+                                            put("address", address)
+                                            put("state", state)
+                                            put("country", country)
+                                            put("pincode", pincode)
+                                            put("telephone", telephone)
+                                            put("mobile", mobile)
+                                            put("fax", fax)
+                                            put("email", email)
+                                            put("website", website)
+                                            put("financial_year_beginning", financialYearStart)
+                                            put("books_beginning", booksStart)
+                                            put("tally_vault_password_enabled", tallyVaultEnabled)
+                                            put("control_user_access_enabled", controlAccessEnabled)
+                                            put("base_currency_symbol", currencySymbol)
+                                            put("formal_name", formalName)
                                             put("owner_id", user.id)
                                         }
                                     )
                                     showCreateDialog = false
-                                    newCompanyName = ""
+                                    // Reset fields
+                                    companyName = ""; mailingName = ""; address = ""; state = ""; country = ""
+                                    pincode = ""; telephone = ""; mobile = ""; fax = ""; email = ""; website = ""
                                     fetchCompanies()
                                 }
                             } catch (e: Exception) {
@@ -105,7 +187,7 @@ fun UserDashboard(
                             }
                         }
                     },
-                    enabled = newCompanyName.isNotBlank() && !isCreating
+                    enabled = companyName.isNotBlank() && !isCreating
                 ) {
                     Text(if (isCreating) "Creating..." else "Create")
                 }
@@ -143,34 +225,55 @@ fun UserDashboard(
                 ) {
                     Text("No companies found.")
                     Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = { showCreateDialog = true }) {
+                    Button(
+                        onClick = { showCreateDialog = true },
+                        modifier = Modifier.widthIn(max = 300.dp)
+                    ) {
                         Text("Create Your First Company")
                     }
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    item {
-                        Text("Your Companies", style = MaterialTheme.typography.headlineSmall)
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-                    items(companies) { company ->
-                        Card(modifier = Modifier.fillMaxWidth()) {
-                            ListItem(
-                                headlineContent = { Text(company.name) },
-                                supportingContent = { Text("ID: ${company.id}") }
-                            )
+                    LazyColumn(
+                        modifier = Modifier
+                            .widthIn(max = 300.dp)
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        item {
+                            Text("Your Companies", style = MaterialTheme.typography.headlineSmall)
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
-                    }
-                    item {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = { showCreateDialog = true },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Create New Company")
+                        items(companies) { company ->
+                            Card(modifier = Modifier.fillMaxWidth()) {
+                                ListItem(
+                                    headlineContent = { Text(company.company_name) },
+                                    supportingContent = {
+                                        Column {
+                                            if (!company.address.isNullOrBlank()) {
+                                                Text("Address: ${company.address}")
+                                            }
+                                            if (!company.email.isNullOrBlank()) {
+                                                Text("Email: ${company.email}")
+                                            }
+                                            Text("ID: ${company.id}", style = MaterialTheme.typography.bodySmall)
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                        item {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = { showCreateDialog = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Create New Company")
+                            }
                         }
                     }
                 }
