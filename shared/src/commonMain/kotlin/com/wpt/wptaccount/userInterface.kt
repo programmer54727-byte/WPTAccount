@@ -1,14 +1,21 @@
 package com.wpt.wptaccount
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.*
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
@@ -69,6 +76,8 @@ fun UserDashboard(
     var currencySymbol by remember { mutableStateOf("₹") }
     var formalName by remember { mutableStateOf("INR") }
     
+    var selectedIndex by remember { mutableStateOf(0) }
+    val focusRequester = remember { FocusRequester() }
     var isCreating by remember { mutableStateOf(false) }
     
     val scope = rememberCoroutineScope()
@@ -82,6 +91,9 @@ fun UserDashboard(
                     companies = supabase.from("companies")
                         .select()
                         .decodeList<Company>()
+                    if (companies.isNotEmpty()) {
+                        selectedIndex = 0
+                    }
                 }
             } catch (e: Exception) {
                 error = e.message
@@ -93,6 +105,13 @@ fun UserDashboard(
 
     LaunchedEffect(Unit) {
         fetchCompanies()
+    }
+
+    // Auto-focus the list to enable keyboard navigation
+    LaunchedEffect(companies) {
+        if (companies.isNotEmpty()) {
+            focusRequester.requestFocus()
+        }
     }
 
     if (showCreateDialog) {
@@ -234,7 +253,31 @@ fun UserDashboard(
                 }
             } else {
                 Column(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .focusRequester(focusRequester)
+                        .focusable()
+                        .onKeyEvent { keyEvent ->
+                            if (keyEvent.type == KeyEventType.KeyDown && companies.isNotEmpty()) {
+                                when (keyEvent.key) {
+                                    Key.DirectionDown -> {
+                                        if (selectedIndex < companies.size - 1) {
+                                            selectedIndex++
+                                        }
+                                        true
+                                    }
+                                    Key.DirectionUp -> {
+                                        if (selectedIndex > 0) {
+                                            selectedIndex--
+                                        }
+                                        true
+                                    }
+                                    else -> false
+                                }
+                            } else {
+                                false
+                            }
+                        },
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     LazyColumn(
@@ -248,21 +291,30 @@ fun UserDashboard(
                             Text("Your Companies", style = MaterialTheme.typography.headlineSmall)
                             Spacer(modifier = Modifier.height(16.dp))
                         }
-                        items(companies) { company ->
-                            Card(modifier = Modifier.fillMaxWidth()) {
+                        itemsIndexed(companies) { index, company ->
+                            val isSelected = index == selectedIndex
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isSelected) 
+                                        MaterialTheme.colorScheme.primaryContainer 
+                                    else 
+                                        MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                                border = if (isSelected) 
+                                    BorderStroke(2.dp, MaterialTheme.colorScheme.primary) 
+                                else null
+                            ) {
                                 ListItem(
-                                    headlineContent = { Text(company.company_name) },
-                                    supportingContent = {
-                                        Column {
-                                            if (!company.address.isNullOrBlank()) {
-                                                Text("Address: ${company.address}")
-                                            }
-                                            if (!company.email.isNullOrBlank()) {
-                                                Text("Email: ${company.email}")
-                                            }
-                                            Text("ID: ${company.id}", style = MaterialTheme.typography.bodySmall)
-                                        }
-                                    }
+                                    headlineContent = { 
+                                        Text(
+                                            text = company.company_name,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                        ) 
+                                    },
+                                    colors = ListItemDefaults.colors(
+                                        containerColor = Color.Transparent
+                                    )
                                 )
                             }
                         }
