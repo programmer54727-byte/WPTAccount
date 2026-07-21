@@ -1,0 +1,6 @@
+- `[x]` Create `signUp.kt` with Supabase integration
+- `[x]` Create `login.kt` with Supabase integration
+- `[x]` Update `App.kt` to integrate new screens
+- `[x]` Verify build and basic functionality
+- `[x]` Add OTP verification to `signUp.kt`
+- `[/]` Fix request timeout in `supabase.kt`

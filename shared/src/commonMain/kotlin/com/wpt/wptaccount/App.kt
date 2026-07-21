@@ -1,16 +1,14 @@
 package com.wpt.wptaccount
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.wpt.wptaccount.landingpage.PreLogin
-import com.wpt.wptaccount.signupform.SignUp
-import com.wpt.wptaccount.login.Login
-import com.wpt.wptaccount.UserDashboard
 
 @Composable
 fun App() {
@@ -18,15 +16,12 @@ fun App() {
 
     MaterialTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
-            // Optional: Show status at the top for testing
-            // Text(connectionStatus, style = MaterialTheme.typography.labelSmall) 
-
             BoxWithConstraints(
                 modifier = Modifier.fillMaxSize(),
             ) {
                 when (currentScreen) {
                     "landing" -> {
-                        PreLogin(
+                        LandingPage(
                             onSignUpClick = { currentScreen = "signup" },
                             onLoginClick = { currentScreen = "login" }
                         )
@@ -34,8 +29,7 @@ fun App() {
                     "signup" -> {
                         SignUp(
                             onBackClick = { currentScreen = "landing" },
-                            onSignUpSuccess = { currentScreen = "dashboard" },
-                            onLoginClick = { currentScreen = "login" }
+                            onSignUpSuccess = { currentScreen = "dashboard" }
                         )
                     }
                     "login" -> {
@@ -45,11 +39,21 @@ fun App() {
                         )
                     }
                     "dashboard" -> {
-                        UserDashboard(
-                            onLogout = { currentScreen = "landing" }
-                        )
+                        PlaceholderScreen("Dashboard Screen") { currentScreen = "landing" }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun PlaceholderScreen(name: String, onBack: () -> Unit) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(text = name, style = MaterialTheme.typography.headlineLarge)
+            androidx.compose.material3.Button(onClick = onBack) {
+                Text("Back to Landing")
             }
         }
     }
