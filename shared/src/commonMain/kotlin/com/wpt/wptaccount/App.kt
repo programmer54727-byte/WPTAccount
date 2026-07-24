@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 @Composable
 fun App() {
     var currentScreen by remember { mutableStateOf("landing") }
+    var selectedCompany by remember { mutableStateOf<Company?>(null) }
 
     MaterialTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
@@ -39,7 +40,30 @@ fun App() {
                         )
                     }
                     "dashboard" -> {
-                        PlaceholderScreen("Dashboard Screen") { currentScreen = "landing" }
+                        UserCompany(
+                            onCreateCompanyClick = { currentScreen = "create_company" },
+                            onCompanyClick = { 
+                                selectedCompany = it
+                                currentScreen = "company_dashboard"
+                            },
+                            onLogout = { currentScreen = "landing" }
+                        )
+                    }
+                    "create_company" -> {
+                        CreateCompanyForm(
+                            onBackClick = { currentScreen = "dashboard" },
+                            onSuccess = { currentScreen = "dashboard" }
+                        )
+                    }
+                    "company_dashboard" -> {
+                        selectedCompany?.let { company ->
+                            CompanyDashboard(
+                                company = company,
+                                onBack = { currentScreen = "dashboard" }
+                            )
+                        } ?: run {
+                            currentScreen = "dashboard"
+                        }
                     }
                 }
             }

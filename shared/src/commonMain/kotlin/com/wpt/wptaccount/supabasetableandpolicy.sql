@@ -1,19 +1,4 @@
--- 1. Create the profiles table
-create table public.profiles (
-  id uuid references auth.users on delete cascade not null primary key,
-  full_name text,
-  email text
-);
-
--- 2. (Optional but recommended) Enable Row Level Security
-alter table public.profiles enable row level security;
-
--- 3. (Optional) Create a policy to allow users to see their own profile
-create policy "Users can view own profile"
-  on public.profiles for select
-  using ( auth.uid() = id );
-
--- 4. Create the companies table
+-- 1. Create the companies table
 create table if not exists public.companies (
   id uuid primary key default gen_random_uuid(),
   company_name text not null,
@@ -37,10 +22,10 @@ create table if not exists public.companies (
   created_at timestamp with time zone default now() not null
 );
 
--- 5. Enable Row Level Security (RLS) for companies
+-- 2. Enable Row Level Security (RLS) for companies
 alter table public.companies enable row level security;
 
--- 6. Create Security Policies for companies
+-- 3. Create Security Policies for companies
 create policy "Users can see only their own companies"
 on public.companies
 for select

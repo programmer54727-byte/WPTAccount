@@ -10,9 +10,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import kotlinx.coroutines.launch
@@ -33,6 +38,30 @@ fun Login(
     
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
+    val focusManager = LocalFocusManager.current
+
+    fun performLogin() {
+        if (email.isBlank() || password.isBlank()) {
+            errorMessage = "Please fill all fields"
+            return
+        }
+        
+        scope.launch {
+            isLoading = true
+            errorMessage = null
+            try {
+                supabase.auth.signInWith(Email) {
+                    this.email = email
+                    this.password = password
+                }
+                onLoginSuccess()
+            } catch (e: Exception) {
+                errorMessage = e.message ?: "Login failed"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -77,7 +106,14 @@ fun Login(
                 onValueChange = { email = it },
                 label = { Text("Email Address") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) }
+                )
             )
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -88,7 +124,17 @@ fun Login(
                 label = { Text("Password") },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation(),
-                singleLine = true
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = { 
+                        focusManager.clearFocus()
+                        performLogin()
+                    }
+                )
             )
             
             errorMessage?.let {
@@ -103,28 +149,7 @@ fun Login(
             Spacer(modifier = Modifier.height(32.dp))
             
             Button(
-                onClick = {
-                    if (email.isBlank() || password.isBlank()) {
-                        errorMessage = "Please fill all fields"
-                        return@Button
-                    }
-                    
-                    scope.launch {
-                        isLoading = true
-                        errorMessage = null
-                        try {
-                            supabase.auth.signInWith(Email) {
-                                this.email = email
-                                this.password = password
-                            }
-                            onLoginSuccess()
-                        } catch (e: Exception) {
-                            errorMessage = e.message ?: "Login failed"
-                        } finally {
-                            isLoading = false
-                        }
-                    }
-                },
+                onClick = { performLogin() },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading
             ) {

@@ -1,6 +1,9 @@
-- `[x]` Create `signUp.kt` with Supabase integration
-- `[x]` Create `login.kt` with Supabase integration
-- `[x]` Update `App.kt` to integrate new screens
-- `[x]` Verify build and basic functionality
-- `[x]` Add OTP verification to `signUp.kt`
-- `[/]` Fix request timeout in `supabase.kt`
+- `[x]` Implement keyboard navigation in forms
+    - `[x]` Update `login.kt`
+    - `[x]` Update `signUp.kt`
+    - `[x]` Update `createCompany.kt`
+- `[x]` Create Company Dashboard
+    - `[x]` Create `companyDashboard.kt`
+    - `[x]` Update `userCompany.kt` to handle clicks
+- `[x]` Update `App.kt` navigation
+- `[x]` Verify build and navigation

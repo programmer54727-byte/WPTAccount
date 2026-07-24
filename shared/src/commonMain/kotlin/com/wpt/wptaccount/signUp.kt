@@ -10,9 +10,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.style.TextAlign
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
@@ -33,22 +38,48 @@ fun SignUp(
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var otpCode by remember { mutableStateOf("") }
-    var isVerifying by remember { mutableStateOf(false) }
+    // var otpCode by remember { mutableStateOf("") }
+    // var isVerifying by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
+    val focusManager = LocalFocusManager.current
+
+    fun performSignUp() {
+        if (email.isBlank() || password.isBlank() || fullName.isBlank()) {
+            errorMessage = "Please fill all fields"
+            return
+        }
+        
+        scope.launch {
+            isLoading = true
+            errorMessage = null
+            try {
+                supabase.auth.signUpWith(Email) {
+                    this.email = email
+                    this.password = password
+                    data = buildJsonObject {
+                        put("full_name", fullName)
+                    }
+                }
+                // isVerifying = true
+                onSignUpSuccess()
+            } catch (e: Exception) {
+                errorMessage = e.message ?: "Signup failed"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isVerifying) "Verify Email" else "Create Account") },
+                title = { Text("Create Account") },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        if (isVerifying) isVerifying = false else onBackClick()
-                    }) {
+                    IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
@@ -74,11 +105,13 @@ fun SignUp(
             Spacer(modifier = Modifier.height(24.dp))
             
             Text(
-                text = if (isVerifying) "Check your email" else "Join WPT Account",
+                text = "Join WPT Account",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
             
+            /*
+            // OTP verification UI commented out for now
             if (isVerifying) {
                 Text(
                     text = "We've sent a 6-digit verification code to $email",
@@ -156,6 +189,7 @@ fun SignUp(
                 }
 
             } else {
+            */
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 OutlinedTextField(
@@ -163,7 +197,11 @@ fun SignUp(
                     onValueChange = { fullName = it },
                     label = { Text("Full Name") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) }
+                    )
                 )
                 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -173,7 +211,14 @@ fun SignUp(
                     onValueChange = { email = it },
                     label = { Text("Email Address") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) }
+                    )
                 )
                 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -184,7 +229,17 @@ fun SignUp(
                     label = { Text("Password") },
                     modifier = Modifier.fillMaxWidth(),
                     visualTransformation = PasswordVisualTransformation(),
-                    singleLine = true
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { 
+                            focusManager.clearFocus()
+                            performSignUp()
+                        }
+                    )
                 )
                 
                 errorMessage?.let {
@@ -199,31 +254,7 @@ fun SignUp(
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 Button(
-                    onClick = {
-                        if (email.isBlank() || password.isBlank() || fullName.isBlank()) {
-                            errorMessage = "Please fill all fields"
-                            return@Button
-                        }
-                        
-                        scope.launch {
-                            isLoading = true
-                            errorMessage = null
-                            try {
-                                supabase.auth.signUpWith(Email) {
-                                    this.email = email
-                                    this.password = password
-                                    data = buildJsonObject {
-                                        put("full_name", fullName)
-                                    }
-                                }
-                                isVerifying = true
-                            } catch (e: Exception) {
-                                errorMessage = e.message ?: "Signup failed"
-                            } finally {
-                                isLoading = false
-                            }
-                        }
-                    },
+                    onClick = { performSignUp() },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isLoading
                 ) {
@@ -237,7 +268,7 @@ fun SignUp(
                         Text("Sign Up")
                     }
                 }
-            }
+            // }
             
             Spacer(modifier = Modifier.height(16.dp))
         }

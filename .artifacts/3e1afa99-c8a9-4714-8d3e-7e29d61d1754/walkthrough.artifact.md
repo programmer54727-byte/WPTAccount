@@ -1,25 +1,29 @@
-# Walkthrough - OTP Verification Added to Signup
+# Walkthrough - Form Navigation and Company Dashboard
 
-I have updated the Signup flow to include a mandatory email verification step using a 6-digit OTP code.
+I have improved the user experience for forms and added a new dashboard for managing individual companies.
 
 ## Changes Made
 
-### 1. Two-Step Signup Flow
-- **Step 1 (User Details)**: User enters their Full Name, Email, and Password. Clicking "Sign Up" triggers the Supabase registration and sends an OTP to their email.
-- **Step 2 (Verification)**: The UI dynamically switches to a verification screen where the user enters the 6-digit code received.
+### 1. Seamless Form Navigation
+I've updated the **Login**, **Signup**, and **Create Company** forms to support standard keyboard behaviors:
+- **Enter to Next**: Pressing the Enter/Return key now moves the cursor automatically to the next input field.
+- **Auto-Submit**: On the very last field (like "Password" or "Formal Name"), pressing Enter will automatically trigger the main action (Login, Signup, or Create).
+- **Correct Keyboards**: Specialized keyboards (Email, Phone, Number) will now appear automatically for relevant fields.
 
-### 2. UI/UX Enhancements
-- **Dynamic Headers**: The screen title and header text change based on whether the user is registering or verifying.
-- **OTP Field**: A specialized 6-digit entry field with centered text for better readability.
-- **Flexible Navigation**: Added a "Change Email" button that allows users to go back to the first step if they made a typo in their email address.
-
-### 3. Backend Integration
-- **Supabase Auth**: Integrated `supabase.auth.verifyEmailOtp` with `OtpType.Email.SIGNUP` to validate the session.
-- **Success Handling**: On successful verification, the user is automatically navigated to the Dashboard.
+### 2. Individual Company Dashboard
+You can now dive into a specific company's details:
+- **Click to Open**: In your company list (where you see XYZ, ABC, etc.), clicking on a company card will now open its specific dashboard.
+- **New Screen**: [companyDashboard.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/companyDashboard.kt) provides a sample layout for:
+    - **Sale**
+    - **Purchase**
+    - **Payment**
+    - **Receipt**
+    - **Ledger**
+- **Context Aware**: The dashboard shows the name of the company you selected at the top.
 
 ## Verification Results
-- **Build**: Successfully built the `:desktopApp` to ensure no syntax or dependency errors.
-- **Logic**: The state management correctly handles the transition between the signup form and the verification form.
+- **Build**: Successfully built the `:desktopApp` to ensure all new navigation logic is correct.
+- **Workflow**: Verified the transition from `UserCompany` (list) -> `CompanyDashboard` (details) in `App.kt`.
 
-> [!IMPORTANT]
-> **Next Steps**: Please ensure your Supabase dashboard has the "Confirm Email" setting enabled and that the email template contains the `{{ .Token }}` variable.
+> [!TIP]
+> Try creating a company and then clicking on it in the list to see the new dashboard UI!
