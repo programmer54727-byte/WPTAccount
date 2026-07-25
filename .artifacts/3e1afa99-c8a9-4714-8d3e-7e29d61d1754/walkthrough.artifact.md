@@ -1,29 +1,27 @@
-# Walkthrough - Form Navigation and Company Dashboard
+# Walkthrough - Complete 8-Voucher Set Added
 
-I have improved the user experience for forms and added a new dashboard for managing individual companies.
+I have added the full set of 8 accounting vouchers to both your **User Home** grid and the **Navigation Sidebar**.
 
 ## Changes Made
 
-### 1. Seamless Form Navigation
-I've updated the **Login**, **Signup**, and **Create Company** forms to support standard keyboard behaviors:
-- **Enter to Next**: Pressing the Enter/Return key now moves the cursor automatically to the next input field.
-- **Auto-Submit**: On the very last field (like "Password" or "Formal Name"), pressing Enter will automatically trigger the main action (Login, Signup, or Create).
-- **Correct Keyboards**: Specialized keyboards (Email, Phone, Number) will now appear automatically for relevant fields.
+### 1. Expanded Voucher Set
+I've integrated the 4 missing voucher types to complete your accounting toolset:
+- **Contra**: For internal bank/cash transfers (Icon: Sync).
+- **Journal**: For adjustment entries (Icon: Description).
+- **Credit Note**: For sales returns (Icon: Return Arrow).
+- **Debit Note**: For purchase returns (Icon: Return Arrow).
 
-### 2. Individual Company Dashboard
-You can now dive into a specific company's details:
-- **Click to Open**: In your company list (where you see XYZ, ABC, etc.), clicking on a company card will now open its specific dashboard.
-- **New Screen**: [companyDashboard.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/companyDashboard.kt) provides a sample layout for:
-    - **Sale**
-    - **Purchase**
-    - **Payment**
-    - **Receipt**
-    - **Ledger**
-- **Context Aware**: The dashboard shows the name of the company you selected at the top.
+### 2. UI Updates
+- **User Home Grid**: The grid now features 9 items (8 vouchers + 1 Ledger), each with a unique color and icon for quick identification.
+- **Navigation Sidebar**: The "Transactions" section has been expanded to include all 8 voucher types, allowing you to jump to any task from any screen.
+
+### 3. Code Refinement
+- **Auto-Mirrored Icons**: Used modern auto-mirrored icons for returns (Credit/Debit notes) to ensure correct display in all locales.
+- **Unified Navigation**: Updated all company-specific screens to handle these new navigation options seamlessly.
 
 ## Verification Results
-- **Build**: Successfully built the `:desktopApp` to ensure all new navigation logic is correct.
-- **Workflow**: Verified the transition from `UserCompany` (list) -> `CompanyDashboard` (details) in `App.kt`.
+- **Build**: Successfully built the `:desktopApp` to verify that all new icons and enum values are correctly linked.
+- **UI Logic**: Verified that the sidebar and grid stay in sync and reflect the full transaction list.
 
 > [!TIP]
-> Try creating a company and then clicking on it in the list to see the new dashboard UI!
+> Your accounting dashboard is now complete with all standard voucher types! Which one should we build the actual form for first? (Sale, Purchase, Receipt, etc.)

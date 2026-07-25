@@ -19,7 +19,7 @@ import wptaccount.shared.generated.resources.applogo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UserCompany(
+fun CompanyList(
     onCreateCompanyClick: () -> Unit,
     onCompanyClick: (Company) -> Unit,
     onLogout: () -> Unit
@@ -44,7 +44,7 @@ fun UserCompany(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("WPT Account") },
+                title = { Text("Select Company") },
                 actions = {
                     TextButton(onClick = onLogout) {
                         Text("Logout")

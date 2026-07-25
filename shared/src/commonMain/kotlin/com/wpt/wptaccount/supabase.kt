@@ -6,6 +6,8 @@ import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.logging.LogLevel
 import io.ktor.client.plugins.HttpTimeout
 import io.github.jan.supabase.annotations.SupabaseInternal
+import com.russhwolf.settings.Settings
+import io.github.jan.supabase.auth.SettingsSessionManager
 
 val supabase by lazy {
     @OptIn(SupabaseInternal::class)
@@ -23,6 +25,7 @@ val supabase by lazy {
         install(Auth) {
             alwaysAutoRefresh = true
             autoLoadFromStorage = true
+            sessionManager = SettingsSessionManager(Settings())
         }
         install(Postgrest)
         defaultLogLevel = LogLevel.DEBUG

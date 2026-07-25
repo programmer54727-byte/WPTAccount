@@ -1,50 +1,36 @@
-# Implementation Plan - Form Navigation and Company Dashboard
+# Implementation Plan - Database Schema for Vouchers and Ledgers
 
-This plan addresses two main requirements: improving keyboard navigation in forms and creating a specific dashboard for a selected company.
+To support the 8 voucher types (Sale, Purchase, Payment, etc.), we need a robust database structure. This plan adds the necessary tables and security policies to `supabasetableandpolicy.sql`.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - Forms (Login, Signup, Create Company) will now allow navigating between fields using the "Enter" key.
-> - Clicking a company in the list will open a new Dashboard specifically for that company, showing "Sale" and "Purchase" options.
+> I am adding three main tables:
+> 1.  **`ledgers`**: To store account heads (e.g., Cash, Bank, Sales A/c, Customer names).
+> 2.  **`vouchers`**: To store the main header of every transaction (Voucher No, Date, Type).
+> 3.  **`voucher_entries`**: To store the specific Debit (Dr) and Credit (Cr) amounts for each ledger in a voucher.
+>
+> You will need to run these SQL commands in your Supabase SQL Editor once added.
 
 ## Proposed Changes
 
-### 1. Keyboard Navigation in Forms
+### [MODIFY] [supabasetableandpolicy.sql](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/supabasetableandpolicy.sql)
 
-#### [MODIFY] [login.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/login.kt)
-- Add `FocusManager` usage.
-- Update `OutlinedTextField`s with `KeyboardOptions(imeAction = ImeAction.Next)` and `ImeAction.Done`.
-- Implement `KeyboardActions` to move focus or trigger login.
-
-#### [MODIFY] [signUp.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/signUp.kt)
-- Similar updates for the Signup form fields.
-
-#### [MODIFY] [createCompany.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/createCompany.kt)
-- Similar updates for all fields in the Create Company form.
-
-### 2. Company Dashboard
-
-#### [NEW] [companyDashboard.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/companyDashboard.kt)
-- Create `CompanyDashboard` composable.
-- Parameters: `company: Company`, `onBack: () -> Unit`.
-- UI: Show company name in the top bar.
-- Content: Sample buttons/cards for "Sale", "Purchase", "Payment", "Receipt", etc.
-
-#### [MODIFY] [App.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/App.kt)
-- Add `var selectedCompany by remember { mutableStateOf<Company?>(null) }`.
-- Add `"company_dashboard"` to the screen navigation.
-- Pass the selected company and navigation callbacks.
-
-#### [MODIFY] [userCompany.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/userCompany.kt)
-- Update `UserCompany` to accept `onCompanyClick: (Company) -> Unit`.
-- Trigger `onCompanyClick` when a company card is clicked in the list.
+- Add **`ledgers`** table:
+    - Links to a specific company.
+    - Stores ledger name and opening balance.
+- Add **`vouchers`** table:
+    - Stores `voucher_type` (Sale, Purchase, etc.).
+    - Stores `voucher_number` and `date`.
+- Add **`voucher_entries`** table:
+    - Links multiple ledgers to a single voucher.
+    - Stores `amount` and `entry_type` (Debit or Credit).
+- Add **RLS Policies**:
+    - Ensures users can only see/edit data belonging to companies they own.
 
 ## Verification Plan
 
 ### Manual Verification
-1. **Forms**: Open Login, Signup, and Create Company forms. Verify that pressing "Enter" moves the cursor to the next field and submits on the last field.
-2. **Dashboard**:
-   - Create or select a company from the list.
-   - Verify that the app navigates to a new screen showing the company name.
-   - Verify that "Sale" and "Purchase" sections/buttons are visible.
+- After adding the code, you can copy-paste the SQL into the Supabase Dashboard.
+- Verify that the tables are created with correct relationships.
+- Verify that RLS (Row Level Security) is active.

@@ -9,11 +9,31 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.status.SessionStatus
 
 @Composable
 fun App() {
-    var currentScreen by remember { mutableStateOf("landing") }
+    var currentScreen by remember { mutableStateOf<String?>(null) }
     var selectedCompany by remember { mutableStateOf<Company?>(null) }
+
+    val sessionStatus by supabase.auth.sessionStatus.collectAsState()
+
+    LaunchedEffect(sessionStatus) {
+        when (sessionStatus) {
+            is SessionStatus.Authenticated -> {
+                if (currentScreen == null || currentScreen == "landing" || currentScreen == "login" || currentScreen == "signup") {
+                    currentScreen = "company_list"
+                }
+            }
+            is SessionStatus.NotAuthenticated -> {
+                if (currentScreen == null || currentScreen == "company_list" || currentScreen == "company_home" || currentScreen == "company_dashboard") {
+                    currentScreen = "landing"
+                }
+            }
+            else -> {}
+        }
+    }
 
     MaterialTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
@@ -30,39 +50,51 @@ fun App() {
                     "signup" -> {
                         SignUp(
                             onBackClick = { currentScreen = "landing" },
-                            onSignUpSuccess = { currentScreen = "dashboard" }
+                            onSignUpSuccess = { currentScreen = "company_list" }
                         )
                     }
                     "login" -> {
                         Login(
                             onBackClick = { currentScreen = "landing" },
-                            onLoginSuccess = { currentScreen = "dashboard" }
+                            onLoginSuccess = { currentScreen = "company_list" }
                         )
                     }
-                    "dashboard" -> {
-                        UserCompany(
+                    "company_list" -> {
+                        CompanyList(
                             onCreateCompanyClick = { currentScreen = "create_company" },
                             onCompanyClick = { 
                                 selectedCompany = it
-                                currentScreen = "company_dashboard"
+                                currentScreen = "company_home"
                             },
                             onLogout = { currentScreen = "landing" }
                         )
                     }
                     "create_company" -> {
                         CreateCompanyForm(
-                            onBackClick = { currentScreen = "dashboard" },
-                            onSuccess = { currentScreen = "dashboard" }
+                            onBackClick = { currentScreen = "company_list" },
+                            onSuccess = { currentScreen = "company_list" }
                         )
+                    }
+                    "company_home" -> {
+                        selectedCompany?.let { company ->
+                            UserHome(
+                                company = company,
+                                onDashboardClick = { currentScreen = "company_dashboard" },
+                                onBack = { currentScreen = "company_list" }
+                            )
+                        } ?: run {
+                            currentScreen = "company_list"
+                        }
                     }
                     "company_dashboard" -> {
                         selectedCompany?.let { company ->
                             CompanyDashboard(
                                 company = company,
-                                onBack = { currentScreen = "dashboard" }
+                                onHomeClick = { currentScreen = "company_home" },
+                                onBack = { currentScreen = "company_list" }
                             )
                         } ?: run {
-                            currentScreen = "dashboard"
+                            currentScreen = "company_list"
                         }
                     }
                 }

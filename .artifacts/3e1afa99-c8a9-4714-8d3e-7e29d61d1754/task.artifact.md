@@ -1,9 +1,4 @@
-- `[x]` Implement keyboard navigation in forms
-    - `[x]` Update `login.kt`
-    - `[x]` Update `signUp.kt`
-    - `[x]` Update `createCompany.kt`
-- `[x]` Create Company Dashboard
-    - `[x]` Create `companyDashboard.kt`
-    - `[x]` Update `userCompany.kt` to handle clicks
-- `[x]` Update `App.kt` navigation
-- `[x]` Verify build and navigation
+- `[x]` Update `ScreenType` and sidebar items in `navigationSidebar.kt`
+- `[x]` Update transaction grid in `userHome.kt`
+- `[x]` Update navigation handlers in `companyDashboard.kt`
+- `[x]` Verify UI and build

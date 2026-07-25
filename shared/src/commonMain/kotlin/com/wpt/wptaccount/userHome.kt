@@ -1,0 +1,153 @@
+package com.wpt.wptaccount
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.AssignmentReturn
+import androidx.compose.material.icons.automirrored.filled.KeyboardReturn
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AddShoppingCart
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.SyncAlt
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun UserHome(
+    company: Company,
+    onDashboardClick: () -> Unit,
+    onBack: () -> Unit
+) {
+    val items = listOf(
+        DashboardItem("Sale", Icons.Default.ShoppingCart, MaterialTheme.colorScheme.primary),
+        DashboardItem("Purchase", Icons.Default.AddShoppingCart, MaterialTheme.colorScheme.secondary),
+        DashboardItem("Payment", Icons.Default.Payments, MaterialTheme.colorScheme.tertiary),
+        DashboardItem("Receipt", Icons.Default.Receipt, MaterialTheme.colorScheme.error),
+        DashboardItem("Contra", Icons.Default.SyncAlt, Color(0xFF009688)),
+        DashboardItem("Journal", Icons.Default.Description, Color(0xFFFF5722)),
+        DashboardItem("Credit Note", Icons.AutoMirrored.Filled.AssignmentReturn, Color(0xFF9C27B0)),
+        DashboardItem("Debit Note", Icons.AutoMirrored.Filled.KeyboardReturn, Color(0xFF00BCD4)),
+        DashboardItem("Ledger", Icons.Default.AccountBalance, MaterialTheme.colorScheme.primary),
+    )
+
+    AppNavigationDrawer(
+        currentScreen = ScreenType.Home,
+        companyName = company.company_name,
+        onNavigate = { screen ->
+            when (screen) {
+                ScreenType.Home -> { /* Already here */ }
+                ScreenType.Dashboard -> onDashboardClick()
+                ScreenType.Exit -> onBack()
+                ScreenType.Sale -> { /* TODO */ }
+                ScreenType.Purchase -> { /* TODO */ }
+                ScreenType.Payment -> { /* TODO */ }
+                ScreenType.Receipt -> { /* TODO */ }
+                ScreenType.Ledger -> { /* TODO */ }
+                ScreenType.Contra -> { /* TODO */ }
+                ScreenType.Journal -> { /* TODO */ }
+                ScreenType.CreditNote -> { /* TODO */ }
+                ScreenType.DebitNote -> { /* TODO */ }
+            }
+        }
+    ) { _, onToggleDrawer, isDesktop ->
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { 
+                        Column {
+                            Text(company.company_name)
+                            Text(
+                                text = "Home",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        if (!isDesktop) {
+                            IconButton(onClick = onToggleDrawer) {
+                                Icon(Icons.Default.Menu, contentDescription = "Menu")
+                            }
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Masters & Transactions",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 150.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(items) { item ->
+                        TransactionCard(item)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun TransactionCard(item: DashboardItem) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(120.dp)
+            .clickable { /* Handle click */ },
+        colors = CardDefaults.cardColors(
+            containerColor = item.color.copy(alpha = 0.1f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = item.icon,
+                contentDescription = item.title,
+                tint = item.color,
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = item.title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = item.color
+            )
+        }
+    }
+}

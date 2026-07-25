@@ -1,21 +1,18 @@
 package com.wpt.wptaccount
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.AddShoppingCart
-import androidx.compose.material.icons.filled.Payments
-import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -23,101 +20,147 @@ import androidx.compose.ui.unit.dp
 data class DashboardItem(
     val title: String,
     val icon: ImageVector,
-    val color: androidx.compose.ui.graphics.Color
+    val color: Color
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CompanyDashboard(
     company: Company,
+    onHomeClick: () -> Unit,
     onBack: () -> Unit
 ) {
-    val items = listOf(
-        DashboardItem("Sale", Icons.Default.ShoppingCart, MaterialTheme.colorScheme.primary),
-        DashboardItem("Purchase", Icons.Default.AddShoppingCart, MaterialTheme.colorScheme.secondary),
-        DashboardItem("Payment", Icons.Default.Payments, MaterialTheme.colorScheme.tertiary),
-        DashboardItem("Receipt", Icons.Default.Receipt, MaterialTheme.colorScheme.error),
-        DashboardItem("Ledger", Icons.Default.AccountBalance, MaterialTheme.colorScheme.primary),
-    )
+    val scrollState = rememberScrollState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { 
-                    Column {
-                        Text(company.company_name)
-                        Text(
-                            text = "Dashboard",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
+    AppNavigationDrawer(
+        currentScreen = ScreenType.Dashboard,
+        companyName = company.company_name,
+        onNavigate = { screen ->
+            when (screen) {
+                ScreenType.Home -> onHomeClick()
+                ScreenType.Dashboard -> { /* Already here */ }
+                ScreenType.Exit -> onBack()
+                ScreenType.Sale -> { /* TODO */ }
+                ScreenType.Purchase -> { /* TODO */ }
+                ScreenType.Payment -> { /* TODO */ }
+                ScreenType.Receipt -> { /* TODO */ }
+                ScreenType.Ledger -> { /* TODO */ }
+                ScreenType.Contra -> { /* TODO */ }
+                ScreenType.Journal -> { /* TODO */ }
+                ScreenType.CreditNote -> { /* TODO */ }
+                ScreenType.DebitNote -> { /* TODO */ }
+            }
         }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "Masters & Transactions",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 150.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) { _, onToggleDrawer, isDesktop ->
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { 
+                        Column {
+                            Text(company.company_name)
+                            Text(
+                                text = "Analytics Dashboard",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        if (!isDesktop) {
+                            IconButton(onClick = onToggleDrawer) {
+                                Icon(Icons.Default.Menu, contentDescription = "Menu")
+                            }
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp)
+                    .verticalScroll(scrollState),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                items(items) { item ->
-                    DashboardCard(item)
-                }
+                Text(
+                    text = "Business Overview",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+
+                // Sales Graph Card
+                GraphCard(
+                    title = "Monthly Sales",
+                    data = listOf(0.4f, 0.7f, 0.5f, 0.9f, 0.6f, 0.8f),
+                    color = MaterialTheme.colorScheme.primary,
+                    labels = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun")
+                )
+
+                // Purchase Graph Card
+                GraphCard(
+                    title = "Monthly Purchases",
+                    data = listOf(0.3f, 0.5f, 0.8f, 0.4f, 0.7f, 0.5f),
+                    color = MaterialTheme.colorScheme.secondary,
+                    labels = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun")
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
 }
 
 @Composable
-fun DashboardCard(item: DashboardItem) {
+fun GraphCard(
+    title: String,
+    data: List<Float>,
+    color: Color,
+    labels: List<String>
+) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(120.dp)
-            .clickable { /* Handle click */ },
-        colors = CardDefaults.cardColors(
-            containerColor = item.color.copy(alpha = 0.1f)
-        )
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier.padding(16.dp)
         ) {
-            Icon(
-                imageVector = item.icon,
-                contentDescription = item.title,
-                tint = item.color,
-                modifier = Modifier.size(32.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = item.title,
+                text = title,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = item.color
+                fontWeight = FontWeight.Bold
             )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                data.forEachIndexed { index, value ->
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Bottom,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight(value)
+                                .width(30.dp)
+                                .background(color, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = labels[index],
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
         }
     }
 }
