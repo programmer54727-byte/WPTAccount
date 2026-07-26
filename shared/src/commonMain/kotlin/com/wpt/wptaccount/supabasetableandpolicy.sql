@@ -45,3 +45,133 @@ create policy "Users can delete their own companies"
 on public.companies
 for delete
 using (auth.uid() = owner_id);
+
+-- 4. Create the groups table
+create table if not exists public.groups (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references public.companies(id) on delete cascade,
+  group_name text not null,
+  parent_group_id uuid references public.groups(id) on delete cascade,
+  nature text, -- Asset, Liability, Income, Expense
+  created_at timestamp with time zone default now() not null
+);
+
+-- 5. Enable Row Level Security (RLS) for groups
+alter table public.groups enable row level security;
+
+-- 6. Create Security Policies for groups
+create policy "Users can see groups of their own companies"
+on public.groups for select
+using (exists (select 1 from public.companies where id = groups.company_id and owner_id = auth.uid()));
+
+create policy "Users can create groups in their own companies"
+on public.groups for insert
+with check (exists (select 1 from public.companies where id = groups.company_id and owner_id = auth.uid()));
+
+create policy "Users can update groups of their own companies"
+on public.groups for update
+using (exists (select 1 from public.companies where id = groups.company_id and owner_id = auth.uid()));
+
+create policy "Users can delete groups of their own companies"
+on public.groups for delete
+using (exists (select 1 from public.companies where id = groups.company_id and owner_id = auth.uid()));
+
+-- 7. Create the ledgers table
+create table if not exists public.ledgers (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references public.companies(id) on delete cascade,
+  group_id uuid not null references public.groups(id) on delete cascade,
+  ledger_name text not null,
+  opening_balance decimal default 0,
+  current_balance decimal default 0,
+  created_at timestamp with time zone default now() not null
+);
+
+-- 8. Enable Row Level Security (RLS) for ledgers
+alter table public.ledgers enable row level security;
+
+-- 9. Create Security Policies for ledgers
+create policy "Users can see ledgers of their own companies"
+on public.ledgers for select
+using (exists (select 1 from public.companies where id = ledgers.company_id and owner_id = auth.uid()));
+
+create policy "Users can create ledgers in their own companies"
+on public.ledgers for insert
+with check (exists (select 1 from public.companies where id = ledgers.company_id and owner_id = auth.uid()));
+
+create policy "Users can update ledgers of their own companies"
+on public.ledgers for update
+using (exists (select 1 from public.companies where id = ledgers.company_id and owner_id = auth.uid()));
+
+create policy "Users can delete ledgers of their own companies"
+on public.ledgers for delete
+using (exists (select 1 from public.companies where id = ledgers.company_id and owner_id = auth.uid()));
+
+-- 10. Create the vouchers table
+create table if not exists public.vouchers (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references public.companies(id) on delete cascade,
+  voucher_type text not null, -- Sale, Purchase, Payment, Receipt, Contra, Journal, CreditNote, DebitNote
+  voucher_number text,
+  date date default current_date not null,
+  narration text,
+  created_at timestamp with time zone default now() not null
+);
+
+-- 11. Enable Row Level Security (RLS) for vouchers
+alter table public.vouchers enable row level security;
+
+-- 12. Create Security Policies for vouchers
+create policy "Users can see vouchers of their own companies"
+on public.vouchers for select
+using (exists (select 1 from public.companies where id = vouchers.company_id and owner_id = auth.uid()));
+
+create policy "Users can create vouchers in their own companies"
+on public.vouchers for insert
+with check (exists (select 1 from public.companies where id = vouchers.company_id and owner_id = auth.uid()));
+
+create policy "Users can update vouchers of their own companies"
+on public.vouchers for update
+using (exists (select 1 from public.companies where id = vouchers.company_id and owner_id = auth.uid()));
+
+create policy "Users can delete vouchers of their own companies"
+on public.vouchers for delete
+using (exists (select 1 from public.companies where id = vouchers.company_id and owner_id = auth.uid()));
+
+-- 13. Create the voucher_entries table
+create table if not exists public.voucher_entries (
+  id uuid primary key default gen_random_uuid(),
+  voucher_id uuid not null references public.vouchers(id) on delete cascade,
+  ledger_id uuid not null references public.ledgers(id) on delete cascade,
+  amount decimal not null,
+  entry_type text not null, -- Debit, Credit
+  created_at timestamp with time zone default now() not null
+);
+
+-- 14. Enable Row Level Security (RLS) for voucher_entries
+alter table public.voucher_entries enable row level security;
+
+-- 15. Create Security Policies for voucher_entries
+create policy "Users can see entries of their vouchers"
+on public.voucher_entries for select
+using (exists (
+  select 1 from public.vouchers
+  join public.companies on vouchers.company_id = companies.id
+  where vouchers.id = voucher_entries.voucher_id and companies.owner_id = auth.uid()
+));
+
+create policy "Users can create entries in their vouchers"
+on public.voucher_entries for insert
+with check (exists (
+  select 1 from public.vouchers
+  join public.companies on vouchers.company_id = companies.id
+  where vouchers.id = voucher_entries.voucher_id and companies.owner_id = auth.uid()
+));
+
+create policy "Users can delete entries of their vouchers"
+on public.voucher_entries for delete
+using (exists (
+  select 1 from public.vouchers
+  join public.companies on vouchers.company_id = companies.id
+  where vouchers.id = voucher_entries.voucher_id and companies.owner_id = auth.uid()
+));
