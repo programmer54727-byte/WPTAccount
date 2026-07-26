@@ -1,37 +1,54 @@
-# Implementation Plan - Setup for Existing Companies
+# Implementation Plan - Inventory Management (Stock Setup)
 
-This plan addresses the need to initialize existing companies (those created before the automatic setup logic) with the 34 standard groups and default ledgers.
+To enable "Sale" and "Purchase" vouchers, we first need to implement Inventory Management. Similar to Ledgers needing Groups, Stock Items need Units of Measure (e.g., Pcs, Kg) and Stock Groups.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> I will implement a "Smart Check" feature. When you select an existing company from your list, the app will automatically check if the accounting groups are present. If they are missing, it will set them up for you instantly without you having to do anything manually.
+> I will implement a complete Inventory setup consisting of:
+> 1.  **Units of Measure**: To define how items are counted (e.g., Nos, Box, Kgs).
+> 2.  **Stock Groups**: To categorize items (e.g., Electronics, Raw Materials).
+> 3.  **Stock Items**: The actual products you will buy and sell.
+>
+> This is a foundational step before we can build the Sale Voucher.
 
 ## Proposed Changes
 
-### 1. Shared Setup Logic
+### 1. Database Schema Update
 
-#### [NEW] [companySetupHelper.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/companySetupHelper.kt)
-- Create a shared function `initializeCompanySetup(companyId: String)` that contains the bulk insert logic for 34 groups and default ledgers (Cash, P&L).
+#### [MODIFY] [supabasetableandpolicy.sql](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/supabasetableandpolicy.sql)
+- **New Table `units`**: To store units like Pcs, Kgs, etc.
+- **New Table `stock_groups`**: To categorize stock.
+- **New Table `stock_items`**: To store products with their opening quantity and rate.
+- Add RLS policies for all new tables.
 
-### 2. Integration into Company Creation
+### 2. Data Models (Kotlin)
 
-#### [MODIFY] [createCompany.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/createCompany.kt)
-- Replace the inline setup logic with a call to `initializeCompanySetup`.
+#### [NEW] [InventoryModels.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/InventoryModels.kt)
+- Define `@Serializable` data classes: `UnitOfMeasure`, `StockGroup`, and `StockItem`.
 
-### 3. Automatic Setup for Existing Companies
+### 3. Inventory Management UI
+
+#### [NEW] [inventoryManagement.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/inventoryManagement.kt)
+- Create a screen to:
+    - View and create **Units**.
+    - View and create **Stock Groups**.
+    - View and create **Stock Items**.
+
+### 4. Navigation Integration
+
+#### [MODIFY] [App.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/App.kt)
+- Add navigation routes for inventory management.
 
 #### [MODIFY] [userHome.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/userHome.kt)
-- Add a `LaunchedEffect` that checks the `groups` table for the current `company_id`.
-- If no groups are found:
-    - Show an "Initializing Company Setup..." loading indicator.
-    - Call `initializeCompanySetup`.
-    - Refresh the view once complete.
+- Link the "Stock Summary" icon to the new Inventory screen.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  **Old Company Test**: Select a company that was created previously (which doesn't have groups yet).
-2.  **Verify**: You should see a brief loading message, and then the home screen should appear as normal.
-3.  **Database Check**: Check the Supabase dashboard to confirm that the groups and ledgers have been added to that specific old company.
-4.  **New Company Test**: Create a completely new company and verify it still works correctly.
+1.  Run the updated SQL in Supabase.
+2.  Navigate to "Stock Summary" from the app.
+3.  Create a Unit (e.g., "Pcs").
+4.  Create a Stock Group (e.g., "General").
+5.  Create a Stock Item (e.g., "Keyboard") linked to the Unit and Group.
+6.  Verify in Supabase that the item is saved correctly.

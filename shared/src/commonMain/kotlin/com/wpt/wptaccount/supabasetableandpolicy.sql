@@ -175,3 +175,90 @@ using (exists (
   join public.companies on vouchers.company_id = companies.id
   where vouchers.id = voucher_entries.voucher_id and companies.owner_id = auth.uid()
 ));
+
+-- 16. Create the units table (Units of Measure)
+create table if not exists public.units (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references public.companies(id) on delete cascade,
+  unit_symbol text not null, -- e.g., Pcs, Kg
+  formal_name text,
+  created_at timestamp with time zone default now() not null
+);
+
+-- 17. Enable RLS for units
+alter table public.units enable row level security;
+
+-- 18. Create Security Policies for units
+create policy "Users can see units of their own companies"
+on public.units for select
+using (exists (select 1 from public.companies where id = units.company_id and owner_id = auth.uid()));
+
+create policy "Users can create units in their own companies"
+on public.units for insert
+with check (exists (select 1 from public.companies where id = units.company_id and owner_id = auth.uid()));
+
+create policy "Users can update units of their own companies"
+on public.units for update
+using (exists (select 1 from public.companies where id = units.company_id and owner_id = auth.uid()));
+
+create policy "Users can delete units of their own companies"
+on public.units for delete
+using (exists (select 1 from public.companies where id = units.company_id and owner_id = auth.uid()));
+
+-- 19. Create the stock_groups table
+create table if not exists public.stock_groups (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references public.companies(id) on delete cascade,
+  group_name text not null,
+  parent_group_id uuid references public.stock_groups(id) on delete cascade,
+  created_at timestamp with time zone default now() not null
+);
+
+-- 20. Enable RLS for stock_groups
+alter table public.stock_groups enable row level security;
+
+-- 21. Create Security Policies for stock_groups
+create policy "Users can see stock_groups of their own companies"
+on public.stock_groups for select
+using (exists (select 1 from public.companies where id = stock_groups.company_id and owner_id = auth.uid()));
+
+create policy "Users can create stock_groups in their own companies"
+on public.stock_groups for insert
+with check (exists (select 1 from public.companies where id = stock_groups.company_id and owner_id = auth.uid()));
+
+create policy "Users can delete stock_groups of their own companies"
+on public.stock_groups for delete
+using (exists (select 1 from public.companies where id = stock_groups.company_id and owner_id = auth.uid()));
+
+-- 22. Create the stock_items table
+create table if not exists public.stock_items (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references public.companies(id) on delete cascade,
+  group_id uuid references public.stock_groups(id) on delete set null,
+  unit_id uuid not null references public.units(id) on delete cascade,
+  item_name text not null,
+  opening_quantity decimal default 0,
+  opening_rate decimal default 0,
+  current_quantity decimal default 0,
+  created_at timestamp with time zone default now() not null
+);
+
+-- 23. Enable RLS for stock_items
+alter table public.stock_items enable row level security;
+
+-- 24. Create Security Policies for stock_items
+create policy "Users can see stock_items of their own companies"
+on public.stock_items for select
+using (exists (select 1 from public.companies where id = stock_items.company_id and owner_id = auth.uid()));
+
+create policy "Users can create stock_items in their own companies"
+on public.stock_items for insert
+with check (exists (select 1 from public.companies where id = stock_items.company_id and owner_id = auth.uid()));
+
+create policy "Users can update stock_items of their own companies"
+on public.stock_items for update
+using (exists (select 1 from public.companies where id = stock_items.company_id and owner_id = auth.uid()));
+
+create policy "Users can delete stock_items of their own companies"
+on public.stock_items for delete
+using (exists (select 1 from public.companies where id = stock_items.company_id and owner_id = auth.uid()));

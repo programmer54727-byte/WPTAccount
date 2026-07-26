@@ -28,6 +28,7 @@ data class DashboardItem(
 fun CompanyDashboard(
     company: Company,
     onHomeClick: () -> Unit,
+    onStockClick: () -> Unit,
     onBack: () -> Unit
 ) {
     val scrollState = rememberScrollState()
@@ -49,6 +50,10 @@ fun CompanyDashboard(
                 ScreenType.Journal -> { /* TODO */ }
                 ScreenType.CreditNote -> { /* TODO */ }
                 ScreenType.DebitNote -> { /* TODO */ }
+                ScreenType.BalanceSheet -> { /* TODO */ }
+                ScreenType.ProfitAndLoss -> { /* TODO */ }
+                ScreenType.CashFlow -> { /* TODO */ }
+                ScreenType.Stock -> onStockClick()
             }
         }
     ) { _, onToggleDrawer, isDesktop ->

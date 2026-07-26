@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Receipt
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.dp
 fun UserHome(
     company: Company,
     onDashboardClick: () -> Unit,
+    onStockSummaryClick: () -> Unit,
     onBack: () -> Unit
 ) {
     var isInitializing by remember { mutableStateOf(false) }
@@ -59,6 +61,10 @@ fun UserHome(
     }
 
     val items = listOf(
+        DashboardItem("Balance Sheet", Icons.Default.AccountBalance, Color(0xFF3F51B5)),
+        DashboardItem("Profit & Loss", Icons.Default.Description, Color(0xFF4CAF50)),
+        DashboardItem("Cash Flow", Icons.Default.SyncAlt, Color(0xFFFF9800)),
+        DashboardItem("Stock Summary", Icons.Default.Inventory, Color(0xFF795548)),
         DashboardItem("Sale", Icons.Default.ShoppingCart, MaterialTheme.colorScheme.primary),
         DashboardItem("Purchase", Icons.Default.AddShoppingCart, MaterialTheme.colorScheme.secondary),
         DashboardItem("Payment", Icons.Default.Payments, MaterialTheme.colorScheme.tertiary),
@@ -68,6 +74,7 @@ fun UserHome(
         DashboardItem("Credit Note", Icons.AutoMirrored.Filled.AssignmentReturn, Color(0xFF9C27B0)),
         DashboardItem("Debit Note", Icons.AutoMirrored.Filled.KeyboardReturn, Color(0xFF00BCD4)),
         DashboardItem("Ledger", Icons.Default.AccountBalance, MaterialTheme.colorScheme.primary),
+
     )
 
     if (isInitializing) {
@@ -96,6 +103,10 @@ fun UserHome(
                     ScreenType.Journal -> { /* TODO */ }
                     ScreenType.CreditNote -> { /* TODO */ }
                     ScreenType.DebitNote -> { /* TODO */ }
+                    ScreenType.BalanceSheet -> { /* TODO */ }
+                    ScreenType.ProfitAndLoss -> { /* TODO */ }
+                    ScreenType.CashFlow -> { /* TODO */ }
+                    ScreenType.Stock -> onStockSummaryClick()
                 }
             }
         ) { _, onToggleDrawer, isDesktop ->
@@ -142,7 +153,14 @@ fun UserHome(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         items(items) { item ->
-                            TransactionCard(item)
+                            TransactionCard(item) {
+                                when (item.title) {
+                                    "Dashboard" -> onDashboardClick()
+                                    "Stock Summary" -> onStockSummaryClick()
+                                    "Balance Sheet", "Profit & Loss", "Cash Flow" -> { /* TODO */ }
+                                    "Sale", "Purchase", "Payment", "Receipt", "Contra", "Journal", "Credit Note", "Debit Note", "Ledger" -> { /* TODO */ }
+                                }
+                            }
                         }
                     }
                 }
@@ -152,12 +170,12 @@ fun UserHome(
 }
 
 @Composable
-fun TransactionCard(item: DashboardItem) {
+fun TransactionCard(item: DashboardItem, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(120.dp)
-            .clickable { /* Handle click */ },
+            .clickable { onClick() },
         colors = CardDefaults.cardColors(
             containerColor = item.color.copy(alpha = 0.1f)
         )

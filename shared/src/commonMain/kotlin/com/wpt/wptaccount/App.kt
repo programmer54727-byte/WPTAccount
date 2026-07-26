@@ -80,6 +80,7 @@ fun App() {
                             UserHome(
                                 company = company,
                                 onDashboardClick = { currentScreen = "company_dashboard" },
+                                onStockSummaryClick = { currentScreen = "inventory_management" },
                                 onBack = { currentScreen = "company_list" }
                             )
                         } ?: run {
@@ -91,7 +92,18 @@ fun App() {
                             CompanyDashboard(
                                 company = company,
                                 onHomeClick = { currentScreen = "company_home" },
+                                onStockClick = { currentScreen = "inventory_management" },
                                 onBack = { currentScreen = "company_list" }
+                            )
+                        } ?: run {
+                            currentScreen = "company_list"
+                        }
+                    }
+                    "inventory_management" -> {
+                        selectedCompany?.let { company ->
+                            InventoryManagement(
+                                company = company,
+                                onBack = { currentScreen = "company_home" }
                             )
                         } ?: run {
                             currentScreen = "company_list"

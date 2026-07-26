@@ -1,6 +1,8 @@
 package com.wpt.wptaccount
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.AssignmentReturn
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
@@ -10,7 +12,8 @@ import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.KeyboardReturn
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -23,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
 enum class ScreenType {
-    Home, Dashboard, Sale, Purchase, Payment, Receipt, Contra, Journal, CreditNote, DebitNote, Ledger, Exit
+    Home, Dashboard, BalanceSheet, ProfitAndLoss, CashFlow, Stock, Sale, Purchase, Payment, Receipt, Contra, Journal, CreditNote, DebitNote, Ledger, Exit
 }
 
 @Composable
@@ -38,11 +41,16 @@ fun AppNavigationDrawer(
 
     BoxWithConstraints {
         val isDesktop = maxWidth > 840.dp
+        val scrollState = rememberScrollState()
 
         if (isDesktop) {
             PermanentNavigationDrawer(
                 drawerContent = {
-                    PermanentDrawerSheet(modifier = Modifier.width(240.dp)) {
+                    PermanentDrawerSheet(
+                        modifier = Modifier
+                            .width(240.dp)
+                            .verticalScroll(scrollState)
+                    ) {
                         DrawerContent(currentScreen, companyName, onNavigate)
                     }
                 }
@@ -53,7 +61,9 @@ fun AppNavigationDrawer(
             ModalNavigationDrawer(
                 drawerState = drawerState,
                 drawerContent = {
-                    ModalDrawerSheet {
+                    ModalDrawerSheet(
+                        modifier = Modifier.verticalScroll(rememberScrollState())
+                    ) {
                         DrawerContent(currentScreen, companyName) { screen ->
                             scope.launch { drawerState.close() }
                             onNavigate(screen)
@@ -68,7 +78,7 @@ fun AppNavigationDrawer(
 }
 
 @Composable
-private fun ColumnScope.DrawerContent(
+private fun DrawerContent(
     currentScreen: ScreenType,
     companyName: String,
     onNavigate: (ScreenType) -> Unit
@@ -94,6 +104,43 @@ private fun ColumnScope.DrawerContent(
         label = { Text("Dashboard") },
         selected = currentScreen == ScreenType.Dashboard,
         onClick = { onNavigate(ScreenType.Dashboard) },
+        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+    )
+
+    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+    Text(
+        text = "Reports",
+        style = MaterialTheme.typography.labelMedium,
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp),
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+
+    NavigationDrawerItem(
+        icon = { Icon(Icons.Default.AccountBalance, contentDescription = null) },
+        label = { Text("Balance Sheet") },
+        selected = currentScreen == ScreenType.BalanceSheet,
+        onClick = { onNavigate(ScreenType.BalanceSheet) },
+        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+    )
+    NavigationDrawerItem(
+        icon = { Icon(Icons.Default.Description, contentDescription = null) },
+        label = { Text("Profit & Loss") },
+        selected = currentScreen == ScreenType.ProfitAndLoss,
+        onClick = { onNavigate(ScreenType.ProfitAndLoss) },
+        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+    )
+    NavigationDrawerItem(
+        icon = { Icon(Icons.Default.SyncAlt, contentDescription = null) },
+        label = { Text("Cash Flow") },
+        selected = currentScreen == ScreenType.CashFlow,
+        onClick = { onNavigate(ScreenType.CashFlow) },
+        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+    )
+    NavigationDrawerItem(
+        icon = { Icon(Icons.Default.Inventory, contentDescription = null) },
+        label = { Text("Stock Summary") },
+        selected = currentScreen == ScreenType.Stock,
+        onClick = { onNavigate(ScreenType.Stock) },
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
 
@@ -169,7 +216,7 @@ private fun ColumnScope.DrawerContent(
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
     
-    Spacer(Modifier.weight(1f))
+    Spacer(Modifier.height(16.dp))
     
     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
     NavigationDrawerItem(
