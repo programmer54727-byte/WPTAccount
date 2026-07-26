@@ -19,8 +19,9 @@ import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.SyncAlt
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import io.github.jan.supabase.postgrest.from
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -34,6 +35,29 @@ fun UserHome(
     onDashboardClick: () -> Unit,
     onBack: () -> Unit
 ) {
+    var isInitializing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(company.id) {
+        val companyId = company.id ?: return@LaunchedEffect
+        try {
+            // Check if groups already exist
+            val groups = supabase.from("groups")
+                .select { 
+                    filter { eq("company_id", companyId) }
+                    limit(1)
+                }.decodeList<AccountingGroup>()
+            
+            if (groups.isEmpty()) {
+                isInitializing = true
+                initializeCompanySetup(companyId)
+            }
+        } catch (e: Exception) {
+            println("Error during Smart Check: ${e.message}")
+        } finally {
+            isInitializing = false
+        }
+    }
+
     val items = listOf(
         DashboardItem("Sale", Icons.Default.ShoppingCart, MaterialTheme.colorScheme.primary),
         DashboardItem("Purchase", Icons.Default.AddShoppingCart, MaterialTheme.colorScheme.secondary),
@@ -46,70 +70,80 @@ fun UserHome(
         DashboardItem("Ledger", Icons.Default.AccountBalance, MaterialTheme.colorScheme.primary),
     )
 
-    AppNavigationDrawer(
-        currentScreen = ScreenType.Home,
-        companyName = company.company_name,
-        onNavigate = { screen ->
-            when (screen) {
-                ScreenType.Home -> { /* Already here */ }
-                ScreenType.Dashboard -> onDashboardClick()
-                ScreenType.Exit -> onBack()
-                ScreenType.Sale -> { /* TODO */ }
-                ScreenType.Purchase -> { /* TODO */ }
-                ScreenType.Payment -> { /* TODO */ }
-                ScreenType.Receipt -> { /* TODO */ }
-                ScreenType.Ledger -> { /* TODO */ }
-                ScreenType.Contra -> { /* TODO */ }
-                ScreenType.Journal -> { /* TODO */ }
-                ScreenType.CreditNote -> { /* TODO */ }
-                ScreenType.DebitNote -> { /* TODO */ }
+    if (isInitializing) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                CircularProgressIndicator()
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Initializing Accounting Groups...")
             }
         }
-    ) { _, onToggleDrawer, isDesktop ->
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { 
-                        Column {
-                            Text(company.company_name)
-                            Text(
-                                text = "Home",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    },
-                    navigationIcon = {
-                        if (!isDesktop) {
-                            IconButton(onClick = onToggleDrawer) {
-                                Icon(Icons.Default.Menu, contentDescription = "Menu")
+    } else {
+        AppNavigationDrawer(
+            currentScreen = ScreenType.Home,
+            companyName = company.company_name,
+            onNavigate = { screen ->
+                when (screen) {
+                    ScreenType.Home -> { /* Already here */ }
+                    ScreenType.Dashboard -> onDashboardClick()
+                    ScreenType.Exit -> onBack()
+                    ScreenType.Sale -> { /* TODO */ }
+                    ScreenType.Purchase -> { /* TODO */ }
+                    ScreenType.Payment -> { /* TODO */ }
+                    ScreenType.Receipt -> { /* TODO */ }
+                    ScreenType.Ledger -> { /* TODO */ }
+                    ScreenType.Contra -> { /* TODO */ }
+                    ScreenType.Journal -> { /* TODO */ }
+                    ScreenType.CreditNote -> { /* TODO */ }
+                    ScreenType.DebitNote -> { /* TODO */ }
+                }
+            }
+        ) { _, onToggleDrawer, isDesktop ->
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { 
+                            Column {
+                                Text(company.company_name)
+                                Text(
+                                    text = "Home",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        },
+                        navigationIcon = {
+                            if (!isDesktop) {
+                                IconButton(onClick = onToggleDrawer) {
+                                    Icon(Icons.Default.Menu, contentDescription = "Menu")
+                                }
                             }
                         }
-                    }
-                )
-            }
-        ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp)
-            ) {
-                Text(
-                    text = "Masters & Transactions",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 150.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    )
+                }
+            ) { padding ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(16.dp)
                 ) {
-                    items(items) { item ->
-                        TransactionCard(item)
+                    Text(
+                        text = "Masters & Transactions",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = 150.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(items) { item ->
+                            TransactionCard(item)
+                        }
                     }
                 }
             }

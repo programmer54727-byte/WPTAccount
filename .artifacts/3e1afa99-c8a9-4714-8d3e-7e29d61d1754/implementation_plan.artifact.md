@@ -1,36 +1,37 @@
-# Implementation Plan - Database Schema for Vouchers and Ledgers
+# Implementation Plan - Setup for Existing Companies
 
-To support the 8 voucher types (Sale, Purchase, Payment, etc.), we need a robust database structure. This plan adds the necessary tables and security policies to `supabasetableandpolicy.sql`.
+This plan addresses the need to initialize existing companies (those created before the automatic setup logic) with the 34 standard groups and default ledgers.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> I am adding three main tables:
-> 1.  **`ledgers`**: To store account heads (e.g., Cash, Bank, Sales A/c, Customer names).
-> 2.  **`vouchers`**: To store the main header of every transaction (Voucher No, Date, Type).
-> 3.  **`voucher_entries`**: To store the specific Debit (Dr) and Credit (Cr) amounts for each ledger in a voucher.
->
-> You will need to run these SQL commands in your Supabase SQL Editor once added.
+> I will implement a "Smart Check" feature. When you select an existing company from your list, the app will automatically check if the accounting groups are present. If they are missing, it will set them up for you instantly without you having to do anything manually.
 
 ## Proposed Changes
 
-### [MODIFY] [supabasetableandpolicy.sql](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/supabasetableandpolicy.sql)
+### 1. Shared Setup Logic
 
-- Add **`ledgers`** table:
-    - Links to a specific company.
-    - Stores ledger name and opening balance.
-- Add **`vouchers`** table:
-    - Stores `voucher_type` (Sale, Purchase, etc.).
-    - Stores `voucher_number` and `date`.
-- Add **`voucher_entries`** table:
-    - Links multiple ledgers to a single voucher.
-    - Stores `amount` and `entry_type` (Debit or Credit).
-- Add **RLS Policies**:
-    - Ensures users can only see/edit data belonging to companies they own.
+#### [NEW] [companySetupHelper.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/companySetupHelper.kt)
+- Create a shared function `initializeCompanySetup(companyId: String)` that contains the bulk insert logic for 34 groups and default ledgers (Cash, P&L).
+
+### 2. Integration into Company Creation
+
+#### [MODIFY] [createCompany.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/createCompany.kt)
+- Replace the inline setup logic with a call to `initializeCompanySetup`.
+
+### 3. Automatic Setup for Existing Companies
+
+#### [MODIFY] [userHome.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/userHome.kt)
+- Add a `LaunchedEffect` that checks the `groups` table for the current `company_id`.
+- If no groups are found:
+    - Show an "Initializing Company Setup..." loading indicator.
+    - Call `initializeCompanySetup`.
+    - Refresh the view once complete.
 
 ## Verification Plan
 
 ### Manual Verification
-- After adding the code, you can copy-paste the SQL into the Supabase Dashboard.
-- Verify that the tables are created with correct relationships.
-- Verify that RLS (Row Level Security) is active.
+1.  **Old Company Test**: Select a company that was created previously (which doesn't have groups yet).
+2.  **Verify**: You should see a brief loading message, and then the home screen should appear as normal.
+3.  **Database Check**: Check the Supabase dashboard to confirm that the groups and ledgers have been added to that specific old company.
+4.  **New Company Test**: Create a completely new company and verify it still works correctly.

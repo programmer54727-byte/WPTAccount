@@ -91,9 +91,16 @@ fun CreateCompanyForm(
                         formal_name = formalName,
                         owner_id = user.id
                     )
+                    
                     println("Inserting company into Supabase...")
-                    supabase.from("companies").insert(company)
-                    println("Company created successfully!")
+                    val insertedCompany = supabase.from("companies").insert(company) {
+                        select()
+                    }.decodeSingle<Company>()
+                    
+                    val companyId = insertedCompany.id!!
+                    initializeCompanySetup(companyId)
+                    
+                    println("Initial setup complete!")
                     onSuccess()
                 } else {
                     errorMessage = "User not logged in"
@@ -101,7 +108,7 @@ fun CreateCompanyForm(
                 }
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Failed to create company"
-                println("Error creating company: ${e.message}")
+                println("Error during company setup: ${e.message}")
                 e.printStackTrace()
             } finally {
                 isLoading = false
