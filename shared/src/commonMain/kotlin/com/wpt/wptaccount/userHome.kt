@@ -35,6 +35,7 @@ fun UserHome(
     company: Company,
     onDashboardClick: () -> Unit,
     onStockSummaryClick: () -> Unit,
+    onGstDetailsClick: () -> Unit,
     onBack: () -> Unit
 ) {
     var isInitializing by remember { mutableStateOf(false) }
@@ -114,13 +115,25 @@ fun UserHome(
                 topBar = {
                     TopAppBar(
                         title = { 
-                            Column {
-                                Text(company.company_name)
-                                Text(
-                                    text = "Home",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                Column(modifier = Modifier.align(Alignment.CenterStart)) {
+                                    Text(company.company_name)
+                                    Text(
+                                        text = "Home",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                
+                                // Centered GST Detail Button
+                                OutlinedButton(
+                                    onClick = onGstDetailsClick,
+                                    modifier = Modifier.align(Alignment.Center).height(32.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                                ) {
+                                    Text("GST Detail", style = MaterialTheme.typography.labelSmall)
+                                }
                             }
                         },
                         navigationIcon = {

@@ -176,7 +176,48 @@ using (exists (
   where vouchers.id = voucher_entries.voucher_id and companies.owner_id = auth.uid()
 ));
 
--- 16. Create the units table (Units of Measure)
+-- 16. Create the gst_details table
+create table if not exists public.gst_details (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references public.companies(id) on delete cascade,
+  registration_status text default 'Active',
+  state text,
+  registration_type text, -- Regular, Composition
+  is_other_territory_assessee boolean default false,
+  gstin_uin text,
+  gstr1_periodicity text, -- Monthly, Quarterly
+  gst_username text,
+  filing_mode text,
+  eway_bill_applicable boolean default false,
+  eway_bill_date date,
+  eway_bill_intrastate boolean default false,
+  einvoice_applicable boolean default false,
+  registration_name text,
+  created_at timestamp with time zone default now() not null,
+  unique(company_id)
+);
+
+-- 17. Enable RLS for gst_details
+alter table public.gst_details enable row level security;
+
+-- 18. Create Security Policies for gst_details
+create policy "Users can see gst_details of their own companies"
+on public.gst_details for select
+using (exists (select 1 from public.companies where id = gst_details.company_id and owner_id = auth.uid()));
+
+create policy "Users can create gst_details in their own companies"
+on public.gst_details for insert
+with check (exists (select 1 from public.companies where id = gst_details.company_id and owner_id = auth.uid()));
+
+create policy "Users can update gst_details of their own companies"
+on public.gst_details for update
+using (exists (select 1 from public.companies where id = gst_details.company_id and owner_id = auth.uid()));
+
+create policy "Users can delete gst_details of their own companies"
+on public.gst_details for delete
+using (exists (select 1 from public.companies where id = gst_details.company_id and owner_id = auth.uid()));
+
+-- 19. Create the units table (Units of Measure)
 create table if not exists public.units (
   id uuid primary key default gen_random_uuid(),
   company_id uuid not null references public.companies(id) on delete cascade,

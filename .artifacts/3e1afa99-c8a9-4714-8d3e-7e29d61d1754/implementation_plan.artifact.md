@@ -1,54 +1,55 @@
-# Implementation Plan - Inventory Management (Stock Setup)
+# Implementation Plan - GST Details Integration
 
-To enable "Sale" and "Purchase" vouchers, we first need to implement Inventory Management. Similar to Ledgers needing Groups, Stock Items need Units of Measure (e.g., Pcs, Kg) and Stock Groups.
+This plan outlines the addition of a GST Details section for companies, including database schema updates, UI entry points, and a placeholder for future expansion.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> I will implement a complete Inventory setup consisting of:
-> 1.  **Units of Measure**: To define how items are counted (e.g., Nos, Box, Kgs).
-> 2.  **Stock Groups**: To categorize items (e.g., Electronics, Raw Materials).
-> 3.  **Stock Items**: The actual products you will buy and sell.
->
-> This is a foundational step before we can build the Sale Voucher.
+> - **Database Update**: I will add a new `gst_details` table to store all fields shown in your Tally screenshot (Registration Type, GSTIN, e-Way Bill status, etc.).
+> - **Entry Point**: A "GST Detail" button will be added to the center of the Top Bar on the Company Home screen.
+> - **Future Proofing**: The GST details screen will have a basic layout now, leaving space for more advanced settings as we progress.
 
 ## Proposed Changes
 
-### 1. Database Schema Update
+### 1. Database Schema (SQL)
 
 #### [MODIFY] [supabasetableandpolicy.sql](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/supabasetableandpolicy.sql)
-- **New Table `units`**: To store units like Pcs, Kgs, etc.
-- **New Table `stock_groups`**: To categorize stock.
-- **New Table `stock_items`**: To store products with their opening quantity and rate.
-- Add RLS policies for all new tables.
+- **New Table `gst_details`**:
+    - `id`, `company_id` (foreign key)
+    - `registration_status` (Active/Inactive)
+    - `state`, `registration_type` (Regular/Composition)
+    - `is_other_territory_assessee` (Boolean)
+    - `gstin_uin` (Text)
+    - `gstr1_periodicity` (Monthly/Quarterly)
+    - `gst_username`, `filing_mode`
+    - `eway_bill_applicable` (Boolean), `eway_bill_date` (Date), `eway_bill_intrastate` (Boolean)
+    - `einvoice_applicable` (Boolean)
+    - `registration_name`
+- **RLS Policies**: Add policies to restrict access based on company ownership.
 
-### 2. Data Models (Kotlin)
+### 2. Data Model (Kotlin)
 
-#### [NEW] [InventoryModels.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/InventoryModels.kt)
-- Define `@Serializable` data classes: `UnitOfMeasure`, `StockGroup`, and `StockItem`.
+#### [NEW] [GstDetails.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/GstDetails.kt)
+- Define `@Serializable` data class `GstDetails`.
 
-### 3. Inventory Management UI
+### 3. UI and Navigation
 
-#### [NEW] [inventoryManagement.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/inventoryManagement.kt)
-- Create a screen to:
-    - View and create **Units**.
-    - View and create **Stock Groups**.
-    - View and create **Stock Items**.
-
-### 4. Navigation Integration
-
-#### [MODIFY] [App.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/App.kt)
-- Add navigation routes for inventory management.
+#### [NEW] [gstDetailsForm.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/gstDetailsForm.kt)
+- Create `GstDetailsScreen` with fields for the details mentioned above.
+- Leave extra space as requested for future additions.
 
 #### [MODIFY] [userHome.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/userHome.kt)
-- Link the "Stock Summary" icon to the new Inventory screen.
+- Update the `TopAppBar` to include a centered "GST Detail" button.
+- Pass the navigation callback `onGstDetailsClick`.
+
+#### [MODIFY] [App.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/App.kt)
+- Add `"gst_details"` screen state and routing logic.
 
 ## Verification Plan
 
 ### Manual Verification
 1.  Run the updated SQL in Supabase.
-2.  Navigate to "Stock Summary" from the app.
-3.  Create a Unit (e.g., "Pcs").
-4.  Create a Stock Group (e.g., "General").
-5.  Create a Stock Item (e.g., "Keyboard") linked to the Unit and Group.
-6.  Verify in Supabase that the item is saved correctly.
+2.  Open a company from the Company List.
+3.  Verify the "GST Detail" button appears in the center of the Top Bar.
+4.  Click the button and verify you land on the new (basic) GST details form.
+5.  Verify data can be saved and retrieved (if implemented in this phase).
