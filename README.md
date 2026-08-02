@@ -1,6 +1,6 @@
 # WPTAccount - Kotlin Multiplatform Dashboard
 
-This is a modern **Kotlin Multiplatform (KMP)** application that works on both **Android** and **Desktop (JVM)**. It uses **Jetpack Compose** for the UI and **Supabase** as the backend.
+This is a modern **Kotlin Multiplatform (KMP)** application that works on **Android**, **Desktop (JVM)**, and **Web (Wasm)**. It uses **Jetpack Compose** for the UI and **Supabase** as the backend.
 
 ## 🚀 Features
 - **User Authentication:** Sign up with email, optional OTP verification, and secure Login.
@@ -10,12 +10,18 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on both *
     - Automatically creates **34 standard Tally groups** for every company.
     - Automatically initializes default ledgers (**Cash** and **Profit & Loss A/c**).
     - **Smart Check:** Automatically initializes groups/ledgers for older companies when opened.
-- **Comprehensive Transaction System:** Support for 8 standard voucher types (Sale, Purchase, Payment, Receipt, Contra, Journal, Credit Note, Debit Note) and Ledger viewing.
+- **Inventory Management:**
+    - **Units & Groups:** Full lifecycle management for Units of Measure and Stock Groups.
+    - **Tally-Style Stock Summary:** Professional table layout displaying Particulars, HSN, GST, and Closing Balances.
+    - **Monthly Summary Drill-down:** Detailed monthly breakdown of Inwards, Outwards, and rolling Closing Balances.
+    - **Smart Deletion:** Safe deletion logic with dependency checks (prevents deleting units or groups currently in use).
+- **Professional Workflows:**
+    - **Keyboard Navigation:** Full support for **Arrow keys** to select items and **Enter** to drill down.
+    - **Android Rotation Control:** Automatically switches to **Landscape** mode for Inventory reports to ensure high readability on mobile.
 - **Responsive UI:**
     - **Desktop:** Permanent navigation sidebar for quick access.
-    - **Mobile:** Adaptive navigation drawer with a dedicated menu button.
-- **Analytics Dashboard:** Graphical representation of monthly Sales and Purchases using bar charts.
-- **Cross-Platform:** 100% shared UI and business logic across Android and Desktop.
+    - **Mobile:** Adaptive navigation drawer and screen-specific orientation handling.
+- **Cross-Platform:** 100% shared UI and business logic across Android, Desktop, and Web.
 - **Secure Backend:** Uses Supabase Auth and advanced Row Level Security (RLS) policies for data isolation.
 
 ## 🛠 Tech Stack
@@ -40,11 +46,12 @@ supabase.key=YOUR_SUPABASE_ANON_KEY
 ```
 
 ### 3. Database Schema
-Copy and run the SQL commands from `shared/src/commonMain/kotlin/com/wpt/wptaccount/supabasetableandpolicy.sql` in your **Supabase SQL Editor** to create the tables (`companies`, `groups`, `ledgers`, `vouchers`, `voucher_entries`) and RLS policies.
+Copy and run the SQL commands from `shared/src/commonMain/kotlin/com/wpt/wptaccount/supabasetableandpolicy.sql` in your **Supabase SQL Editor** to create the tables (`companies`, `groups`, `ledgers`, `vouchers`, `voucher_entries`, `units`, `stock_groups`, `stock_items`) and RLS policies.
 
 ### 4. Run the Project
 - **Android:** Select the `androidApp` configuration.
 - **Desktop:** Select the `desktopApp` configuration.
+- **Web:** Run `./gradlew :webApp:wasmJsBrowserRun`.
 
 ## 🔒 Security
 RLS is strictly enforced on all tables, ensuring users only see data belonging to companies they own. Tokens are stored securely using platform-native storage.

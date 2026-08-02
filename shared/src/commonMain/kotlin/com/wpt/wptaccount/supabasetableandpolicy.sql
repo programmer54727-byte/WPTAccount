@@ -278,6 +278,15 @@ create table if not exists public.stock_items (
   group_id uuid references public.stock_groups(id) on delete set null,
   unit_id uuid not null references public.units(id) on delete cascade,
   item_name text not null,
+  alias text,
+  gst_applicability text default 'Applicable', -- Applicable, Not Applicable, Undefined
+  hsn_sac_details text default 'As per Company/Stock Group',
+  hsn_sac_number text,
+  hsn_description text,
+  gst_rate_details text default 'As per Company/Stock Group',
+  taxability_type text default 'Taxable', -- Taxable, Nil Rated, Exempt
+  gst_rate decimal default 0,
+  type_of_supply text default 'Goods', -- Goods, Services, Capital Goods
   opening_quantity decimal default 0,
   opening_rate decimal default 0,
   current_quantity decimal default 0,

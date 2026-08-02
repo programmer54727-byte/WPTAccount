@@ -1,5 +1,6 @@
 package com.wpt.wptaccount
 
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -13,7 +14,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            App()
+            App(
+                onOrientationRequest = { orientation ->
+                    requestedOrientation = when (orientation) {
+                        ScreenOrientation.LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                        ScreenOrientation.PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                        ScreenOrientation.SENSOR -> ActivityInfo.SCREEN_ORIENTATION_SENSOR
+                        ScreenOrientation.UNSPECIFIED -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                    }
+                }
+            )
         }
     }
 }

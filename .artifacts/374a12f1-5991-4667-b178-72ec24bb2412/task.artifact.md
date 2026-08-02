@@ -1,0 +1,9 @@
+- [x] Add necessary imports for keyboard navigation and focus management in `inventoryManagement.kt`
+- [x] Implement `StockItemMonthlySummary` composable for the drill-down view
+- [x] Update `StockItemsTab` to handle selection state and keyboard events
+    - [x] Add `selectedItemIndex` and `viewMode` states
+    - [x] Implement `onPreviewKeyEvent` for Up/Down/Enter
+    - [x] Highlight the selected row
+- [x] Integrate `StockItemMonthlySummary` into `StockItemsTab`
+- [x] Verify build and functionality
+- [x] Create walkthrough artifact

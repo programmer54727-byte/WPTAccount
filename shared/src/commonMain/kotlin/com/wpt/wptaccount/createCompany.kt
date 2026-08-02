@@ -51,6 +51,13 @@ fun CreateCompanyForm(
     var tallyVaultEnabled by remember { mutableStateOf("No") }
     var controlAccessEnabled by remember { mutableStateOf("No") }
 
+    // GST/HSN Defaults
+    var gstApplicability by remember { mutableStateOf("Applicable") }
+    var hsnNumber by remember { mutableStateOf("") }
+    var hsnDescription by remember { mutableStateOf("") }
+    var gstRate by remember { mutableStateOf("0") }
+    var typeOfSupply by remember { mutableStateOf("Goods") }
+
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     
@@ -89,6 +96,11 @@ fun CreateCompanyForm(
                         control_user_access_enabled = controlAccessEnabled,
                         base_currency_symbol = baseCurrencySymbol,
                         formal_name = formalName,
+                        gst_applicability = gstApplicability,
+                        hsn_sac_number = hsnNumber,
+                        hsn_description = hsnDescription,
+                        gst_rate = gstRate.toDoubleOrNull() ?: 0.0,
+                        type_of_supply = typeOfSupply,
                         owner_id = user.id
                     )
                     
@@ -287,6 +299,42 @@ fun CreateCompanyForm(
             SectionHeader("Security Control")
             SelectionRow("Tally Vault Password", tallyVaultEnabled) { tallyVaultEnabled = it }
             SelectionRow("Control User Access", controlAccessEnabled) { controlAccessEnabled = it }
+
+            SectionHeader("GST/HSN Statutory Defaults")
+            SelectionRow("GST Applicability", gstApplicability) { gstApplicability = it }
+            if (gstApplicability == "Applicable") {
+                OutlinedTextField(
+                    value = hsnNumber,
+                    onValueChange = { hsnNumber = it },
+                    label = { Text("HSN/SAC Number") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = hsnDescription,
+                    onValueChange = { hsnDescription = it },
+                    label = { Text("HSN Description") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = gstRate,
+                    onValueChange = { gstRate = it },
+                    label = { Text("Default GST Rate (%)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+                
+                Text("Type of Supply", style = MaterialTheme.typography.bodyMedium)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(selected = typeOfSupply == "Goods", onClick = { typeOfSupply = "Goods" })
+                    Text("Goods", style = MaterialTheme.typography.bodySmall)
+                    Spacer(Modifier.width(8.dp))
+                    RadioButton(selected = typeOfSupply == "Services", onClick = { typeOfSupply = "Services" })
+                    Text("Services", style = MaterialTheme.typography.bodySmall)
+                }
+            }
 
             errorMessage?.let {
                 Text(text = it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
