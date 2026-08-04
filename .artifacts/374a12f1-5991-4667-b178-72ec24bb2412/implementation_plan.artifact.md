@@ -1,41 +1,45 @@
-# Implementation Plan - Screen Rotation Control for Android
+# Implementation Plan - Summary Values for Units and Groups
 
-The user wants the app to follow system auto-rotate settings normally, but specifically force landscape orientation when navigating to the **Inventory Management** (Stock) screen, even if the device's auto-rotate is disabled.
+The user wants to see summary information (Total Quantity, Average Rate, and Total Value) in the **Units** and **Groups** tabs, similar to how individual items are displayed.
 
 ## Proposed Changes
 
 ### [shared](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared)
 
-#### [NEW] [ScreenOrientation.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/ScreenOrientation.kt)
-- Define `enum class ScreenOrientation` with values: `UNSPECIFIED`, `LANDSCAPE`, `PORTRAIT`, `SENSOR`.
-- Define `val LocalScreenOrientation = staticCompositionLocalOf<(ScreenOrientation) -> Unit>` to provide orientation control to Composables.
+#### [MODIFY] [inventoryManagement.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/inventoryManagement.kt)
 
-#### [MODIFY] [App.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/App.kt)
-- Add a parameter `onOrientationRequest: (ScreenOrientation) -> Unit` to the `App` Composable.
-- Wrap the app content in `CompositionLocalProvider(LocalScreenOrientation provides onOrientationRequest)`.
-- Use `LaunchedEffect` monitoring `currentScreen`:
-    - If `currentScreen == "inventory_management"`, request `LANDSCAPE`.
-    - Otherwise, request `UNSPECIFIED` (to return to normal system behavior).
+- **UnitsTab Enhancement**:
+    - Fetch all `StockItems` along with the units.
+    - For each unit row, calculate:
+        - **Total Quantity**: Sum of `current_quantity` of all items using this unit.
+        - **Total Value**: Sum of (`current_quantity` * `opening_rate`) for all items.
+        - **Average Rate**: `Total Value / Total Quantity`.
+    - Update the UI to show these values in a table-like format.
 
-### [androidApp](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/androidApp)
+- **StockGroupsTab Enhancement**:
+    - Fetch all `StockItems` and `UnitOfMeasure` list.
+    - For each group row, identify the items belonging to it.
+    - **Logic**:
+        - If all items in the group use the **same unit**: Show Total Quantity, Average Rate, and Total Value.
+        - If items in the group use **different units**: Show **ONLY** the Total Value.
+    - Update the UI to match the table format.
 
-#### [MODIFY] [MainActivity.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/androidApp/src/main/kotlin/com/wpt/wptaccount/MainActivity.kt)
-- Update `setContent { App(...) }` to pass a lambda that calls `setRequestedOrientation`.
-- Map `ScreenOrientation` enum values to `ActivityInfo.SCREEN_ORIENTATION_*` constants.
+- **Visual Consistency**:
+    - Use the same highlighted row design and column headers as the `StockItemsTab` for a professional, uniform look.
 
 ## User Review Required
 
-> [!IMPORTANT]
-> Forcing landscape orientation can be jarring if the user doesn't expect it. This will only apply to the Android version of the app. Desktop and other platforms will ignore these orientation requests.
+> [!NOTE]
+> For groups with different units (e.g., some items in "Kg" and some in "Pcs"), adding quantities together doesn't make sense, so only the total monetary value will be displayed in those cases.
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `./gradlew :shared:compileKotlinJvm` to verify common code.
-- Run `./gradlew :androidApp:assembleDebug` to verify Android implementation.
+- Run `./gradlew :shared:compileKotlinJvm` to verify compilation.
 
 ### Manual Verification
-1.  Launch the app on an Android device.
-2.  Navigate between Landing, Login, and Company List. Verify it follows system rotate settings.
-3.  Enter **Inventory Management** (Stock). Verify the screen immediately rotates to landscape even if auto-rotate is OFF.
-4.  Navigate back. Verify it returns to portrait (or system default).
+1.  Navigate to **Inventory > Units**.
+    - Verify that each unit row shows the combined quantity and value of all items assigned to it.
+2.  Navigate to **Inventory > Groups**.
+    - Create a group with items of the same unit. Verify it shows Qty, Rate, and Value.
+    - Create a group with items of different units. Verify it shows only the total Value.

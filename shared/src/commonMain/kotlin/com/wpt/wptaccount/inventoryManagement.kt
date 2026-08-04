@@ -28,6 +28,7 @@ import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.window.DialogProperties
 
 @Composable
 fun InventoryField(label: String, value: String, modifier: Modifier = Modifier, enabled: Boolean = true, onValueChange: (String) -> Unit) {
@@ -73,70 +74,6 @@ fun InventoryDropdown(label: String, options: List<String>, selected: String, on
     }
 }
 
-@Composable
-fun TallyListAction(
-    label: String,
-    value: String,
-    options: List<String>,
-    onSelect: (String) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    var searchText by remember { mutableStateOf(value) }
-    val filteredOptions = options.filter { it.contains(searchText, ignoreCase = true) }
-
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
-        Text(text = "$label : ", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(100.dp))
-        
-        Box(modifier = Modifier.weight(1f)) {
-            OutlinedTextField(
-                value = searchText,
-                onValueChange = { 
-                    searchText = it
-                    expanded = true
-                },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodySmall,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color(0xFFFFF9C4), // Tally-like yellow focus
-                    unfocusedContainerColor = Color.Transparent
-                )
-            )
-
-            DropdownMenu(
-                expanded = expanded && filteredOptions.isNotEmpty(),
-                onDismissRequest = { expanded = false },
-                modifier = Modifier.width(IntrinsicSize.Max)
-            ) {
-                Text(
-                    text = "List of Actions",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFF3F51B5))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-                filteredOptions.forEach { option ->
-                    DropdownMenuItem(
-                        text = { 
-                            Text(
-                                text = option, 
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (option == value) Color(0xFFE91E63) else Color.Unspecified
-                            ) 
-                        },
-                        onClick = {
-                            onSelect(option)
-                            searchText = option
-                            expanded = false
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -151,6 +88,7 @@ fun InventoryManagement(
         topBar = {
             TopAppBar(
                 title = { Text("Inventory: ${company.company_name}") },
+                modifier = Modifier.fillMaxHeight(0.1f),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -160,7 +98,10 @@ fun InventoryManagement(
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
-            TabRow(selectedTabIndex = selectedTab) {
+            TabRow(
+                selectedTabIndex = selectedTab,
+                modifier = Modifier.fillMaxHeight(0.05f)
+            ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
                         selected = selectedTab == index,
@@ -182,6 +123,7 @@ fun InventoryManagement(
 @Composable
 fun UnitsTab(company: Company) {
     var units by remember { mutableStateOf<List<UnitOfMeasure>>(emptyList()) }
+    var items by remember { mutableStateOf<List<StockItem>>(emptyList()) }
     var showDialog by remember { mutableStateOf(false) }
     var unitToDelete by remember { mutableStateOf<UnitOfMeasure?>(null) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
@@ -189,29 +131,57 @@ fun UnitsTab(company: Company) {
     var formalName by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
 
-    fun fetchUnits() {
+    fun fetchData() {
         scope.launch {
             units = supabase.from("units").select {
                 filter { eq("company_id", company.id!!) }
             }.decodeList<UnitOfMeasure>()
+            
+            items = supabase.from("stock_items").select {
+                filter { eq("company_id", company.id!!) }
+            }.decodeList<StockItem>()
         }
     }
 
-    LaunchedEffect(Unit) { fetchUnits() }
+    LaunchedEffect(Unit) { fetchData() }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            items(units) { unit ->
-                ListItem(
-                    headlineContent = { Text(unit.unit_symbol) },
-                    supportingContent = { unit.formal_name?.let { Text(it) } },
-                    trailingContent = {
-                        IconButton(onClick = { unitToDelete = unit }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete Unit", tint = MaterialTheme.colorScheme.error)
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            // Table Header
+            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp), verticalAlignment = Alignment.Bottom) {
+                Text("Unit Symbol", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                Text("Formal Name", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                Text("Quantity", modifier = Modifier.width(100.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
+                Text("Avg Rate", modifier = Modifier.width(100.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
+                Text("Total Value", modifier = Modifier.width(120.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(48.dp))
+            }
+            HorizontalDivider(thickness = 2.dp, color = Color.Black)
+
+            LazyColumn(modifier = Modifier.weight(1f)) {
+                items(units) { unit ->
+                    val unitItems = items.filter { it.unit_id == unit.id }
+                    val totalQty = unitItems.sumOf { it.current_quantity }
+                    val totalValue = unitItems.sumOf { it.current_quantity * it.opening_rate }
+                    val avgRate = if (totalQty > 0) totalValue / totalQty else 0.0
+
+                    Surface(
+                        color = Color(0xFFFFE082),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)
+                    ) {
+                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(unit.unit_symbol, modifier = Modifier.weight(1f).padding(start = 8.dp))
+                            Text(unit.formal_name ?: "", modifier = Modifier.weight(1f))
+                            Text("$totalQty", modifier = Modifier.width(100.dp), textAlign = TextAlign.End)
+                            Text("${avgRate}", modifier = Modifier.width(100.dp), textAlign = TextAlign.End)
+                            Text("${totalValue}", modifier = Modifier.width(120.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
+                            
+                            IconButton(onClick = { unitToDelete = unit }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Delete Unit", tint = MaterialTheme.colorScheme.error)
+                            }
                         }
                     }
-                )
-                HorizontalDivider()
+                }
             }
         }
         
@@ -245,7 +215,7 @@ fun UnitsTab(company: Company) {
                                     supabase.from("units").delete {
                                         filter { eq("id", id) }
                                     }
-                                    fetchUnits()
+                                    fetchData()
                                 }
                             }
                             unitToDelete = null
@@ -274,11 +244,26 @@ fun UnitsTab(company: Company) {
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
+            modifier = Modifier.fillMaxWidth(0.95f),
+            properties = DialogProperties(usePlatformDefaultWidth = false),
             title = { Text("Add Unit of Measure") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = symbol, onValueChange = { symbol = it }, label = { Text("Symbol (e.g. Pcs)") })
-                    OutlinedTextField(value = formalName, onValueChange = { formalName = it }, label = { Text("Formal Name") })
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = symbol, 
+                        onValueChange = { symbol = it }, 
+                        label = { Text("Symbol (e.g. Pcs)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = formalName, 
+                        onValueChange = { formalName = it }, 
+                        label = { Text("Formal Name") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             },
             confirmButton = {
@@ -287,7 +272,7 @@ fun UnitsTab(company: Company) {
                         supabase.from("units").insert(UnitOfMeasure(company_id = company.id!!, unit_symbol = symbol, formal_name = formalName))
                         showDialog = false
                         symbol = ""; formalName = ""
-                        fetchUnits()
+                        fetchData()
                     }
                 }) { Text("Save") }
             }
@@ -298,6 +283,8 @@ fun UnitsTab(company: Company) {
 @Composable
 fun StockGroupsTab(company: Company) {
     var groups by remember { mutableStateOf<List<StockGroup>>(emptyList()) }
+    var items by remember { mutableStateOf<List<StockItem>>(emptyList()) }
+    var units by remember { mutableStateOf<List<UnitOfMeasure>>(emptyList()) }
     var showDialog by remember { mutableStateOf(false) }
     var groupToDelete by remember { mutableStateOf<StockGroup?>(null) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
@@ -306,40 +293,72 @@ fun StockGroupsTab(company: Company) {
     var name by remember { mutableStateOf("") }
     var selectedParentId by remember { mutableStateOf<String?>(null) }
     
-    // Statutory Details
-    var gstApplicability by remember { mutableStateOf("Applicable") }
-    var hsnDetails by remember { mutableStateOf("As per Company/Stock Group") }
-    var hsnNumber by remember { mutableStateOf("") }
-    var hsnDescription by remember { mutableStateOf("") }
-    var gstRateDetails by remember { mutableStateOf("As per Company/Stock Group") }
-    var taxabilityType by remember { mutableStateOf("Taxable") }
-    var gstRate by remember { mutableStateOf("0") }
-    var typeOfSupply by remember { mutableStateOf("Goods") }
-
     val scope = rememberCoroutineScope()
 
-    fun fetchGroups() {
+    fun fetchData() {
         scope.launch {
             groups = supabase.from("stock_groups").select {
                 filter { eq("company_id", company.id!!) }
             }.decodeList<StockGroup>()
+            
+            items = supabase.from("stock_items").select {
+                filter { eq("company_id", company.id!!) }
+            }.decodeList<StockItem>()
+            
+            units = supabase.from("units").select {
+                filter { eq("company_id", company.id!!) }
+            }.decodeList<UnitOfMeasure>()
         }
     }
 
-    LaunchedEffect(Unit) { fetchGroups() }
+    LaunchedEffect(Unit) { fetchData() }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            items(groups) { group ->
-                ListItem(
-                    headlineContent = { Text(group.group_name) },
-                    trailingContent = {
-                        IconButton(onClick = { groupToDelete = group }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete Group", tint = MaterialTheme.colorScheme.error)
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            // Table Header
+            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp), verticalAlignment = Alignment.Bottom) {
+                Text("Group Name", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                Text("Quantity", modifier = Modifier.width(100.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
+                Text("Avg Rate", modifier = Modifier.width(100.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
+                Text("Total Value", modifier = Modifier.width(120.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(48.dp))
+            }
+            HorizontalDivider(thickness = 2.dp, color = Color.Black)
+
+            LazyColumn(modifier = Modifier.weight(1f)) {
+                items(groups) { group ->
+                    val groupItems = items.filter { it.group_id == group.id }
+                    val totalValue = groupItems.sumOf { it.current_quantity * it.opening_rate }
+                    
+                    // Check if all items have the same unit
+                    val uniqueUnitIds = groupItems.map { it.unit_id }.distinct()
+                    val hasSameUnit = uniqueUnitIds.size == 1
+                    val unitSymbol = if (hasSameUnit) units.find { it.id == uniqueUnitIds[0] }?.unit_symbol ?: "" else ""
+                    val totalQty = groupItems.sumOf { it.current_quantity }
+                    val avgRate = if (totalQty > 0) totalValue / totalQty else 0.0
+
+                    Surface(
+                        color = Color(0xFFFFE082),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)
+                    ) {
+                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(group.group_name, modifier = Modifier.weight(1f).padding(start = 8.dp))
+                            
+                            if (hasSameUnit && groupItems.isNotEmpty()) {
+                                Text("$totalQty $unitSymbol", modifier = Modifier.width(100.dp), textAlign = TextAlign.End)
+                                Text("${avgRate}", modifier = Modifier.width(100.dp), textAlign = TextAlign.End)
+                            } else {
+                                Spacer(modifier = Modifier.width(200.dp)) // Hide Qty and Rate if mixed units
+                            }
+                            
+                            Text("${totalValue}", modifier = Modifier.width(120.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
+                            
+                            IconButton(onClick = { groupToDelete = group }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Delete Group", tint = MaterialTheme.colorScheme.error)
+                            }
                         }
                     }
-                )
-                HorizontalDivider()
+                }
             }
         }
         
@@ -379,7 +398,7 @@ fun StockGroupsTab(company: Company) {
                                     supabase.from("stock_groups").delete {
                                         filter { eq("id", id) }
                                     }
-                                    fetchGroups()
+                                    fetchData()
                                 }
                             }
                             groupToDelete = null
@@ -408,13 +427,14 @@ fun StockGroupsTab(company: Company) {
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
+            modifier = Modifier.fillMaxWidth(0.95f),
+            properties = DialogProperties(usePlatformDefaultWidth = false),
             title = { Text("Stock Group Creation") },
             text = {
                 val scrollState = rememberScrollState()
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 500.dp)
                         .verticalScroll(scrollState),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
@@ -424,43 +444,6 @@ fun StockGroupsTab(company: Company) {
                         groups.find { it.id == selectedParentId }?.group_name ?: "Primary") {
                         selectedParentId = groups.find { g -> g.group_name == it }?.id
                     }
-
-                    HorizontalDivider()
-
-                    Text("Statutory Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                    InventoryDropdown("GST applicability", listOf("Applicable", "Not Applicable", "Undefined"), gstApplicability) { gstApplicability = it }
-                    
-                    if (gstApplicability == "Applicable") {
-                        Text("HSN/SAC & Related Details", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                        
-                        TallyListAction(
-                            label = "HSN/SAC Details", 
-                            value = hsnDetails,
-                            options = listOf("As per Company/Stock Group", "Specify Details Here", "Use GST Classification", "Specify in Voucher")
-                        ) { hsnDetails = it }
-
-                        if (hsnDetails == "Specify Details Here") {
-                            InventoryField("HSN/SAC", hsnNumber) { hsnNumber = it }
-                            InventoryField("Description", hsnDescription) { hsnDescription = it }
-                        }
-                        
-                        Spacer(Modifier.height(8.dp))
-                        Text("GST Rate & Related Details", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                        
-                        TallyListAction(
-                            label = "GST Rate Details", 
-                            value = gstRateDetails,
-                            options = listOf("As per Company/Stock Group", "Specify Details Here", "Use GST Classification", "Specify in Voucher")
-                        ) { gstRateDetails = it }
-
-                        if (gstRateDetails == "Specify Details Here") {
-                            InventoryDropdown("Taxability Type", listOf("Taxable", "Nil Rated", "Exempt"), taxabilityType) { taxabilityType = it }
-                            if (taxabilityType == "Taxable") {
-                                InventoryField("GST Rate (%)", gstRate) { gstRate = it }
-                            }
-                        }
-                        InventoryDropdown("Type of Supply", listOf("Goods", "Services", "Capital Goods"), typeOfSupply) { typeOfSupply = it }
-                    }
                 }
             },
             confirmButton = {
@@ -469,20 +452,12 @@ fun StockGroupsTab(company: Company) {
                         val newGroup = StockGroup(
                             company_id = company.id!!,
                             group_name = name,
-                            parent_group_id = selectedParentId,
-                            gst_applicability = gstApplicability,
-                            hsn_sac_details = hsnDetails,
-                            hsn_sac_number = hsnNumber,
-                            hsn_description = hsnDescription,
-                            gst_rate_details = gstRateDetails,
-                            taxability_type = taxabilityType,
-                            gst_rate = gstRate.toDoubleOrNull() ?: 0.0,
-                            type_of_supply = typeOfSupply
+                            parent_group_id = selectedParentId
                         )
                         supabase.from("stock_groups").insert(newGroup)
                         showDialog = false
                         name = ""
-                        fetchGroups()
+                        fetchData()
                     }
                 }) { Text("Save") }
             },
@@ -515,10 +490,8 @@ fun StockItemsTab(company: Company) {
     
     // Statutory Details
     var gstApplicability by remember { mutableStateOf("Applicable") }
-    var hsnDetails by remember { mutableStateOf("As per Company/Stock Group") }
     var hsnNumber by remember { mutableStateOf("") }
     var hsnDescription by remember { mutableStateOf("") }
-    var gstRateDetails by remember { mutableStateOf("As per Company/Stock Group") }
     var taxabilityType by remember { mutableStateOf("Taxable") }
     var gstRate by remember { mutableStateOf("0") }
     var typeOfSupply by remember { mutableStateOf("Goods") }
@@ -737,13 +710,14 @@ fun StockItemsTab(company: Company) {
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
+            modifier = Modifier.fillMaxWidth(0.95f),
+            properties = DialogProperties(usePlatformDefaultWidth = false),
             title = { Text("Stock Item Creation") },
             text = {
                 val scrollState = rememberScrollState()
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 500.dp)
+                        .fillMaxWidth(0.9f)
                         .verticalScroll(scrollState),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
@@ -777,32 +751,15 @@ fun StockItemsTab(company: Company) {
                             
                             if (gstApplicability == "Applicable") {
                                 Text("HSN/SAC & Related Details", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                                
-                                TallyListAction(
-                                    label = "HSN/SAC Details", 
-                                    value = hsnDetails,
-                                    options = listOf("As per Company/Stock Group", "Specify Details Here", "Use GST Classification", "Specify in Voucher")
-                                ) { hsnDetails = it }
-
-                                if (hsnDetails == "Specify Details Here") {
-                                    InventoryField("HSN/SAC", hsnNumber) { hsnNumber = it }
-                                    InventoryField("Description", hsnDescription) { hsnDescription = it }
-                                }
+                                InventoryField("HSN/SAC", hsnNumber) { hsnNumber = it }
+                                InventoryField("Description", hsnDescription) { hsnDescription = it }
                                 
                                 Spacer(Modifier.height(8.dp))
                                 Text("GST Rate & Related Details", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                                 
-                                TallyListAction(
-                                    label = "GST Rate Details", 
-                                    value = gstRateDetails,
-                                    options = listOf("As per Company/Stock Group", "Specify Details Here", "Use GST Classification", "Specify in Voucher")
-                                ) { gstRateDetails = it }
-
-                                if (gstRateDetails == "Specify Details Here") {
-                                    InventoryDropdown("Taxability Type", listOf("Taxable", "Nil Rated", "Exempt"), taxabilityType) { taxabilityType = it }
-                                    if (taxabilityType == "Taxable") {
-                                        InventoryField("GST Rate (%)", gstRate) { gstRate = it }
-                                    }
+                                InventoryDropdown("Taxability Type", listOf("Taxable", "Nil Rated", "Exempt"), taxabilityType) { taxabilityType = it }
+                                if (taxabilityType == "Taxable") {
+                                    InventoryField("GST Rate (%)", gstRate) { gstRate = it }
                                 }
                                 InventoryDropdown("Type of Supply", listOf("Goods", "Services", "Capital Goods"), typeOfSupply) { typeOfSupply = it }
                             }
@@ -833,10 +790,10 @@ fun StockItemsTab(company: Company) {
                             unit_id = selectedUnitId,
                             group_id = selectedGroupId,
                             gst_applicability = gstApplicability,
-                            hsn_sac_details = hsnDetails,
+                            hsn_sac_details = "Specify Details Here",
                             hsn_sac_number = hsnNumber,
                             hsn_description = hsnDescription,
-                            gst_rate_details = gstRateDetails,
+                            gst_rate_details = "Specify Details Here",
                             taxability_type = taxabilityType,
                             gst_rate = gstRate.toDoubleOrNull() ?: 0.0,
                             type_of_supply = typeOfSupply,
@@ -875,7 +832,7 @@ fun StockItemMonthlySummary(
 
     Scaffold(
         topBar = {
-            Column(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(8.dp)) {
+            Column(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -892,10 +849,10 @@ fun StockItemMonthlySummary(
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
             // Header
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-                Text("Particulars", modifier = Modifier.weight(1.5f), fontWeight = FontWeight.Bold)
-                SummaryColumnHeader("Inwards", Modifier.weight(2f))
-                SummaryColumnHeader("Outwards", Modifier.weight(2f))
-                SummaryColumnHeader("Closing Balance", Modifier.weight(2f))
+                Text("Particulars", modifier = Modifier.weight(1.2f), fontWeight = FontWeight.Bold)
+                SummaryColumnHeader("Inwards", Modifier.weight(2.5f))
+                SummaryColumnHeader("Outwards", Modifier.weight(2.5f))
+                SummaryColumnHeader("Closing Balance", Modifier.weight(2.5f))
             }
             HorizontalDivider(thickness = 2.dp, color = Color.Black)
 
@@ -906,34 +863,41 @@ fun StockItemMonthlySummary(
                         label = "Opening Balance",
                         italic = true,
                         closingQty = "${item.opening_quantity} $unitSymbol",
+                        closingRate = item.opening_rate.toString(),
                         closingValue = openingValue.toString()
                     )
                 }
 
-                // Monthly Rows (Currently showing Opening Balance for April as a mock)
+                // Monthly Rows (Showing movement during the year)
                 items(months) { month ->
                     SummaryRow(
                         label = month,
-                        inwardQty = if (month == "April") "${item.opening_quantity} $unitSymbol" else "",
-                        inwardValue = if (month == "April") openingValue.toString() else "",
+                        inwardQty = "",
+                        inwardRate = "",
+                        inwardValue = "",
                         outwardQty = "",
+                        outwardRate = "",
                         outwardValue = "",
-                        closingQty = if (month == "April") "${item.opening_quantity} $unitSymbol" else "${item.opening_quantity} $unitSymbol", // Rolling balance
+                        closingQty = "${item.opening_quantity} $unitSymbol", // Showing current balance
+                        closingRate = item.opening_rate.toString(),
                         closingValue = openingValue.toString()
                     )
                 }
             }
 
             HorizontalDivider(thickness = 2.dp, color = Color.Black)
-            // Grand Total Row
+            // Grand Total Row (Total movements during the year)
             SummaryRow(
                 label = "Grand Total",
                 bold = true,
-                inwardQty = "${item.opening_quantity} $unitSymbol",
-                inwardValue = openingValue.toString(),
+                inwardQty = "0 $unitSymbol",
+                inwardRate = "0.00",
+                inwardValue = "0.00",
                 outwardQty = "0 $unitSymbol",
+                outwardRate = "0.00",
                 outwardValue = "0.00",
                 closingQty = "${item.opening_quantity} $unitSymbol",
+                closingRate = item.opening_rate.toString(),
                 closingValue = openingValue.toString()
             )
         }
@@ -946,6 +910,7 @@ fun SummaryColumnHeader(label: String, modifier: Modifier) {
         Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
         Row(modifier = Modifier.fillMaxWidth()) {
             Text("Quantity", modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall)
+            Text("Rate", modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall)
             Text("Value", modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall)
         }
     }
@@ -957,30 +922,36 @@ fun SummaryRow(
     bold: Boolean = false,
     italic: Boolean = false,
     inwardQty: String = "",
+    inwardRate: String = "",
     inwardValue: String = "",
     outwardQty: String = "",
+    outwardRate: String = "",
     outwardValue: String = "",
     closingQty: String = "",
+    closingRate: String = "",
     closingValue: String = ""
 ) {
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = label,
-            modifier = Modifier.weight(1.5f),
+            modifier = Modifier.weight(1.2f),
             fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
             style = if (italic) MaterialTheme.typography.bodyMedium.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic) else MaterialTheme.typography.bodyMedium
         )
         
-        Row(modifier = Modifier.weight(2f)) {
+        Row(modifier = Modifier.weight(2.5f)) {
             Text(inwardQty, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+            Text(inwardRate, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
             Text(inwardValue, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
         }
-        Row(modifier = Modifier.weight(2f)) {
+        Row(modifier = Modifier.weight(2.5f)) {
             Text(outwardQty, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+            Text(outwardRate, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
             Text(outwardValue, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
         }
-        Row(modifier = Modifier.weight(2f)) {
+        Row(modifier = Modifier.weight(2.5f)) {
             Text(closingQty, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+            Text(closingRate, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
             Text(closingValue, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal)
         }
     }

@@ -7,15 +7,24 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+
+val CompanySaver = Saver<Company?, String>(
+    save = { company -> if (company != null) Json.encodeToString(company) else "" },
+    restore = { value -> if (value.isNotEmpty()) Json.decodeFromString<Company>(value) else null }
+)
 
 @Composable
 fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
-    var currentScreen by remember { mutableStateOf<String?>(null) }
-    var selectedCompany by remember { mutableStateOf<Company?>(null) }
+    var currentScreen by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedCompany by rememberSaveable(stateSaver = CompanySaver) { mutableStateOf<Company?>(null) }
 
     val sessionStatus by supabase.auth.sessionStatus.collectAsState()
 
