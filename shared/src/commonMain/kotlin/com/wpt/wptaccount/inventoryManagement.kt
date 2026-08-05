@@ -141,6 +141,7 @@ fun InventoryManagement(
 fun UnitsTab(company: Company) {
     var units by remember { mutableStateOf<List<UnitOfMeasure>>(emptyList()) }
     var items by remember { mutableStateOf<List<StockItem>>(emptyList()) }
+    var selectedUnitForItems by remember { mutableStateOf<UnitOfMeasure?>(null) }
     var showDialog by remember { mutableStateOf(false) }
     var unitToDelete by remember { mutableStateOf<UnitOfMeasure?>(null) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
@@ -162,56 +163,71 @@ fun UnitsTab(company: Company) {
 
     LaunchedEffect(Unit) { fetchData() }
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val isMobile = maxWidth < 600.dp
-        val qtyWidth = if (isMobile) 70.dp else 100.dp
-        val rateWidth = if (isMobile) 70.dp else 100.dp
-        val valueWidth = if (isMobile) 90.dp else 120.dp
+    if (selectedUnitForItems != null) {
+        FilteredStockItemsList(
+            company = company,
+            title = "Items for ${selectedUnitForItems!!.unit_symbol}",
+            items = items.filter { it.unit_id == selectedUnitForItems!!.id },
+            units = units,
+            onBack = { selectedUnitForItems = null }
+        )
+    } else {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val isMobile = maxWidth < 600.dp
+            val qtyWidth = if (isMobile) 70.dp else 100.dp
+            val rateWidth = if (isMobile) 70.dp else 100.dp
+            val valueWidth = if (isMobile) 90.dp else 120.dp
 
-        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 4.dp)) {
-            // Table Header
-            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp), verticalAlignment = Alignment.Bottom) {
-                Text("Unit Symbol", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                if (!isMobile) Text("Formal Name", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                Text("Quantity", modifier = Modifier.width(qtyWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                Text("Avg Rate", modifier = Modifier.width(rateWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                Text("Value", modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.width(40.dp))
-            }
-            HorizontalDivider(thickness = 1.dp, color = Color.Black)
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 4.dp)) {
+                    // Table Header
+                    Row(modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp), verticalAlignment = Alignment.Bottom) {
+                        Text("Unit Symbol", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        if (!isMobile) Text("Formal Name", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text("Quantity", modifier = Modifier.width(qtyWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text("Avg Rate", modifier = Modifier.width(rateWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text("Value", modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.width(40.dp))
+                    }
+                    HorizontalDivider(thickness = 1.dp, color = Color.Black)
 
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                items(units) { unit ->
-                    val unitItems = items.filter { it.unit_id == unit.id }
-                    val totalQty = unitItems.sumOf { it.current_quantity }
-                    val totalValue = unitItems.sumOf { it.current_quantity * it.opening_rate }
-                    val avgRate = if (totalQty > 0) totalValue / totalQty else 0.0
+                    LazyColumn(modifier = Modifier.weight(1f)) {
+                        items(units) { unit ->
+                            val unitItems = items.filter { it.unit_id == unit.id }
+                            val totalQty = unitItems.sumOf { it.current_quantity }
+                            val totalValue = unitItems.sumOf { it.current_quantity * it.opening_rate }
+                            val avgRate = if (totalQty > 0) totalValue / totalQty else 0.0
 
-                    Surface(
-                        color = Color(0xFFFFE082),
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)
-                    ) {
-                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(unit.unit_symbol, modifier = Modifier.weight(1f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
-                            if (!isMobile) Text(unit.formal_name ?: "", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                            Text(totalQty.format(), modifier = Modifier.width(qtyWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                            Text(avgRate.format(), modifier = Modifier.width(rateWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                            Text(totalValue.format(), modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
-                            
-                            IconButton(onClick = { unitToDelete = unit }, modifier = Modifier.size(40.dp)) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete Unit", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                            Surface(
+                                color = Color(0xFFFFE082),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 1.dp)
+                                    .clickable { selectedUnitForItems = unit }
+                            ) {
+                                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(unit.unit_symbol, modifier = Modifier.weight(1f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
+                                    if (!isMobile) Text(unit.formal_name ?: "", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                                    Text(totalQty.format(), modifier = Modifier.width(qtyWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                                    Text(avgRate.format(), modifier = Modifier.width(rateWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                                    Text(totalValue.format(), modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                    
+                                    IconButton(onClick = { unitToDelete = unit }, modifier = Modifier.size(40.dp)) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Delete Unit", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                                    }
+                                }
                             }
                         }
                     }
                 }
+                
+                FloatingActionButton(
+                    onClick = { showDialog = true },
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
+                ) {
+                    Icon(Icons.Default.Add, "Add Unit")
+                }
             }
-        }
-        
-        FloatingActionButton(
-            onClick = { showDialog = true },
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
-        ) {
-            Icon(Icons.Default.Add, "Add Unit")
         }
     }
 
@@ -307,6 +323,7 @@ fun StockGroupsTab(company: Company) {
     var groups by remember { mutableStateOf<List<StockGroup>>(emptyList()) }
     var items by remember { mutableStateOf<List<StockItem>>(emptyList()) }
     var units by remember { mutableStateOf<List<UnitOfMeasure>>(emptyList()) }
+    var selectedGroupForItems by remember { mutableStateOf<StockGroup?>(null) }
     var showDialog by remember { mutableStateOf(false) }
     var groupToDelete by remember { mutableStateOf<StockGroup?>(null) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
@@ -335,65 +352,80 @@ fun StockGroupsTab(company: Company) {
 
     LaunchedEffect(Unit) { fetchData() }
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val isMobile = maxWidth < 600.dp
-        val qtyWidth = if (isMobile) 70.dp else 100.dp
-        val rateWidth = if (isMobile) 70.dp else 100.dp
-        val valueWidth = if (isMobile) 90.dp else 120.dp
+    if (selectedGroupForItems != null) {
+        FilteredStockItemsList(
+            company = company,
+            title = "Items in ${selectedGroupForItems!!.group_name}",
+            items = items.filter { it.group_id == selectedGroupForItems!!.id },
+            units = units,
+            onBack = { selectedGroupForItems = null }
+        )
+    } else {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val isMobile = maxWidth < 600.dp
+            val qtyWidth = if (isMobile) 70.dp else 100.dp
+            val rateWidth = if (isMobile) 70.dp else 100.dp
+            val valueWidth = if (isMobile) 90.dp else 120.dp
 
-        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 4.dp)) {
-            // Table Header
-            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp), verticalAlignment = Alignment.Bottom) {
-                Text("Group Name", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                Text("Quantity", modifier = Modifier.width(qtyWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                Text("Avg Rate", modifier = Modifier.width(rateWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                Text("Value", modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.width(40.dp))
-            }
-            HorizontalDivider(thickness = 1.dp, color = Color.Black)
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 4.dp)) {
+                    // Table Header
+                    Row(modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp), verticalAlignment = Alignment.Bottom) {
+                        Text("Group Name", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text("Quantity", modifier = Modifier.width(qtyWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text("Avg Rate", modifier = Modifier.width(rateWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text("Value", modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.width(40.dp))
+                    }
+                    HorizontalDivider(thickness = 1.dp, color = Color.Black)
 
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                items(groups) { group ->
-                    val groupItems = items.filter { it.group_id == group.id }
-                    val totalValue = groupItems.sumOf { it.current_quantity * it.opening_rate }
-                    
-                    // Check if all items have the same unit
-                    val uniqueUnitIds = groupItems.map { it.unit_id }.distinct()
-                    val hasSameUnit = uniqueUnitIds.size == 1
-                    val unitSymbol = if (hasSameUnit) units.find { it.id == uniqueUnitIds[0] }?.unit_symbol ?: "" else ""
-                    val totalQty = groupItems.sumOf { it.current_quantity }
-                    val avgRate = if (totalQty > 0) totalValue / totalQty else 0.0
+                    LazyColumn(modifier = Modifier.weight(1f)) {
+                        items(groups) { group ->
+                            val groupItems = items.filter { it.group_id == group.id }
+                            val totalValue = groupItems.sumOf { it.current_quantity * it.opening_rate }
+                            
+                            // Check if all items have the same unit
+                            val uniqueUnitIds = groupItems.map { it.unit_id }.distinct()
+                            val hasSameUnit = uniqueUnitIds.size == 1
+                            val unitSymbol = if (hasSameUnit) units.find { it.id == uniqueUnitIds[0] }?.unit_symbol ?: "" else ""
+                            val totalQty = groupItems.sumOf { it.current_quantity }
+                            val avgRate = if (totalQty > 0) totalValue / totalQty else 0.0
 
-                    Surface(
-                        color = Color(0xFFFFE082),
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)
-                    ) {
-                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(group.group_name, modifier = Modifier.weight(1f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
-                            
-                            if (hasSameUnit && groupItems.isNotEmpty()) {
-                                Text("${totalQty.format()} $unitSymbol", modifier = Modifier.width(qtyWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                                Text(avgRate.format(), modifier = Modifier.width(rateWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                            } else {
-                                Spacer(modifier = Modifier.width(qtyWidth + rateWidth)) 
-                            }
-                            
-                            Text(totalValue.format(), modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
-                            
-                            IconButton(onClick = { groupToDelete = group }, modifier = Modifier.size(40.dp)) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete Group", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                            Surface(
+                                color = Color(0xFFFFE082),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 1.dp)
+                                    .clickable { selectedGroupForItems = group }
+                            ) {
+                                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(group.group_name, modifier = Modifier.weight(1f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
+                                    
+                                    if (hasSameUnit && groupItems.isNotEmpty()) {
+                                        Text("${totalQty.format()} $unitSymbol", modifier = Modifier.width(qtyWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                                        Text(avgRate.format(), modifier = Modifier.width(rateWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                                    } else {
+                                        Spacer(modifier = Modifier.width(qtyWidth + rateWidth)) 
+                                    }
+                                    
+                                    Text(totalValue.format(), modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                    
+                                    IconButton(onClick = { groupToDelete = group }, modifier = Modifier.size(40.dp)) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Delete Group", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                                    }
+                                }
                             }
                         }
                     }
                 }
+                
+                FloatingActionButton(
+                    onClick = { showDialog = true },
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
+                ) {
+                    Icon(Icons.Default.Add, "Add Group")
+                }
             }
-        }
-        
-        FloatingActionButton(
-            onClick = { showDialog = true },
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
-        ) {
-            Icon(Icons.Default.Add, "Add Group")
         }
     }
 
@@ -990,6 +1022,161 @@ fun SummaryRow(
             Text(closingQty, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
             Text(closingRate, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
             Text(closingValue, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal)
+        }
+    }
+}
+
+@Composable
+fun FilteredStockItemsList(
+    company: Company,
+    title: String,
+    items: List<StockItem>,
+    units: List<UnitOfMeasure>,
+    onBack: () -> Unit
+) {
+    var selectedIndex by remember { mutableStateOf(0) }
+    var isSummaryMode by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
+    if (isSummaryMode && items.isNotEmpty() && selectedIndex < items.size) {
+        StockItemMonthlySummary(
+            company = company,
+            item = items[selectedIndex],
+            unitSymbol = units.find { it.id == items[selectedIndex].unit_id }?.unit_symbol ?: "",
+            onBack = { 
+                isSummaryMode = false 
+                scope.launch { focusRequester.requestFocus() }
+            }
+        )
+    } else {
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .focusRequester(focusRequester)
+                .focusable()
+                .onPreviewKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyDown) {
+                        when (event.key) {
+                            Key.DirectionDown -> {
+                                if (selectedIndex < items.size - 1) selectedIndex++
+                                true
+                            }
+                            Key.DirectionUp -> {
+                                if (selectedIndex > 0) selectedIndex--
+                                true
+                            }
+                            Key.Enter -> {
+                                if (items.isNotEmpty()) isSummaryMode = true
+                                true
+                            }
+                            else -> false
+                        }
+                    } else false
+                }
+        ) {
+            val isMobile = maxWidth < 600.dp
+            val qtyWidth = if (isMobile) 60.dp else 80.dp
+            val rateWidth = if (isMobile) 60.dp else 80.dp
+            val valueWidth = if (isMobile) 80.dp else 100.dp
+
+            Column(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 4.dp)) {
+                // Header with Back Button
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
+                    IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", modifier = Modifier.size(20.dp))
+                    }
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+
+                // Table Header
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 1.dp),
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    Text(
+                        text = "Particulars",
+                        modifier = Modifier.weight(1.5f),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Closing Balance",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 2.dp)
+                        )
+                        Row {
+                            Text("Qty", modifier = Modifier.width(qtyWidth), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                            Text("Rate", modifier = Modifier.width(rateWidth), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                            Text("Value", modifier = Modifier.width(valueWidth), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                        }
+                    }
+                    Spacer(Modifier.width(40.dp))
+                }
+                HorizontalDivider(thickness = 1.dp, color = Color.Black)
+
+                LazyColumn(modifier = Modifier.weight(1f)) {
+                    itemsIndexed(items) { index, item ->
+                        val unitSymbol = units.find { it.id == item.unit_id }?.unit_symbol ?: ""
+                        val value = item.current_quantity * item.opening_rate
+                        
+                        Surface(
+                            color = if (index == selectedIndex) Color(0xFF0D47A1) else Color(0xFFFFE082),
+                            contentColor = if (index == selectedIndex) Color.White else Color.Black,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 1.dp)
+                                .clickable { 
+                                    selectedIndex = index
+                                    isSummaryMode = true 
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = item.item_name,
+                                    modifier = Modifier.weight(1.5f).padding(start = 4.dp),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                Text(
+                                    text = "${item.current_quantity.format()} $unitSymbol",
+                                    modifier = Modifier.width(qtyWidth),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    textAlign = TextAlign.End
+                                )
+                                Text(
+                                    text = item.opening_rate.format(),
+                                    modifier = Modifier.width(rateWidth),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    textAlign = TextAlign.End
+                                )
+                                Text(
+                                    text = value.format(),
+                                    modifier = Modifier.width(valueWidth),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    textAlign = TextAlign.End,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(Modifier.width(40.dp))
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
