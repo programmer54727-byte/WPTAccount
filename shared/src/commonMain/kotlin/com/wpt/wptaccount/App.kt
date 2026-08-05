@@ -54,6 +54,14 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
 
     MaterialTheme {
         CompositionLocalProvider(LocalScreenOrientation provides onOrientationRequest) {
+            BackHandler(enabled = currentScreen != null && currentScreen != "landing" && currentScreen != "company_list") {
+                when (currentScreen) {
+                    "inventory_management", "gst_details", "company_dashboard" -> currentScreen = "company_home"
+                    "company_home", "create_company" -> currentScreen = "company_list"
+                    "login", "signup" -> currentScreen = "landing"
+                }
+            }
+
             Surface(modifier = Modifier.fillMaxSize()) {
                 BoxWithConstraints(
                     modifier = Modifier.fillMaxSize(),

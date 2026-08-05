@@ -94,6 +94,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.androidx.activity.compose)
         }
         jvmMain.dependencies {
             implementation(libs.ktor.client.okhttp)

@@ -1,46 +1,44 @@
-# Implementation Plan - Item Drill-down for Units and Groups
+# Implementation Plan - Handle System Back Button on Android
 
-The user wants to be able to click on a Unit or a Stock Group and see a filtered list of items belonging to that category.
+The user reported that pressing the system back button on Android closes the app instead of going back to the previous screen. This is because the app uses manual state-based navigation without handling back press events.
 
 ## Proposed Changes
 
 ### [shared](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared)
 
-#### [MODIFY] [inventoryManagement.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/inventoryManagement.kt)
+#### [NEW] [BackHandler.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/BackHandler.kt)
+- Define an `expect fun BackHandler(enabled: Boolean = true, onBack: () -> Unit)` to handle back press events in a cross-platform way.
 
-- **`UnitsTab` Update**:
-    - Add state `selectedUnitForItems` (UnitOfMeasure?) to track drill-down.
-    - When a unit row is clicked, set `selectedUnitForItems`.
-    - If `selectedUnitForItems` is not null, display a filtered table of `StockItem`s.
-    - Include a "Back" mechanism (button or header click) to return to the units list.
+#### [NEW] [BackHandler.android.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/androidMain/kotlin/com/wpt/wptaccount/BackHandler.android.kt)
+- Implement `actual fun BackHandler` using `androidx.activity.compose.BackHandler`.
 
-- **`StockGroupsTab` Update**:
-    - Add state `selectedGroupForItems` (StockGroup?) to track drill-down.
-    - When a group row is clicked, set `selectedGroupForItems`.
-    - If `selectedGroupForItems` is not null, display a filtered table of `StockItem`s.
-    - Include a "Back" mechanism to return to the groups list.
+#### [NEW] [BackHandler.jvm.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/jvmMain/kotlin/com/wpt/wptaccount/BackHandler.jvm.kt)
+- Implement an empty `actual fun BackHandler` (or optionally handle Escape key).
 
-- **Reusable Component: `FilteredStockItemsList`**:
-    - Extract the table logic from `StockItemsTab` into a reusable internal component.
-    - This component will take a list of items and a title as parameters.
-    - It will maintain the Tally-style table format, highlighting, and numeric formatting.
-    - It will support the existing delete functionality.
+#### [NEW] [BackHandler.js.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/jsMain/kotlin/com/wpt/wptaccount/BackHandler.js.kt)
+- Implement an empty `actual fun BackHandler`.
+
+#### [NEW] [BackHandler.ios.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/iosMain/kotlin/com/wpt/wptaccount/BackHandler.ios.kt)
+- Implement an empty `actual fun BackHandler`.
+
+#### [MODIFY] [App.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/App.kt)
+- Add `BackHandler` logic to navigate back based on the `currentScreen` state.
+- Define a navigation hierarchy (e.g., `inventory_management` -> `company_home` -> `company_list`).
 
 ## User Review Required
 
 > [!NOTE]
-> When drilling down, the view will switch from the summary (Totals) to the specific individual items. I will use the same professional table design for consistency.
+> I will implement a basic "back" logic where each screen knows its parent. For example, if you are in "Inventory", pressing back will take you to the "Company Home". If you are on the "Company List", pressing back will exit the app (normal Android behavior).
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `./gradlew :shared:compileKotlinJvm` to verify compilation.
+- Run `./gradlew :shared:compileKotlinJvm` to verify code structure.
 
 ### Manual Verification
-1.  Navigate to **Inventory > Units**.
-2.  Click on "Pcs".
-3.  **Expected Result**: The view should switch to show only items that use the "Pcs" unit.
-4.  Navigate to **Inventory > Groups**.
-5.  Click on "Electronics".
-6.  **Expected Result**: The view should switch to show only items inside the "Electronics" group.
-7.  Verify the "Back" button works to return to the summary lists.
+1.  Deploy the app to an Android device.
+2.  Navigate into a company and then into Inventory.
+3.  Press the system back button.
+4.  **Expected Result**: The app should go back to the Company Home screen instead of closing.
+5.  Press back again.
+6.  **Expected Result**: The app should go back to the Company List screen.

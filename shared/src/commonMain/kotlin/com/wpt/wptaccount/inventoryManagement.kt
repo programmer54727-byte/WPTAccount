@@ -163,6 +163,10 @@ fun UnitsTab(company: Company) {
 
     LaunchedEffect(Unit) { fetchData() }
 
+    BackHandler(enabled = selectedUnitForItems != null) {
+        selectedUnitForItems = null
+    }
+
     if (selectedUnitForItems != null) {
         FilteredStockItemsList(
             company = company,
@@ -351,6 +355,10 @@ fun StockGroupsTab(company: Company) {
     }
 
     LaunchedEffect(Unit) { fetchData() }
+
+    BackHandler(enabled = selectedGroupForItems != null) {
+        selectedGroupForItems = null
+    }
 
     if (selectedGroupForItems != null) {
         FilteredStockItemsList(
@@ -582,6 +590,10 @@ fun StockItemsTab(company: Company) {
     LaunchedEffect(Unit) { 
         fetchData()
         focusRequester.requestFocus()
+    }
+
+    BackHandler(enabled = isSummaryMode) {
+        isSummaryMode = false
     }
 
     if (isSummaryMode && items.isNotEmpty() && selectedIndex < items.size) {
@@ -1038,6 +1050,10 @@ fun FilteredStockItemsList(
     var isSummaryMode by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
+
+    BackHandler(enabled = isSummaryMode) {
+        isSummaryMode = false
+    }
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
