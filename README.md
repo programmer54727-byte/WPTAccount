@@ -11,16 +11,18 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - Automatically initializes default ledgers (**Cash** and **Profit & Loss A/c**).
     - **Smart Check:** Automatically initializes groups/ledgers for older companies when opened.
 - **Inventory Management:**
-    - **Units & Groups:** Full lifecycle management for Units of Measure and Stock Groups.
+    - **Units & Groups:** Full lifecycle management with aggregated summaries (Total Qty, Avg Rate, Total Value).
     - **Tally-Style Stock Summary:** Professional table layout displaying Particulars, HSN, GST, and Closing Balances.
-    - **Monthly Summary Drill-down:** Detailed monthly breakdown of Inwards, Outwards, and rolling Closing Balances.
+    - **Monthly Summary Drill-down:** Detailed monthly breakdown of Inwards, Outwards, and rolling Closing Balances with Rate columns.
+    - **Numeric Precision:** All calculations (Quantity, Rate, Value) feature **2-decimal formatting** with accurate rounding.
     - **Smart Deletion:** Safe deletion logic with dependency checks (prevents deleting units or groups currently in use).
 - **Professional Workflows:**
     - **Keyboard Navigation:** Full support for **Arrow keys** to select items and **Enter** to drill down.
     - **Android Rotation Control:** Automatically switches to **Landscape** mode for Inventory reports to ensure high readability on mobile.
-- **Responsive UI:**
+- **Responsive & Dense UI:**
+    - **Adaptive Layouts:** Tables automatically hide non-essential columns on mobile to prevent crowding.
+    - **High-Density Lists:** Reduced padding and optimized header heights to display **5-6+ items** simultaneously on mobile screens.
     - **Desktop:** Permanent navigation sidebar for quick access.
-    - **Mobile:** Adaptive navigation drawer and screen-specific orientation handling.
 - **Cross-Platform:** 100% shared UI and business logic across Android, Desktop, and Web.
 - **Secure Backend:** Uses Supabase Auth and advanced Row Level Security (RLS) policies for data isolation.
 

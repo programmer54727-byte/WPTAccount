@@ -29,6 +29,24 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.window.DialogProperties
+import kotlin.math.roundToInt
+
+private fun Double.format(digits: Int = 2): String {
+    var res = 1L
+    repeat(digits) { res *= 10 }
+    val factor = res.toDouble()
+    val rounded = (this * factor).roundToInt() / factor
+    val s = rounded.toString()
+    if (digits == 0) return s.split(".")[0]
+    val parts = s.split(".")
+    val integral = parts[0]
+    val decimal = if (parts.size > 1) parts[1] else ""
+    return if (decimal.length < digits) {
+        "$integral.${decimal.padEnd(digits, '0')}"
+    } else {
+        "$integral.${decimal.substring(0, digits)}"
+    }
+}
 
 @Composable
 fun InventoryField(label: String, value: String, modifier: Modifier = Modifier, enabled: Boolean = true, onValueChange: (String) -> Unit) {
@@ -87,8 +105,7 @@ fun InventoryManagement(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Inventory: ${company.company_name}") },
-                modifier = Modifier.fillMaxHeight(0.1f),
+                title = { Text("Inventory: ${company.company_name}", style = MaterialTheme.typography.titleMedium) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -100,13 +117,13 @@ fun InventoryManagement(
         Column(modifier = Modifier.padding(padding)) {
             TabRow(
                 selectedTabIndex = selectedTab,
-                modifier = Modifier.fillMaxHeight(0.05f)
+                containerColor = MaterialTheme.colorScheme.surface
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
                         selected = selectedTab == index,
                         onClick = { selectedTab = index },
-                        text = { Text(title) }
+                        text = { Text(title, style = MaterialTheme.typography.bodySmall) }
                     )
                 }
             }
@@ -145,18 +162,23 @@ fun UnitsTab(company: Company) {
 
     LaunchedEffect(Unit) { fetchData() }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val isMobile = maxWidth < 600.dp
+        val qtyWidth = if (isMobile) 70.dp else 100.dp
+        val rateWidth = if (isMobile) 70.dp else 100.dp
+        val valueWidth = if (isMobile) 90.dp else 120.dp
+
+        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 4.dp)) {
             // Table Header
-            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp), verticalAlignment = Alignment.Bottom) {
-                Text("Unit Symbol", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                Text("Formal Name", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                Text("Quantity", modifier = Modifier.width(100.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
-                Text("Avg Rate", modifier = Modifier.width(100.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
-                Text("Total Value", modifier = Modifier.width(120.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.width(48.dp))
+            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp), verticalAlignment = Alignment.Bottom) {
+                Text("Unit Symbol", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                if (!isMobile) Text("Formal Name", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Text("Quantity", modifier = Modifier.width(qtyWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Text("Avg Rate", modifier = Modifier.width(rateWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Text("Value", modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(40.dp))
             }
-            HorizontalDivider(thickness = 2.dp, color = Color.Black)
+            HorizontalDivider(thickness = 1.dp, color = Color.Black)
 
             LazyColumn(modifier = Modifier.weight(1f)) {
                 items(units) { unit ->
@@ -169,15 +191,15 @@ fun UnitsTab(company: Company) {
                         color = Color(0xFFFFE082),
                         modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)
                     ) {
-                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(unit.unit_symbol, modifier = Modifier.weight(1f).padding(start = 8.dp))
-                            Text(unit.formal_name ?: "", modifier = Modifier.weight(1f))
-                            Text("$totalQty", modifier = Modifier.width(100.dp), textAlign = TextAlign.End)
-                            Text("${avgRate}", modifier = Modifier.width(100.dp), textAlign = TextAlign.End)
-                            Text("${totalValue}", modifier = Modifier.width(120.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
+                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(unit.unit_symbol, modifier = Modifier.weight(1f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
+                            if (!isMobile) Text(unit.formal_name ?: "", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                            Text(totalQty.format(), modifier = Modifier.width(qtyWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                            Text(avgRate.format(), modifier = Modifier.width(rateWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                            Text(totalValue.format(), modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                             
-                            IconButton(onClick = { unitToDelete = unit }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete Unit", tint = MaterialTheme.colorScheme.error)
+                            IconButton(onClick = { unitToDelete = unit }, modifier = Modifier.size(40.dp)) {
+                                Icon(Icons.Default.Delete, contentDescription = "Delete Unit", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
                             }
                         }
                     }
@@ -313,17 +335,22 @@ fun StockGroupsTab(company: Company) {
 
     LaunchedEffect(Unit) { fetchData() }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val isMobile = maxWidth < 600.dp
+        val qtyWidth = if (isMobile) 70.dp else 100.dp
+        val rateWidth = if (isMobile) 70.dp else 100.dp
+        val valueWidth = if (isMobile) 90.dp else 120.dp
+
+        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 4.dp)) {
             // Table Header
-            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp), verticalAlignment = Alignment.Bottom) {
-                Text("Group Name", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                Text("Quantity", modifier = Modifier.width(100.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
-                Text("Avg Rate", modifier = Modifier.width(100.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
-                Text("Total Value", modifier = Modifier.width(120.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.width(48.dp))
+            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp), verticalAlignment = Alignment.Bottom) {
+                Text("Group Name", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Text("Quantity", modifier = Modifier.width(qtyWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Text("Avg Rate", modifier = Modifier.width(rateWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Text("Value", modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(40.dp))
             }
-            HorizontalDivider(thickness = 2.dp, color = Color.Black)
+            HorizontalDivider(thickness = 1.dp, color = Color.Black)
 
             LazyColumn(modifier = Modifier.weight(1f)) {
                 items(groups) { group ->
@@ -341,20 +368,20 @@ fun StockGroupsTab(company: Company) {
                         color = Color(0xFFFFE082),
                         modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)
                     ) {
-                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(group.group_name, modifier = Modifier.weight(1f).padding(start = 8.dp))
+                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(group.group_name, modifier = Modifier.weight(1f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
                             
                             if (hasSameUnit && groupItems.isNotEmpty()) {
-                                Text("$totalQty $unitSymbol", modifier = Modifier.width(100.dp), textAlign = TextAlign.End)
-                                Text("${avgRate}", modifier = Modifier.width(100.dp), textAlign = TextAlign.End)
+                                Text("${totalQty.format()} $unitSymbol", modifier = Modifier.width(qtyWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                                Text(avgRate.format(), modifier = Modifier.width(rateWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
                             } else {
-                                Spacer(modifier = Modifier.width(200.dp)) // Hide Qty and Rate if mixed units
+                                Spacer(modifier = Modifier.width(qtyWidth + rateWidth)) 
                             }
                             
-                            Text("${totalValue}", modifier = Modifier.width(120.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
+                            Text(totalValue.format(), modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                             
-                            IconButton(onClick = { groupToDelete = group }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete Group", tint = MaterialTheme.colorScheme.error)
+                            IconButton(onClick = { groupToDelete = group }, modifier = Modifier.size(40.dp)) {
+                                Icon(Icons.Default.Delete, contentDescription = "Delete Group", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
                             }
                         }
                     }
@@ -536,7 +563,7 @@ fun StockItemsTab(company: Company) {
             }
         )
     } else {
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .focusRequester(focusRequester)
@@ -561,7 +588,12 @@ fun StockItemsTab(company: Company) {
                     } else false
                 }
         ) {
-            Column(modifier = Modifier.fillMaxSize().padding(5.dp)) {
+            val isMobile = maxWidth < 600.dp
+            val qtyWidth = if (isMobile) 60.dp else 80.dp
+            val rateWidth = if (isMobile) 60.dp else 80.dp
+            val valueWidth = if (isMobile) 80.dp else 100.dp
+
+            Column(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 4.dp)) {
                 // Table Header
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 1.dp),
@@ -569,39 +601,41 @@ fun StockItemsTab(company: Company) {
                 ) {
                     Text(
                         text = "Particulars",
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.weight(1.5f),
+                        style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = "HSN Code",
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "GST Rate",
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (!isMobile) {
+                        Text(
+                            text = "HSN",
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "GST",
+                            modifier = Modifier.weight(0.8f),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                     
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = "Closing Balance",
-                            style = MaterialTheme.typography.titleSmall,
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 4.dp)
+                            modifier = Modifier.padding(bottom = 2.dp)
                         )
                         Row {
-                            Text("Quantity", modifier = Modifier.width(80.dp), style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.End)
-                            Text("Rate", modifier = Modifier.width(80.dp), style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.End)
-                            Text("Value", modifier = Modifier.width(100.dp), style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.End)
+                            Text("Qty", modifier = Modifier.width(qtyWidth), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                            Text("Rate", modifier = Modifier.width(rateWidth), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                            Text("Value", modifier = Modifier.width(valueWidth), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
                         }
                     }
-                    Spacer(Modifier.width(48.dp))
+                    Spacer(Modifier.width(40.dp))
                 }
-                HorizontalDivider(thickness = 2.dp, color = Color.Black)
+                HorizontalDivider(thickness = 1.dp, color = Color.Black)
 
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     itemsIndexed(items) { index, item ->
@@ -609,7 +643,7 @@ fun StockItemsTab(company: Company) {
                         val value = item.current_quantity * item.opening_rate
                         
                         Surface(
-                            color = if (index == selectedIndex) Color(0xFF0D47A1) else Color(0xFFFFE082), // Deep blue for selection
+                            color = if (index == selectedIndex) Color(0xFF0D47A1) else Color(0xFFFFE082),
                             contentColor = if (index == selectedIndex) Color.White else Color.Black,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -625,44 +659,47 @@ fun StockItemsTab(company: Company) {
                             ) {
                                 Text(
                                     text = item.item_name,
-                                    modifier = Modifier.weight(1f).padding(start = 8.dp),
-                                    style = MaterialTheme.typography.bodyMedium
+                                    modifier = Modifier.weight(1.5f).padding(start = 4.dp),
+                                    style = MaterialTheme.typography.bodySmall
                                 )
+                                if (!isMobile) {
+                                    Text(
+                                        text = "${item.hsn_sac_number ?: ""}",
+                                        modifier = Modifier.weight(1f),
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                    Text(
+                                        text = item.gst_rate.format(),
+                                        modifier = Modifier.weight(0.8f),
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
                                 Text(
-                                    text = "${item.hsn_sac_number ?: ""}",
-                                    modifier = Modifier.weight(1f).padding(start = 8.dp),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                    text = "${item.gst_rate}",
-                                    modifier = Modifier.weight(1f).padding(start = 8.dp),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                    text = "${item.current_quantity} $unitSymbol",
-                                    modifier = Modifier.width(80.dp),
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    text = "${item.current_quantity.format()} $unitSymbol",
+                                    modifier = Modifier.width(qtyWidth),
+                                    style = MaterialTheme.typography.bodySmall,
                                     textAlign = TextAlign.End
                                 )
                                 Text(
-                                    text = "${item.opening_rate}",
-                                    modifier = Modifier.width(80.dp),
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    text = item.opening_rate.format(),
+                                    modifier = Modifier.width(rateWidth),
+                                    style = MaterialTheme.typography.bodySmall,
                                     textAlign = TextAlign.End
                                 )
                                 Text(
-                                    text = "${value}",
-                                    modifier = Modifier.width(100.dp),
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    text = value.format(),
+                                    modifier = Modifier.width(valueWidth),
+                                    style = MaterialTheme.typography.bodySmall,
                                     textAlign = TextAlign.End,
                                     fontWeight = FontWeight.Bold
                                 )
                                 
-                                IconButton(onClick = { itemToDelete = item }) {
+                                IconButton(onClick = { itemToDelete = item }, modifier = Modifier.size(40.dp)) {
                                     Icon(
                                         Icons.Default.Delete, 
                                         contentDescription = "Delete Item", 
-                                        tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.error
+                                        tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
                             }
@@ -775,7 +812,7 @@ fun StockItemsTab(company: Company) {
                             InventoryField("Quantity", qty, modifier = Modifier.weight(1f)) { qty = it }
                             InventoryField("Rate", rate, modifier = Modifier.weight(1f)) { rate = it }
                             val totalValue = (qty.toDoubleOrNull() ?: 0.0) * (rate.toDoubleOrNull() ?: 0.0)
-                            InventoryField("Value", totalValue.toString(), enabled = false, modifier = Modifier.weight(1f)) { }
+                            InventoryField("Value", totalValue.format(), enabled = false, modifier = Modifier.weight(1f)) { }
                         }
                     }
                 }
@@ -862,9 +899,9 @@ fun StockItemMonthlySummary(
                     SummaryRow(
                         label = "Opening Balance",
                         italic = true,
-                        closingQty = "${item.opening_quantity} $unitSymbol",
-                        closingRate = item.opening_rate.toString(),
-                        closingValue = openingValue.toString()
+                        closingQty = "${item.opening_quantity.format()} $unitSymbol",
+                        closingRate = item.opening_rate.format(),
+                        closingValue = openingValue.format()
                     )
                 }
 
@@ -878,9 +915,9 @@ fun StockItemMonthlySummary(
                         outwardQty = "",
                         outwardRate = "",
                         outwardValue = "",
-                        closingQty = "${item.opening_quantity} $unitSymbol", // Showing current balance
-                        closingRate = item.opening_rate.toString(),
-                        closingValue = openingValue.toString()
+                        closingQty = "${item.opening_quantity.format()} $unitSymbol", // Showing current balance
+                        closingRate = item.opening_rate.format(),
+                        closingValue = openingValue.format()
                     )
                 }
             }
@@ -896,9 +933,9 @@ fun StockItemMonthlySummary(
                 outwardQty = "0 $unitSymbol",
                 outwardRate = "0.00",
                 outwardValue = "0.00",
-                closingQty = "${item.opening_quantity} $unitSymbol",
-                closingRate = item.opening_rate.toString(),
-                closingValue = openingValue.toString()
+                closingQty = "${item.opening_quantity.format()} $unitSymbol",
+                closingRate = item.opening_rate.format(),
+                closingValue = openingValue.format()
             )
         }
     }

@@ -1,6 +1,6 @@
-# Implementation Plan - Summary Values for Units and Groups
+# Implementation Plan - Mobile UI Responsiveness and List Density
 
-The user wants to see summary information (Total Quantity, Average Rate, and Total Value) in the **Units** and **Groups** tabs, similar to how individual items are displayed.
+The user wants the inventory list screens to be more responsive on mobile, displaying more items at once. Currently, only about 3 items are visible; the goal is to see at least 4 or more by optimizing padding and layout weights.
 
 ## Proposed Changes
 
@@ -8,29 +8,24 @@ The user wants to see summary information (Total Quantity, Average Rate, and Tot
 
 #### [MODIFY] [inventoryManagement.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/inventoryManagement.kt)
 
-- **UnitsTab Enhancement**:
-    - Fetch all `StockItems` along with the units.
-    - For each unit row, calculate:
-        - **Total Quantity**: Sum of `current_quantity` of all items using this unit.
-        - **Total Value**: Sum of (`current_quantity` * `opening_rate`) for all items.
-        - **Average Rate**: `Total Value / Total Quantity`.
-    - Update the UI to show these values in a table-like format.
+- **Global Adjustments**:
+    - Reduce vertical padding in `Surface` and `Row` for list items from `4.dp` or `2.dp` to `1.dp`.
+    - Use `BoxWithConstraints` to detect screen width and apply conditional styling.
 
-- **StockGroupsTab Enhancement**:
-    - Fetch all `StockItems` and `UnitOfMeasure` list.
-    - For each group row, identify the items belonging to it.
-    - **Logic**:
-        - If all items in the group use the **same unit**: Show Total Quantity, Average Rate, and Total Value.
-        - If items in the group use **different units**: Show **ONLY** the Total Value.
-    - Update the UI to match the table format.
+- **`UnitsTab` & `StockGroupsTab`**:
+    - Reduce header heights.
+    - Scale column widths (Quantity, Rate, Value) based on available width. On narrow mobile screens, prioritize Quantity and Value.
+    - Reduce font sizes for supporting text if necessary.
 
-- **Visual Consistency**:
-    - Use the same highlighted row design and column headers as the `StockItemsTab` for a professional, uniform look.
+- **`StockItemsTab`**:
+    - Optimize the "Closing Balance" sub-columns. Instead of fixed `80.dp` or `100.dp`, use smaller fixed widths for mobile (e.g., `60.dp`, `80.dp`).
+    - Adjust the `Particulars` weight to give more room to the numeric data on small screens.
+    - Remove or shrink the spacer for the delete button on mobile to save horizontal space.
 
 ## User Review Required
 
 > [!NOTE]
-> For groups with different units (e.g., some items in "Kg" and some in "Pcs"), adding quantities together doesn't make sense, so only the total monetary value will be displayed in those cases.
+> Reducing font size to `MaterialTheme.typography.bodySmall` globally for the list rows will help fit more items vertically.
 
 ## Verification Plan
 
@@ -38,8 +33,8 @@ The user wants to see summary information (Total Quantity, Average Rate, and Tot
 - Run `./gradlew :shared:compileKotlinJvm` to verify compilation.
 
 ### Manual Verification
-1.  Navigate to **Inventory > Units**.
-    - Verify that each unit row shows the combined quantity and value of all items assigned to it.
-2.  Navigate to **Inventory > Groups**.
-    - Create a group with items of the same unit. Verify it shows Qty, Rate, and Value.
-    - Create a group with items of different units. Verify it shows only the total Value.
+1.  Launch the app on an Android emulator or device.
+2.  Navigate to **Inventory > Items**.
+3.  **Expected Result**: At least 4-5 items should be visible on the screen without scrolling.
+4.  Verify that text remains readable and columns don't overlap.
+5.  Check both Portrait and Landscape (Landscape was forced for some screens, verify it still looks good).
