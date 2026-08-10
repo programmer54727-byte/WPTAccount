@@ -82,7 +82,35 @@ create table if not exists public.ledgers (
   company_id uuid not null references public.companies(id) on delete cascade,
   group_id uuid not null references public.groups(id) on delete cascade,
   ledger_name text not null,
+  alias text,
+  mailing_name text,
+  address text,
+  state text,
+  country text,
+  pincode text,
+  pan_it_number text,
+  gst_registration_type text, -- Regular, Composition, Consumer, Unregistered
+  gstin_uin text,
+
+  -- Bank Details
+  bank_acc_no text,
+  bank_ifsc text,
+  bank_name text,
+  bank_branch text,
+  bank_swift text,
+
+  -- Party Details
+  bill_by_bill boolean default false,
+  credit_period integer,
+  credit_limit decimal,
+
+  -- Tax Details
+  duty_tax_type text, -- GST, TDS, Others
+  gst_tax_sub_type text, -- Central Tax, State Tax, Integrated Tax, Cess
+  tax_rate decimal,
+
   opening_balance decimal default 0,
+  opening_balance_type text default 'Dr', -- Dr, Cr
   current_balance decimal default 0,
   created_at timestamp with time zone default now() not null
 );

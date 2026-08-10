@@ -1,44 +1,35 @@
-# Implementation Plan - Handle System Back Button on Android
+# Implementation Plan - Support Capital Account Group
 
-The user reported that pressing the system back button on Android closes the app instead of going back to the previous screen. This is because the app uses manual state-based navigation without handling back press events.
+This plan updates the Ledger creation form to support the specific requirements of the **Capital Account** group. Based on research, Capital Accounts (like Proprietor's Capital or Partner's Capital) often require **Banking Details** for managing payouts and **PAN/Tax** details for owner identification.
+
+## Research Findings for Capital Account
+*   **Nature**: Liabilities (Equity).
+*   **Mailing Details**: Used to store the owner's or partner's personal address.
+*   **Banking Details**: Optional but frequently used in professional accounting to record the owner's bank account for withdrawals or profit distribution.
+*   **Taxation**: PAN number is highly recommended for audit purposes.
+*   **Difference from Sundry**: Does NOT typically require Bill-by-Bill tracking or Credit Limits.
 
 ## Proposed Changes
 
 ### [shared](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared)
 
-#### [NEW] [BackHandler.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/BackHandler.kt)
-- Define an `expect fun BackHandler(enabled: Boolean = true, onBack: () -> Unit)` to handle back press events in a cross-platform way.
-
-#### [NEW] [BackHandler.android.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/androidMain/kotlin/com/wpt/wptaccount/BackHandler.android.kt)
-- Implement `actual fun BackHandler` using `androidx.activity.compose.BackHandler`.
-
-#### [NEW] [BackHandler.jvm.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/jvmMain/kotlin/com/wpt/wptaccount/BackHandler.jvm.kt)
-- Implement an empty `actual fun BackHandler` (or optionally handle Escape key).
-
-#### [NEW] [BackHandler.js.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/jsMain/kotlin/com/wpt/wptaccount/BackHandler.js.kt)
-- Implement an empty `actual fun BackHandler`.
-
-#### [NEW] [BackHandler.ios.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/iosMain/kotlin/com/wpt/wptaccount/BackHandler.ios.kt)
-- Implement an empty `actual fun BackHandler`.
-
-#### [MODIFY] [App.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/App.kt)
-- Add `BackHandler` logic to navigate back based on the `currentScreen` state.
-- Define a navigation hierarchy (e.g., `inventory_management` -> `company_home` -> `company_list`).
+#### [MODIFY] [ledgerManagement.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/ledgerManagement.kt)
+- Update the conditional logic for the **Bank Account Details** section.
+- It will now display if the selected group name contains **"Bank"** OR is exactly **"Capital Account"**.
+- This ensures owners can store their personal banking information directly within their capital ledger.
 
 ## User Review Required
 
-> [!NOTE]
-> I will implement a basic "back" logic where each screen knows its parent. For example, if you are in "Inventory", pressing back will take you to the "Company Home". If you are on the "Company List", pressing back will exit the app (normal Android behavior).
+> [!TIP]
+> Enabling bank details for Capital Accounts is standard practice in Tally and other ERPs to facilitate easy bank transfers to the business owners.
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `./gradlew :shared:compileKotlinJvm` to verify code structure.
+- Run `./gradlew :shared:compileKotlinJvm` to verify UI logic.
 
 ### Manual Verification
-1.  Deploy the app to an Android device.
-2.  Navigate into a company and then into Inventory.
-3.  Press the system back button.
-4.  **Expected Result**: The app should go back to the Company Home screen instead of closing.
-5.  Press back again.
-6.  **Expected Result**: The app should go back to the Company List screen.
+1.  Open **Add Ledger**.
+2.  Select **Capital Account** from the "Under" dropdown.
+3.  **Expected Result**: The "Bank Account Details" section should appear.
+4.  Verify that "Credit Control Details" (Bill-by-bill) remains hidden for this group.

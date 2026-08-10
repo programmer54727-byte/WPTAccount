@@ -29,29 +29,19 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.window.DialogProperties
-import kotlin.math.roundToInt
-
-private fun Double.format(digits: Int = 2): String {
-    var res = 1L
-    repeat(digits) { res *= 10 }
-    val factor = res.toDouble()
-    val rounded = (this * factor).roundToInt() / factor
-    val s = rounded.toString()
-    if (digits == 0) return s.split(".")[0]
-    val parts = s.split(".")
-    val integral = parts[0]
-    val decimal = if (parts.size > 1) parts[1] else ""
-    return if (decimal.length < digits) {
-        "$integral.${decimal.padEnd(digits, '0')}"
-    } else {
-        "$integral.${decimal.substring(0, digits)}"
-    }
-}
 
 @Composable
 fun InventoryField(label: String, value: String, modifier: Modifier = Modifier, enabled: Boolean = true, onValueChange: (String) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier.padding(vertical = 4.dp)) {
-        Text(text = "$label : ", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(100.dp))
+        if (label.isNotEmpty()) {
+            Text(
+                text = "$label : ", 
+                style = MaterialTheme.typography.bodySmall, 
+                modifier = Modifier.width(150.dp),
+                textAlign = TextAlign.End
+            )
+            Spacer(Modifier.width(8.dp))
+        }
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
@@ -64,10 +54,18 @@ fun InventoryField(label: String, value: String, modifier: Modifier = Modifier, 
 }
 
 @Composable
-fun InventoryDropdown(label: String, options: List<String>, selected: String, onSelect: (String) -> Unit) {
+fun InventoryDropdown(label: String, options: List<String>, selected: String, modifier: Modifier = Modifier, onSelect: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
-        Text(text = "$label : ", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(100.dp))
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier.padding(vertical = 4.dp)) {
+        if (label.isNotEmpty()) {
+            Text(
+                text = "$label : ", 
+                style = MaterialTheme.typography.bodySmall, 
+                modifier = Modifier.width(150.dp),
+                textAlign = TextAlign.End
+            )
+            Spacer(Modifier.width(8.dp))
+        }
         Box(modifier = Modifier.weight(1f)) {
             OutlinedButton(
                 onClick = { expanded = true },

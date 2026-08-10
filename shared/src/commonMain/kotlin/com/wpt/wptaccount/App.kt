@@ -56,7 +56,7 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
         CompositionLocalProvider(LocalScreenOrientation provides onOrientationRequest) {
             BackHandler(enabled = currentScreen != null && currentScreen != "landing" && currentScreen != "company_list") {
                 when (currentScreen) {
-                    "inventory_management", "gst_details", "company_dashboard" -> currentScreen = "company_home"
+                    "inventory_management", "gst_details", "company_dashboard", "ledger_management" -> currentScreen = "company_home"
                     "company_home", "create_company" -> currentScreen = "company_list"
                     "login", "signup" -> currentScreen = "landing"
                 }
@@ -108,6 +108,7 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                     onDashboardClick = { currentScreen = "company_dashboard" },
                                     onStockSummaryClick = { currentScreen = "inventory_management" },
                                     onGstDetailsClick = { currentScreen = "gst_details" },
+                                    onLedgerClick = { currentScreen = "ledger_management" },
                                     onBack = { currentScreen = "company_list" }
                                 )
                             } ?: run {
@@ -139,6 +140,16 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                         "inventory_management" -> {
                             selectedCompany?.let { company ->
                                 InventoryManagement(
+                                    company = company,
+                                    onBack = { currentScreen = "company_home" }
+                                )
+                            } ?: run {
+                                currentScreen = "company_list"
+                            }
+                        }
+                        "ledger_management" -> {
+                            selectedCompany?.let { company ->
+                                LedgerManagement(
                                     company = company,
                                     onBack = { currentScreen = "company_home" }
                                 )
