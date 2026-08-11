@@ -1,27 +1,25 @@
-# Implementation Plan - Support Capital Account Group
+# Implementation Plan - Support Current Assets Sub-groups
 
-This plan updates the Ledger creation form to support the specific requirements of the **Capital Account** group. Based on research, Capital Accounts (like Proprietor's Capital or Partner's Capital) often require **Banking Details** for managing payouts and **PAN/Tax** details for owner identification.
-
-## Research Findings for Capital Account
-*   **Nature**: Liabilities (Equity).
-*   **Mailing Details**: Used to store the owner's or partner's personal address.
-*   **Banking Details**: Optional but frequently used in professional accounting to record the owner's bank account for withdrawals or profit distribution.
-*   **Taxation**: PAN number is highly recommended for audit purposes.
-*   **Difference from Sundry**: Does NOT typically require Bill-by-Bill tracking or Credit Limits.
+This plan updates the Ledger creation form to support the specific requirements of the **Current Assets** group and its sub-groups like **Loans & Advances (Asset)** and **Deposits (Asset)**.
 
 ## Proposed Changes
 
 ### [shared](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared)
 
 #### [MODIFY] [ledgerManagement.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/ledgerManagement.kt)
-- Update the conditional logic for the **Bank Account Details** section.
-- It will now display if the selected group name contains **"Bank"** OR is exactly **"Capital Account"**.
-- This ensures owners can store their personal banking information directly within their capital ledger.
+- Update the conditional logic for the **Credit Control Details** section.
+- It will now display if the selected group is:
+    - **"Sundry Debtors"** or **"Sundry Creditors"**
+    - **"Branch / Divisions"**
+    - **"Loans & Advances (Asset)"**
+    - **"Current Assets"**
+- This enables **Bill-by-bill tracking** for loans and advances, allowing you to track individual repayment installments.
+- Ensure **Mailing Details** and **Tax Registration** sections remain visible for these groups, as they are needed for party-related assets and tax-receivable ledgers (like TDS).
 
 ## User Review Required
 
-> [!TIP]
-> Enabling bank details for Capital Accounts is standard practice in Tally and other ERPs to facilitate easy bank transfers to the business owners.
+> [!NOTE]
+> Enabling "Bill-by-bill" for **Loans & Advances** is a professional accounting standard that helps in tracking which specific loan or advance is being settled during a transaction.
 
 ## Verification Plan
 
@@ -30,6 +28,9 @@ This plan updates the Ledger creation form to support the specific requirements 
 
 ### Manual Verification
 1.  Open **Add Ledger**.
-2.  Select **Capital Account** from the "Under" dropdown.
-3.  **Expected Result**: The "Bank Account Details" section should appear.
-4.  Verify that "Credit Control Details" (Bill-by-bill) remains hidden for this group.
+2.  Select **Loans & Advances (Asset)** from the "Under" dropdown.
+3.  **Expected Result**: The "Credit Control Details" section should appear.
+4.  Select **Current Assets**.
+5.  **Expected Result**: The "Credit Control Details" section should remain visible.
+6.  Select **Deposits (Asset)**.
+7.  **Expected Result**: Only General, Mailing, and Tax sections should be visible (Credit Control hidden).

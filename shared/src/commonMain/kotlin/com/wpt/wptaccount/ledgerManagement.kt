@@ -371,9 +371,10 @@ fun LedgersTab(company: Company) {
                     HorizontalDivider()
 
                     // Section 2: Mailing Details
-                    val isCash = groupName.contains("Cash-in-Hand", ignoreCase = true)
+                    val isInternalAccount = groupName.contains("Cash-in-Hand", ignoreCase = true) || 
+                                           groupName.contains("Provisions", ignoreCase = true)
                     
-                    if (!isCash) {
+                    if (!isInternalAccount) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("Mailing Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                             InventoryField("Name", mailingName) { 
@@ -404,7 +405,9 @@ fun LedgersTab(company: Company) {
                     }
 
                     // Section 4: Dynamic Group-Specific Details
-                    if (groupName.contains("Bank", ignoreCase = true) || groupName.contains("Capital", ignoreCase = true)) {
+                    if ((groupName.contains("Bank", ignoreCase = true) || 
+                         groupName.contains("Capital", ignoreCase = true) || 
+                         groupName.contains("Current Liabilities", ignoreCase = true)) && !isInternalAccount) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("Bank Account Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                             InventoryField("A/c No.", bankAccNo) { bankAccNo = it }
@@ -416,7 +419,11 @@ fun LedgersTab(company: Company) {
                         HorizontalDivider()
                     }
 
-                    if (groupName.contains("Sundry", ignoreCase = true) || groupName.contains("Branch", ignoreCase = true)) {
+                    if (groupName.contains("Sundry", ignoreCase = true) || 
+                        groupName.contains("Branch", ignoreCase = true) ||
+                        groupName.contains("Loans & Advances", ignoreCase = true) ||
+                        groupName.contains("Current Assets", ignoreCase = true) ||
+                        groupName.contains("Current Liabilities", ignoreCase = true)) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("Credit Control Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                             Row(verticalAlignment = Alignment.CenterVertically) {
