@@ -30,7 +30,10 @@ compose.desktop {
             vendor = "WPT"
             
             windows {
-                iconFile.set(project.file("src/main/resources/icon.png"))
+                menu = true
+                shortcut = true
+                menuGroup = "WPT Account"
+                iconFile.set(project.file("src/main/resources/icon.ico"))
             }
         }
     }

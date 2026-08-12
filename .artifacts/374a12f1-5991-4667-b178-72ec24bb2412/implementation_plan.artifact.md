@@ -1,40 +1,50 @@
-# Implementation Plan - Native System Auto-Rotate and Horizontal Scrolling
+# Implementation Plan - Professional Windows Installer Configuration
 
-The user wants to stop forcing landscape orientation and instead let the app follow the system's auto-rotate settings. To ensure usability in portrait mode, wide tables will be updated with horizontal scrolling capability.
+This plan updates the desktop application's distribution settings to ensure the app creates a Start Menu shortcut, appears in Windows Search, and has a professional icon. It also addresses the "Another version already installed" error.
+
+## Problem Analysis
+
+1.  **Start Menu/Search**: The current configuration does not explicitly tell the Windows installer to create a shortcut in the Start Menu.
+2.  **Duplicate Installation Error**: Windows prevents installing an MSI if a product with the same ID is already present.
+3.  **Icon**: While a `.png` is provided, Windows installers work best with `.ico` files for shortcuts and the Taskbar.
 
 ## Proposed Changes
 
-### [shared](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared)
+### [desktopApp](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/desktopApp)
 
-#### [MODIFY] [App.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/App.kt)
-- Update the `LaunchedEffect(currentScreen)` logic.
-- Remove the code that forces `ScreenOrientation.LANDSCAPE` for `inventory_management`.
-- Instead, set `onOrientationRequest(ScreenOrientation.UNSPECIFIED)` for all screens. This allows the system's auto-rotate toggle to control the app's orientation.
+#### [MODIFY] [build.gradle.kts](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/desktopApp/build.gradle.kts)
+- Update the `windows` block inside `nativeDistributions` to enable shortcuts and search visibility:
+    - Set `menu = true` to add the app to the Start Menu.
+    - Set `shortcut = true` to add a shortcut to the Desktop (optional, but common).
+    - Set `menuGroup = "WPT Account"` to organize it in the Start Menu.
+    - Use `upgradeUuid` (optional but good practice) to handle upgrades better.
 
-#### [MODIFY] [inventoryManagement.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/inventoryManagement.kt)
-- **Tables Refactoring**:
-    - Wrap the table header `Row` and the `LazyColumn` inside a `Column` that has `horizontalScroll(rememberScrollState())`.
-    - Set a minimum width for the table (e.g., `minWidth = 800.dp`) to ensure that columns don't get crushed in portrait mode.
-    - This applies to `UnitsTab`, `StockGroupsTab`, `StockItemsTab`, `FilteredStockItemsList`, and `StockItemMonthlySummary`.
+#### [NEW] Icon Requirements
+- Recommend converting `icon.png` to `icon.ico` (containing multiple sizes like 16, 32, 48, 256).
 
-#### [MODIFY] [ledgerManagement.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/ledgerManagement.kt)
-- **Tables Refactoring**:
-    - Apply the same `horizontalScroll` and `minWidth` logic to all ledger tables.
-    - This applies to `LedgerGroupsTab`, `LedgersTab`, `FilteredLedgersList`, and `LedgerMonthlySummary`.
+## Troubleshooting: "Another version already installed"
+This error happens because an older version of the app was installed via the `.msi` or `.exe`.
+**To fix this:**
+1.  Go to **Control Panel > Uninstall a Program**.
+2.  Search for "WPT Account".
+3.  Right-click and **Uninstall**.
+4.  Now run your new installer.
 
 ## User Review Required
 
-> [!NOTE]
-> With horizontal scrolling, when you hold your phone in portrait mode, you will see the left part of the table (Particulars) and can swipe right to see Quantity, Rate, and Value. Rotating to landscape will still work as before, showing the full table at once.
+> [!IMPORTANT]
+> To make the app appear in Windows Search correctly, the `menu = true` setting is required. I will apply this change to your build script.
+
+> [!TIP]
+> For the best visual result, you should replace the `icon.png` with an `icon.ico` file. If you don't have one, the build system will try to convert it, but it's always better to provide a high-quality `.ico`.
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `./gradlew :shared:compileKotlinJvm` to verify compilation.
+- Run `./gradlew :desktopApp:package` to verify the installer builds without errors.
 
 ### Manual Verification
-1.  Launch the Android app.
-2.  Open **Inventory > Items**.
-3.  **Portrait Mode**: Verify that you can swipe left/right to see all columns. The screen should **not** rotate automatically.
-4.  **Auto-Rotate ON**: Rotate the phone. Verify that the UI rotates to landscape and fits the whole table.
-5.  Repeat for **Ledger** screens.
+1.  **Uninstall** any previous version of "WPT Account" from your PC.
+2.  Run the new `.exe` or `.msi` installer.
+3.  Open the **Start Menu** and type "WPT Account".
+4.  **Expected Result**: The app should appear in the search results with the correct name and icon.
