@@ -25,10 +25,10 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **Monthly Summary Drill-down:** Detailed monthly breakdown of Inwards, Outwards, and rolling Closing Balances with Rate columns.
 - **Professional Workflows:**
     - **Keyboard Navigation:** Full support for **Arrow keys** to select items and **Enter** to drill down project-wide.
-    - **Android Rotation Control:** Automatically switches to **Landscape** mode for detailed Inventory and Ledger reports.
+    - **System-Based Rotation:** Follows standard Android auto-rotate settings for all reports, giving users control over their viewing orientation.
     - **System Back Handling:** Native back button support on Android for intuitive screen navigation.
 - **Responsive & Dense UI:**
-    - **Adaptive Layouts:** Tables automatically hide non-essential columns on mobile to prevent crowding.
+    - **Horizontal Table Scrolling:** Wide financial tables now feature smooth horizontal scrolling in portrait mode, ensuring all data (Quantity, Rate, Value) is accessible without squashing columns.
     - **High-Density Lists:** Optimized padding and header heights to display **5-6+ items** simultaneously on mobile.
 - **Cross-Platform:** 100% shared UI and business logic across Android, Desktop, and Web.
 - **Secure Backend:** Uses Supabase Auth and advanced Row Level Security (RLS) policies for data isolation.

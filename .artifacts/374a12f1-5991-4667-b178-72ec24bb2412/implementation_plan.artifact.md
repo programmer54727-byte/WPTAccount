@@ -1,36 +1,40 @@
-# Implementation Plan - Support Current Assets Sub-groups
+# Implementation Plan - Native System Auto-Rotate and Horizontal Scrolling
 
-This plan updates the Ledger creation form to support the specific requirements of the **Current Assets** group and its sub-groups like **Loans & Advances (Asset)** and **Deposits (Asset)**.
+The user wants to stop forcing landscape orientation and instead let the app follow the system's auto-rotate settings. To ensure usability in portrait mode, wide tables will be updated with horizontal scrolling capability.
 
 ## Proposed Changes
 
 ### [shared](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared)
 
+#### [MODIFY] [App.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/App.kt)
+- Update the `LaunchedEffect(currentScreen)` logic.
+- Remove the code that forces `ScreenOrientation.LANDSCAPE` for `inventory_management`.
+- Instead, set `onOrientationRequest(ScreenOrientation.UNSPECIFIED)` for all screens. This allows the system's auto-rotate toggle to control the app's orientation.
+
+#### [MODIFY] [inventoryManagement.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/inventoryManagement.kt)
+- **Tables Refactoring**:
+    - Wrap the table header `Row` and the `LazyColumn` inside a `Column` that has `horizontalScroll(rememberScrollState())`.
+    - Set a minimum width for the table (e.g., `minWidth = 800.dp`) to ensure that columns don't get crushed in portrait mode.
+    - This applies to `UnitsTab`, `StockGroupsTab`, `StockItemsTab`, `FilteredStockItemsList`, and `StockItemMonthlySummary`.
+
 #### [MODIFY] [ledgerManagement.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/ledgerManagement.kt)
-- Update the conditional logic for the **Credit Control Details** section.
-- It will now display if the selected group is:
-    - **"Sundry Debtors"** or **"Sundry Creditors"**
-    - **"Branch / Divisions"**
-    - **"Loans & Advances (Asset)"**
-    - **"Current Assets"**
-- This enables **Bill-by-bill tracking** for loans and advances, allowing you to track individual repayment installments.
-- Ensure **Mailing Details** and **Tax Registration** sections remain visible for these groups, as they are needed for party-related assets and tax-receivable ledgers (like TDS).
+- **Tables Refactoring**:
+    - Apply the same `horizontalScroll` and `minWidth` logic to all ledger tables.
+    - This applies to `LedgerGroupsTab`, `LedgersTab`, `FilteredLedgersList`, and `LedgerMonthlySummary`.
 
 ## User Review Required
 
 > [!NOTE]
-> Enabling "Bill-by-bill" for **Loans & Advances** is a professional accounting standard that helps in tracking which specific loan or advance is being settled during a transaction.
+> With horizontal scrolling, when you hold your phone in portrait mode, you will see the left part of the table (Particulars) and can swipe right to see Quantity, Rate, and Value. Rotating to landscape will still work as before, showing the full table at once.
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `./gradlew :shared:compileKotlinJvm` to verify UI logic.
+- Run `./gradlew :shared:compileKotlinJvm` to verify compilation.
 
 ### Manual Verification
-1.  Open **Add Ledger**.
-2.  Select **Loans & Advances (Asset)** from the "Under" dropdown.
-3.  **Expected Result**: The "Credit Control Details" section should appear.
-4.  Select **Current Assets**.
-5.  **Expected Result**: The "Credit Control Details" section should remain visible.
-6.  Select **Deposits (Asset)**.
-7.  **Expected Result**: Only General, Mailing, and Tax sections should be visible (Credit Control hidden).
+1.  Launch the Android app.
+2.  Open **Inventory > Items**.
+3.  **Portrait Mode**: Verify that you can swipe left/right to see all columns. The screen should **not** rotate automatically.
+4.  **Auto-Rotate ON**: Rotate the phone. Verify that the UI rotates to landscape and fits the whole table.
+5.  Repeat for **Ledger** screens.

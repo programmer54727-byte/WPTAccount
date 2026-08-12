@@ -3,6 +3,7 @@ package com.wpt.wptaccount
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -110,32 +111,43 @@ fun LedgerGroupsTab(company: Company) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val isMobile = maxWidth < 600.dp
             val balanceWidth = if (isMobile) 100.dp else 150.dp
+            val scrollState = rememberScrollState()
 
-            Column(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 4.dp)) {
-                // Table Header
-                Row(modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp), verticalAlignment = Alignment.Bottom) {
-                    Text("Group Name", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                    Text("Nature", modifier = Modifier.width(80.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                    Text("Current Balance", modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                }
-                HorizontalDivider(thickness = 1.dp, color = Color.Black)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .horizontalScroll(scrollState)
+            ) {
+                val constraints = this@BoxWithConstraints
+                val contentWidth = if (isMobile) 800.dp else constraints.maxWidth
+                
+                Column(modifier = Modifier.width(contentWidth)) {
+                    // Table Header
+                    Row(modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp), verticalAlignment = Alignment.Bottom) {
+                        Text("Group Name", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text("Nature", modifier = Modifier.width(80.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text("Current Balance", modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    }
+                    HorizontalDivider(thickness = 1.dp, color = Color.Black)
 
-                LazyColumn(modifier = Modifier.weight(1f)) {
-                    items(groups) { group ->
-                        val groupLedgers = ledgers.filter { it.group_id == group.id }
-                        val totalBalance = groupLedgers.sumOf { it.current_balance }
+                    LazyColumn(modifier = Modifier.weight(1f)) {
+                        items(groups) { group ->
+                            val groupLedgers = ledgers.filter { it.group_id == group.id }
+                            val totalBalance = groupLedgers.sumOf { it.current_balance }
 
-                        Surface(
-                            color = Color(0xFFFFE082),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 1.dp)
-                                .clickable { selectedGroupForLedgers = group }
-                        ) {
-                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(group.group_name, modifier = Modifier.weight(1f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
-                                Text(group.nature ?: "", modifier = Modifier.width(80.dp), style = MaterialTheme.typography.bodySmall)
-                                Text(totalBalance.format(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                            Surface(
+                                color = Color(0xFFFFE082),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 1.dp)
+                                    .clickable { selectedGroupForLedgers = group }
+                            ) {
+                                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(group.group_name, modifier = Modifier.weight(1f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
+                                    Text(group.nature ?: "", modifier = Modifier.width(80.dp), style = MaterialTheme.typography.bodySmall)
+                                    Text(totalBalance.format(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                }
                             }
                         }
                     }
@@ -256,56 +268,69 @@ fun LedgersTab(company: Company) {
         ) {
             val isMobile = maxWidth < 600.dp
             val balanceWidth = if (isMobile) 80.dp else 120.dp
+            val scrollState = rememberScrollState()
 
-            Column(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 4.dp)) {
-                // Table Header
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 1.dp),
-                    verticalAlignment = Alignment.Bottom
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .horizontalScroll(scrollState)
                 ) {
-                    Text("Particulars", modifier = Modifier.weight(1.5f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                    if (!isMobile) Text("Group", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                    Text("Opening", modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                    Text("Closing", modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.width(40.dp))
-                }
-                HorizontalDivider(thickness = 1.dp, color = Color.Black)
-
-                LazyColumn(modifier = Modifier.weight(1f)) {
-                    itemsIndexed(ledgers) { index, ledger ->
-                        val groupName = groups.find { it.id == ledger.group_id }?.group_name ?: ""
-                        
-                        Surface(
-                            color = if (index == selectedIndex) Color(0xFF0D47A1) else Color(0xFFFFE082),
-                            contentColor = if (index == selectedIndex) Color.White else Color.Black,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 1.dp)
-                                .clickable { 
-                                    selectedIndex = index
-                                    isSummaryMode = true 
-                                }
+                    val constraints = this@BoxWithConstraints
+                    val contentWidth = if (isMobile) 800.dp else constraints.maxWidth
+                    
+                    Column(modifier = Modifier.width(contentWidth)) {
+                        // Table Header
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 1.dp),
+                            verticalAlignment = Alignment.Bottom
                         ) {
-                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(ledger.ledger_name, modifier = Modifier.weight(1.5f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
-                                if (!isMobile) Text(groupName, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                                Text(ledger.opening_balance.format(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                                Text(ledger.current_balance.format(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                            Text("Particulars", modifier = Modifier.weight(1.5f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            if (!isMobile) Text("Group", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Opening", modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Closing", modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.width(40.dp))
+                        }
+                        HorizontalDivider(thickness = 1.dp, color = Color.Black)
+
+                        LazyColumn(modifier = Modifier.weight(1f)) {
+                            itemsIndexed(ledgers) { index, ledger ->
+                                val groupName = groups.find { it.id == ledger.group_id }?.group_name ?: ""
                                 
-                                IconButton(onClick = { ledgerToDelete = ledger }, modifier = Modifier.size(40.dp)) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Delete Ledger", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                                Surface(
+                                    color = if (index == selectedIndex) Color(0xFF0D47A1) else Color(0xFFFFE082),
+                                    contentColor = if (index == selectedIndex) Color.White else Color.Black,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 1.dp)
+                                        .clickable { 
+                                            selectedIndex = index
+                                            isSummaryMode = true 
+                                        }
+                                ) {
+                                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Text(ledger.ledger_name, modifier = Modifier.weight(1.5f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
+                                        if (!isMobile) Text(groupName, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                                        Text(ledger.opening_balance.format(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                                        Text(ledger.current_balance.format(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                        
+                                        IconButton(onClick = { ledgerToDelete = ledger }, modifier = Modifier.size(40.dp)) {
+                                            Icon(Icons.Default.Delete, contentDescription = "Delete Ledger", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-            
-            FloatingActionButton(
-                onClick = { showDialog = true },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
-            ) {
-                Icon(Icons.Default.Add, "Add Ledger")
+                
+                FloatingActionButton(
+                    onClick = { showDialog = true },
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
+                ) {
+                    Icon(Icons.Default.Add, "Add Ledger")
+                }
             }
         }
     }
@@ -580,43 +605,56 @@ fun FilteredLedgersList(
         ) {
             val isMobile = maxWidth < 600.dp
             val balanceWidth = if (isMobile) 80.dp else 120.dp
+            val scrollState = rememberScrollState()
 
-            Column(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 4.dp)) {
-                // Header with Back Button
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
-                    IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", modifier = Modifier.size(20.dp))
-                    }
-                    Text(text = title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
-                }
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .horizontalScroll(scrollState)
+                ) {
+                    val constraints = this@BoxWithConstraints
+                    val contentWidth = if (isMobile) 800.dp else constraints.maxWidth
+                    
+                    Column(modifier = Modifier.width(contentWidth)) {
+                        // Header with Back Button
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
+                            IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", modifier = Modifier.size(20.dp))
+                            }
+                            Text(text = title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+                        }
 
-                // Table Header
-                Row(modifier = Modifier.fillMaxWidth().padding(bottom = 1.dp), verticalAlignment = Alignment.Bottom) {
-                    Text("Particulars", modifier = Modifier.weight(1.5f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                    Text("Opening", modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                    Text("Closing", modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.width(40.dp))
-                }
-                HorizontalDivider(thickness = 1.dp, color = Color.Black)
+                        // Table Header
+                        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 1.dp), verticalAlignment = Alignment.Bottom) {
+                            Text("Particulars", modifier = Modifier.weight(1.5f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Opening", modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Closing", modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.width(40.dp))
+                        }
+                        HorizontalDivider(thickness = 1.dp, color = Color.Black)
 
-                LazyColumn(modifier = Modifier.weight(1f)) {
-                    itemsIndexed(ledgers) { index, ledger ->
-                        Surface(
-                            color = if (index == selectedIndex) Color(0xFF0D47A1) else Color(0xFFFFE082),
-                            contentColor = if (index == selectedIndex) Color.White else Color.Black,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 1.dp)
-                                .clickable { 
-                                    selectedIndex = index
-                                    isSummaryMode = true 
+                        LazyColumn(modifier = Modifier.weight(1f)) {
+                            itemsIndexed(ledgers) { index, ledger ->
+                                Surface(
+                                    color = if (index == selectedIndex) Color(0xFF0D47A1) else Color(0xFFFFE082),
+                                    contentColor = if (index == selectedIndex) Color.White else Color.Black,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 1.dp)
+                                        .clickable { 
+                                            selectedIndex = index
+                                            isSummaryMode = true 
+                                        }
+                                ) {
+                                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Text(ledger.ledger_name, modifier = Modifier.weight(1.5f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
+                                        Text(ledger.opening_balance.format(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                                        Text(ledger.current_balance.format(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                        Spacer(Modifier.width(40.dp))
+                                    }
                                 }
-                        ) {
-                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(ledger.ledger_name, modifier = Modifier.weight(1.5f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
-                                Text(ledger.opening_balance.format(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                                Text(ledger.current_balance.format(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
-                                Spacer(Modifier.width(40.dp))
                             }
                         }
                     }
@@ -653,46 +691,61 @@ fun LedgerMonthlySummary(
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
-            // Header
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-                Text("Particulars", modifier = Modifier.weight(1.2f), fontWeight = FontWeight.Bold)
-                SummaryColumnHeader("Debit", Modifier.weight(1f))
-                SummaryColumnHeader("Credit", Modifier.weight(1f))
-                SummaryColumnHeader("Closing Balance", Modifier.weight(1.5f))
-            }
-            HorizontalDivider(thickness = 2.dp, color = Color.Black)
+        BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(padding)) {
+            val isMobile = maxWidth < 600.dp
+            val scrollState = rememberScrollState()
+            val constraints = this@BoxWithConstraints
 
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                // Opening Balance Row
-                item {
-                    LedgerSummaryRow(
-                        label = "Opening Balance",
-                        italic = true,
-                        closingValue = ledger.opening_balance.format()
-                    )
-                }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .horizontalScroll(scrollState)
+            ) {
+                val contentWidth = if (isMobile) 800.dp else constraints.maxWidth
+                
+                Column(modifier = Modifier.width(contentWidth)) {
+                    // Header
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+                        Text("Particulars", modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        SummaryColumnHeader("Debit", Modifier.weight(1f))
+                        SummaryColumnHeader("Credit", Modifier.weight(1f))
+                        SummaryColumnHeader("Closing Balance", Modifier.weight(1.5f))
+                    }
+                    HorizontalDivider(thickness = 2.dp, color = Color.Black)
 
-                // Monthly Rows
-                items(months) { month ->
+                    LazyColumn(modifier = Modifier.weight(1f)) {
+                        // Opening Balance Row
+                        item {
+                            LedgerSummaryRow(
+                                label = "Opening Balance",
+                                italic = true,
+                                closingValue = ledger.opening_balance.format()
+                            )
+                        }
+
+                        // Monthly Rows
+                        items(months) { month ->
+                            LedgerSummaryRow(
+                                label = month,
+                                debit = "0.00",
+                                credit = "0.00",
+                                closingValue = ledger.current_balance.format()
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(thickness = 2.dp, color = Color.Black)
+                    // Grand Total Row
                     LedgerSummaryRow(
-                        label = month,
+                        label = "Grand Total",
+                        bold = true,
                         debit = "0.00",
                         credit = "0.00",
                         closingValue = ledger.current_balance.format()
                     )
                 }
             }
-
-            HorizontalDivider(thickness = 2.dp, color = Color.Black)
-            // Grand Total Row
-            LedgerSummaryRow(
-                label = "Grand Total",
-                bold = true,
-                debit = "0.00",
-                credit = "0.00",
-                closingValue = ledger.current_balance.format()
-            )
         }
     }
 }

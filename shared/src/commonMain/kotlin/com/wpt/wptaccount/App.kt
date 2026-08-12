@@ -29,11 +29,7 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
     val sessionStatus by supabase.auth.sessionStatus.collectAsState()
 
     LaunchedEffect(currentScreen) {
-        if (currentScreen == "inventory_management") {
-            onOrientationRequest(ScreenOrientation.LANDSCAPE)
-        } else {
-            onOrientationRequest(ScreenOrientation.UNSPECIFIED)
-        }
+        onOrientationRequest(ScreenOrientation.UNSPECIFIED)
     }
 
     LaunchedEffect(sessionStatus) {
