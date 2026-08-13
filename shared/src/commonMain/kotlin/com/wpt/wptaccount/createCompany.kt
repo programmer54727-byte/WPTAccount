@@ -119,8 +119,8 @@ fun CreateCompanyForm(
                     println("Error: User not logged in")
                 }
             } catch (e: Exception) {
-                errorMessage = e.message ?: "Failed to create company"
-                println("Error during company setup: ${e.message}")
+                println("Create company error: ${e.message}")
+                errorMessage = "Failed to create company. Please try again."
                 e.printStackTrace()
             } finally {
                 isLoading = false

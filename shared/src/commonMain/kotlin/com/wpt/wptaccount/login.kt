@@ -56,7 +56,12 @@ fun Login(
                 }
                 onLoginSuccess()
             } catch (e: Exception) {
-                errorMessage = e.message ?: "Login failed"
+                println("Login error: ${e.message}")
+                errorMessage = if (e.message?.contains("invalid_credentials", ignoreCase = true) == true) {
+                    "Invalid email or password"
+                } else {
+                    "Login failed. Please check your connection."
+                }
             } finally {
                 isLoading = false
             }

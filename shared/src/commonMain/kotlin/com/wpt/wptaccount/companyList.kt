@@ -35,7 +35,8 @@ fun CompanyList(
                 .select()
                 .decodeList<Company>()
         } catch (e: Exception) {
-            error = e.message ?: "Failed to load companies"
+            println("Load companies error: ${e.message}")
+            error = "Failed to load companies. Please check your connection."
         } finally {
             isLoading = false
         }

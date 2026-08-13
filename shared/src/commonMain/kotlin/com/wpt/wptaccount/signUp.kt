@@ -67,7 +67,12 @@ fun SignUp(
                 // isVerifying = true
                 onSignUpSuccess()
             } catch (e: Exception) {
-                errorMessage = e.message ?: "Signup failed"
+                println("Signup error: ${e.message}")
+                errorMessage = if (e.message?.contains("user_already_exists", ignoreCase = true) == true) {
+                    "An account with this email already exists."
+                } else {
+                    "Signup failed. Please try again."
+                }
             } finally {
                 isLoading = false
             }

@@ -1,50 +1,38 @@
-# Implementation Plan - Professional Windows Installer Configuration
+# Implementation Plan - Secure Error Handling for Authentication
 
-This plan updates the desktop application's distribution settings to ensure the app creates a Start Menu shortcut, appears in Windows Search, and has a professional icon. It also addresses the "Another version already installed" error.
-
-## Problem Analysis
-
-1.  **Start Menu/Search**: The current configuration does not explicitly tell the Windows installer to create a shortcut in the Start Menu.
-2.  **Duplicate Installation Error**: Windows prevents installing an MSI if a product with the same ID is already present.
-3.  **Icon**: While a `.png` is provided, Windows installers work best with `.ico` files for shortcuts and the Taskbar.
+The user reported that failed login attempts display raw Supabase error messages, which include sensitive information such as the Supabase API URL and public API key. This is a security risk. This plan will replace raw error messages with user-friendly, non-sensitive messages across the authentication and company management flows.
 
 ## Proposed Changes
 
-### [desktopApp](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/desktopApp)
+### [shared](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared)
 
-#### [MODIFY] [build.gradle.kts](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/desktopApp/build.gradle.kts)
-- Update the `windows` block inside `nativeDistributions` to enable shortcuts and search visibility:
-    - Set `menu = true` to add the app to the Start Menu.
-    - Set `shortcut = true` to add a shortcut to the Desktop (optional, but common).
-    - Set `menuGroup = "WPT Account"` to organize it in the Start Menu.
-    - Use `upgradeUuid` (optional but good practice) to handle upgrades better.
+#### [MODIFY] [login.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/login.kt)
+- Sanitize the error message in the `catch` block.
+- If the error contains "invalid_credentials", show "Invalid email or password".
+- Otherwise, show a generic "Login failed. Please try again."
 
-#### [NEW] Icon Requirements
-- Recommend converting `icon.png` to `icon.ico` (containing multiple sizes like 16, 32, 48, 256).
+#### [MODIFY] [signUp.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/signUp.kt)
+- Sanitize error messages for both Signup and Verification flows.
+- Map common Supabase Auth errors (like "user_already_exists") to clean messages.
+- Hide technical details (URL, headers).
 
-## Troubleshooting: "Another version already installed"
-This error happens because an older version of the app was installed via the `.msi` or `.exe`.
-**To fix this:**
-1.  Go to **Control Panel > Uninstall a Program**.
-2.  Search for "WPT Account".
-3.  Right-click and **Uninstall**.
-4.  Now run your new installer.
+#### [MODIFY] [companyList.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/companyList.kt) and [createCompany.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/createCompany.kt)
+- Replace `e.message` usage with generic error messages when displaying to the UI.
+- Keep detailed logging in `println` or `Log` (if available) for debugging, but never show it to the user in a `Text` component.
 
 ## User Review Required
 
-> [!IMPORTANT]
-> To make the app appear in Windows Search correctly, the `menu = true` setting is required. I will apply this change to your build script.
-
-> [!TIP]
-> For the best visual result, you should replace the `icon.png` with an `icon.ico` file. If you don't have one, the build system will try to convert it, but it's always better to provide a high-quality `.ico`.
+> [!WARNING]
+> By sanitizing these messages, you will no longer see the technical reason for a failure in the UI (like a 404 or specific header issue). For development debugging, I recommend checking the console output (`println`) instead of the app screen.
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `./gradlew :desktopApp:package` to verify the installer builds without errors.
+- Run `./gradlew :shared:compileKotlinJvm` to ensure no syntax errors.
 
 ### Manual Verification
-1.  **Uninstall** any previous version of "WPT Account" from your PC.
-2.  Run the new `.exe` or `.msi` installer.
-3.  Open the **Start Menu** and type "WPT Account".
-4.  **Expected Result**: The app should appear in the search results with the correct name and icon.
+1.  Try to log in with a wrong password.
+    - **Expected Result**: See "Invalid email or password" instead of the full Supabase URL/API Key.
+2.  Try to sign up with an existing email.
+    - **Expected Result**: See a clean error message.
+3.  Check other screens for any remaining raw error displays.

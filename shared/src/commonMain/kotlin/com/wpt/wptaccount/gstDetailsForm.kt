@@ -96,7 +96,7 @@ fun GstDetailsScreen(
                                 gst_username = gstUsername,
                                 filing_mode = modeOfFiling,
                                 eway_bill_applicable = ewayBillApplicable,
-                                eway_bill_date = ewayBillDate,
+                                eway_bill_date = ewayBillDate.ifEmpty { null },
                                 eway_bill_intrastate = ewayBillIntrastate,
                                 einvoice_applicable = einvoiceApplicable,
                                 registration_name = registrationName
