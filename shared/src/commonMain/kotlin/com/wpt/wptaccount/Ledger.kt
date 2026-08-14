@@ -30,10 +30,18 @@ data class Ledger(
     val credit_period: Int? = null,
     val credit_limit: Double? = null,
     
-    // Tax Details
+    // Tax Details (for Duties & Taxes)
     val duty_tax_type: String? = null, // GST, TDS, Others
     val gst_tax_sub_type: String? = null, // Central Tax, State Tax, Integrated Tax, Cess
     val tax_rate: Double? = null,
+
+    // Revenue/Expense Details
+    val inventory_affected: Boolean = false,
+    val cost_centres_applicable: Boolean = false,
+    val gst_applicable_type: String? = null, // Applicable, Not Applicable, Undefined
+    val supply_type: String? = null, // Goods, Services, Capital Goods
+    val hsn_sac_code: String? = null,
+    val hsn_sac_desc: String? = null,
     
     val opening_balance: Double = 0.0,
     val opening_balance_type: String = "Dr", // Dr or Cr

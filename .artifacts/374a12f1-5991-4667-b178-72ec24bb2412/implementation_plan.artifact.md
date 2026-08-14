@@ -1,38 +1,45 @@
-# Implementation Plan - Secure Error Handling for Authentication
+# Implementation Plan - Support Income and Expense Groups
 
-The user reported that failed login attempts display raw Supabase error messages, which include sensitive information such as the Supabase API URL and public API key. This is a security risk. This plan will replace raw error messages with user-friendly, non-sensitive messages across the authentication and company management flows.
+This plan updates the Ledger creation system to handle **Direct/Indirect Expenses** and **Direct/Indirect Income** with professional fields such as "Inventory Affected" and detailed GST configurations.
 
 ## Proposed Changes
 
 ### [shared](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared)
 
-#### [MODIFY] [login.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/login.kt)
-- Sanitize the error message in the `catch` block.
-- If the error contains "invalid_credentials", show "Invalid email or password".
-- Otherwise, show a generic "Login failed. Please try again."
+#### [MODIFY] [Ledger.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/Ledger.kt)
+- Add new fields to support revenue/expense accounting:
+    - `inventory_affected`: Boolean (default false)
+    - `cost_centres_applicable`: Boolean (default false)
+    - `gst_applicable_type`: String (e.g., "Applicable", "Not Applicable")
+    - `supply_type`: String (e.g., "Goods", "Services")
+    - `hsn_sac_code`: String?
+    - `hsn_sac_desc`: String?
 
-#### [MODIFY] [signUp.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/signUp.kt)
-- Sanitize error messages for both Signup and Verification flows.
-- Map common Supabase Auth errors (like "user_already_exists") to clean messages.
-- Hide technical details (URL, headers).
+#### [MODIFY] [ledgerManagement.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/ledgerManagement.kt)
+- **Smart Group Logic**:
+    - Identify "Income" and "Expense" groups (Direct and Indirect).
+    - **Hide**: Mailing, Bank, and Credit sections for these groups to keep the form clean.
+    - **Show**:
+        - **Inventory & Costing Section**: Includes toggles for "Inventory Affected" and "Cost Centres".
+        - **GST Configuration Section**: Shows if GST is "Applicable". Includes HSN/SAC, Tax Rate, and Supply Type.
+- **Improved Validation**: Ensure that if "Inventory Affected" is selected, the user is aware it will impact stock costs.
 
-#### [MODIFY] [companyList.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/companyList.kt) and [createCompany.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/createCompany.kt)
-- Replace `e.message` usage with generic error messages when displaying to the UI.
-- Keep detailed logging in `println` or `Log` (if available) for debugging, but never show it to the user in a `Text` component.
+#### [MODIFY] [supabasetableandpolicy.sql](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/supabasetableandpolicy.sql)
+- Provide a migration script to add these new columns to the `ledgers` table.
 
 ## User Review Required
 
-> [!WARNING]
-> By sanitizing these messages, you will no longer see the technical reason for a failure in the UI (like a 404 or specific header issue). For development debugging, I recommend checking the console output (`println`) instead of the app screen.
+> [!TIP]
+> This "Smart Form" approach ensures that if you are creating a "Salary Expense", you only see relevant options like "Cost Centres", without being bothered by "A/c Number" or "Mailing Address" fields.
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `./gradlew :shared:compileKotlinJvm` to ensure no syntax errors.
+- Run `./gradlew :shared:compileKotlinJvm` to verify data model and UI logic.
 
 ### Manual Verification
-1.  Try to log in with a wrong password.
-    - **Expected Result**: See "Invalid email or password" instead of the full Supabase URL/API Key.
-2.  Try to sign up with an existing email.
-    - **Expected Result**: See a clean error message.
-3.  Check other screens for any remaining raw error displays.
+1.  **Expense Creation**: Select "Indirect Expenses".
+    - **Expected**: Mailing/Bank sections hide. "Inventory Affected" and GST sections appear.
+2.  **Income Creation**: Select "Direct Income".
+    - **Expected**: Similar behavior to Expenses.
+3.  **Data Persistence**: Save an expense with HSN details and verify it stores correctly.

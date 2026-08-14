@@ -58,8 +58,8 @@ fun CreateCompanyForm(
     var gstRate by remember { mutableStateOf("0") }
     var typeOfSupply by remember { mutableStateOf("Goods") }
 
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isSaving by remember { mutableStateOf(false) }
+    var saveError by remember { mutableStateOf<String?>(null) }
     
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
@@ -67,13 +67,13 @@ fun CreateCompanyForm(
 
     fun performCreateCompany() {
         if (companyName.isBlank()) {
-            errorMessage = "Company Name is required"
+            saveError = "Company Name is required"
             return
         }
         
         scope.launch {
-            isLoading = true
-            errorMessage = null
+            isSaving = true
+            saveError = null
             println("Starting company creation for: $companyName")
             try {
                 val user = supabase.auth.currentUserOrNull()
@@ -115,15 +115,15 @@ fun CreateCompanyForm(
                     println("Initial setup complete!")
                     onSuccess()
                 } else {
-                    errorMessage = "User not logged in"
+                    saveError = "User not logged in"
                     println("Error: User not logged in")
                 }
             } catch (e: Exception) {
                 println("Create company error: ${e.message}")
-                errorMessage = "Failed to create company. Please try again."
+                saveError = "Failed to create company. Please try again."
                 e.printStackTrace()
             } finally {
-                isLoading = false
+                isSaving = false
             }
         }
     }
@@ -140,215 +140,223 @@ fun CreateCompanyForm(
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 24.dp)
-                .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            SectionHeader("General Information")
-            OutlinedTextField(
-                value = companyName, 
-                onValueChange = { companyName = it }, 
-                label = { Text("Company Name *") }, 
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
-            )
-            OutlinedTextField(
-                value = mailingName, 
-                onValueChange = { mailingName = it }, 
-                label = { Text("Mailing Name") }, 
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
-            )
-            OutlinedTextField(
-                value = address, 
-                onValueChange = { address = it }, 
-                label = { Text("Address") }, 
-                modifier = Modifier.fillMaxWidth(), 
-                minLines = 2,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
-            )
+        Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 800.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .verticalScroll(scrollState),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                if (saveError != null) {
+                    Text(
+                        text = saveError!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
 
-            SectionHeader("Contact Details")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SectionHeader("General Information")
                 OutlinedTextField(
-                    value = state, 
-                    onValueChange = { state = it }, 
-                    label = { Text("State") }, 
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Right) })
-                )
-                OutlinedTextField(
-                    value = country, 
-                    onValueChange = { country = it }, 
-                    label = { Text("Country") }, 
-                    modifier = Modifier.weight(1f),
+                    value = companyName, 
+                    onValueChange = { companyName = it }, 
+                    label = { Text("Company Name *") }, 
+                    modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
                 )
-            }
-            OutlinedTextField(
-                value = pincode, 
-                onValueChange = { pincode = it }, 
-                label = { Text("Pincode") }, 
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
-            )
-            OutlinedTextField(
-                value = telephone, 
-                onValueChange = { telephone = it }, 
-                label = { Text("Telephone") }, 
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
-            )
-            OutlinedTextField(
-                value = mobile, 
-                onValueChange = { mobile = it }, 
-                label = { Text("Mobile") }, 
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
-            )
-            OutlinedTextField(
-                value = fax, 
-                onValueChange = { fax = it }, 
-                label = { Text("Fax") }, 
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
-            )
-            OutlinedTextField(
-                value = email, 
-                onValueChange = { email = it }, 
-                label = { Text("Email") }, 
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
-            )
-            OutlinedTextField(
-                value = website, 
-                onValueChange = { website = it }, 
-                label = { Text("Website") }, 
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
-            )
-
-            SectionHeader("Financial Details")
-            OutlinedTextField(
-                value = finYearBeginning, 
-                onValueChange = { finYearBeginning = it }, 
-                label = { Text("Financial Year Beginning (YYYY-MM-DD)") }, 
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
-            )
-            OutlinedTextField(
-                value = booksBeginning, 
-                onValueChange = { booksBeginning = it }, 
-                label = { Text("Books Beginning (YYYY-MM-DD)") }, 
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
-                    value = baseCurrencySymbol, 
-                    onValueChange = { baseCurrencySymbol = it }, 
-                    label = { Text("Currency Symbol") }, 
-                    modifier = Modifier.weight(1f),
+                    value = mailingName, 
+                    onValueChange = { mailingName = it }, 
+                    label = { Text("Mailing Name") }, 
+                    modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Right) })
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
                 )
                 OutlinedTextField(
-                    value = formalName, 
-                    onValueChange = { formalName = it }, 
-                    label = { Text("Formal Name") }, 
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { 
-                        focusManager.clearFocus()
-                        performCreateCompany()
-                    })
+                    value = address, 
+                    onValueChange = { address = it }, 
+                    label = { Text("Address") }, 
+                    modifier = Modifier.fillMaxWidth(), 
+                    minLines = 2,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
                 )
-            }
 
-            SectionHeader("Security Control")
-            SelectionRow("Tally Vault Password", tallyVaultEnabled) { tallyVaultEnabled = it }
-            SelectionRow("Control User Access", controlAccessEnabled) { controlAccessEnabled = it }
-
-            SectionHeader("GST/HSN Statutory Defaults")
-            SelectionRow("GST Applicability", gstApplicability) { gstApplicability = it }
-            if (gstApplicability == "Applicable") {
-                OutlinedTextField(
-                    value = hsnNumber,
-                    onValueChange = { hsnNumber = it },
-                    label = { Text("HSN/SAC Number") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = hsnDescription,
-                    onValueChange = { hsnDescription = it },
-                    label = { Text("HSN Description") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = gstRate,
-                    onValueChange = { gstRate = it },
-                    label = { Text("Default GST Rate (%)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-                
-                Text("Type of Supply", style = MaterialTheme.typography.bodyMedium)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(selected = typeOfSupply == "Goods", onClick = { typeOfSupply = "Goods" })
-                    Text("Goods", style = MaterialTheme.typography.bodySmall)
-                    Spacer(Modifier.width(8.dp))
-                    RadioButton(selected = typeOfSupply == "Services", onClick = { typeOfSupply = "Services" })
-                    Text("Services", style = MaterialTheme.typography.bodySmall)
+                SectionHeader("Contact Details")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = state, 
+                        onValueChange = { state = it }, 
+                        label = { Text("State") }, 
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Right) })
+                    )
+                    OutlinedTextField(
+                        value = country, 
+                        onValueChange = { country = it }, 
+                        label = { Text("Country") }, 
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
+                    )
                 }
-            }
+                OutlinedTextField(
+                    value = pincode, 
+                    onValueChange = { pincode = it }, 
+                    label = { Text("Pincode") }, 
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
+                )
+                OutlinedTextField(
+                    value = telephone, 
+                    onValueChange = { telephone = it }, 
+                    label = { Text("Telephone") }, 
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
+                )
+                OutlinedTextField(
+                    value = mobile, 
+                    onValueChange = { mobile = it }, 
+                    label = { Text("Mobile") }, 
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
+                )
+                OutlinedTextField(
+                    value = fax, 
+                    onValueChange = { fax = it }, 
+                    label = { Text("Fax") }, 
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
+                )
+                OutlinedTextField(
+                    value = email, 
+                    onValueChange = { email = it }, 
+                    label = { Text("Email") }, 
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
+                )
+                OutlinedTextField(
+                    value = website, 
+                    onValueChange = { website = it }, 
+                    label = { Text("Website") }, 
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
+                )
 
-            errorMessage?.let {
-                Text(text = it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
+                SectionHeader("Financial Details")
+                OutlinedTextField(
+                    value = finYearBeginning, 
+                    onValueChange = { finYearBeginning = it }, 
+                    label = { Text("Financial Year Beginning (YYYY-MM-DD)") }, 
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
+                )
+                OutlinedTextField(
+                    value = booksBeginning, 
+                    onValueChange = { booksBeginning = it }, 
+                    label = { Text("Books Beginning (YYYY-MM-DD)") }, 
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = baseCurrencySymbol, 
+                        onValueChange = { baseCurrencySymbol = it }, 
+                        label = { Text("Currency Symbol") }, 
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Right) })
+                    )
+                    OutlinedTextField(
+                        value = formalName, 
+                        onValueChange = { formalName = it }, 
+                        label = { Text("Formal Name") }, 
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { 
+                            focusManager.clearFocus()
+                            performCreateCompany()
+                        })
+                    )
+                }
 
-            Button(
-                onClick = { performCreateCompany() },
-                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                enabled = !isLoading
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
-                } else {
-                    Text("Create Company")
+                SectionHeader("Security Control")
+                SelectionRow("Tally Vault Password", tallyVaultEnabled) { tallyVaultEnabled = it }
+                SelectionRow("Control User Access", controlAccessEnabled) { controlAccessEnabled = it }
+
+                SectionHeader("GST/HSN Statutory Defaults")
+                SelectionRow("GST Applicability", gstApplicability) { gstApplicability = it }
+                if (gstApplicability == "Applicable") {
+                    OutlinedTextField(
+                        value = hsnNumber,
+                        onValueChange = { hsnNumber = it },
+                        label = { Text("HSN/SAC Number") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = hsnDescription,
+                        onValueChange = { hsnDescription = it },
+                        label = { Text("HSN Description") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = gstRate,
+                        onValueChange = { gstRate = it },
+                        label = { Text("Default GST Rate (%)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                    
+                    Text("Type of Supply", style = MaterialTheme.typography.bodyMedium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = typeOfSupply == "Goods", onClick = { typeOfSupply = "Goods" })
+                        Text("Goods", style = MaterialTheme.typography.bodySmall)
+                        Spacer(Modifier.width(8.dp))
+                        RadioButton(selected = typeOfSupply == "Services", onClick = { typeOfSupply = "Services" })
+                        Text("Services", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+
+                Button(
+                    onClick = { performCreateCompany() },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                    enabled = !isSaving
+                ) {
+                    if (isSaving) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                    } else {
+                        Text("Create Company")
+                    }
                 }
             }
         }

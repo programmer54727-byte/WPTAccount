@@ -109,6 +109,14 @@ create table if not exists public.ledgers (
   gst_tax_sub_type text, -- Central Tax, State Tax, Integrated Tax, Cess
   tax_rate decimal,
 
+  -- Revenue/Expense Details
+  inventory_affected boolean default false,
+  cost_centres_applicable boolean default false,
+  gst_applicable_type text, -- Applicable, Not Applicable, Undefined
+  supply_type text, -- Goods, Services, Capital Goods
+  hsn_sac_code text,
+  hsn_sac_desc text,
+
   opening_balance decimal default 0,
   opening_balance_type text default 'Dr', -- Dr, Cr
   current_balance decimal default 0,

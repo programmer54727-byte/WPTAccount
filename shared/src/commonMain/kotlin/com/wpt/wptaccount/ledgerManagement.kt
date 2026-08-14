@@ -137,7 +137,8 @@ fun LedgerGroupsTab(company: Company) {
                             val totalBalance = groupLedgers.sumOf { it.current_balance }
 
                             Surface(
-                                color = Color(0xFFFFE082),
+                                color = Color(0xFFF8FAFC),
+                                contentColor = Color.Black,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 1.dp)
@@ -205,6 +206,17 @@ fun LedgersTab(company: Company) {
     var dutyTaxType by remember { mutableStateOf("GST") }
     var gstTaxSubType by remember { mutableStateOf("Integrated Tax") }
     var taxRate by remember { mutableStateOf("0") }
+
+    // Revenue/Expense Details
+    var inventoryAffected by remember { mutableStateOf(false) }
+    var costCentresApplicable by remember { mutableStateOf(false) }
+    var gstApplicableType by remember { mutableStateOf("Applicable") }
+    var supplyType by remember { mutableStateOf("Services") }
+    var hsnSacCode by remember { mutableStateOf("") }
+    var hsnSacDesc by remember { mutableStateOf("") }
+
+    var saveError by remember { mutableStateOf<String?>(null) }
+    var isSaving by remember { mutableStateOf(false) }
     
     val scope = rememberCoroutineScope()
 
@@ -299,7 +311,7 @@ fun LedgersTab(company: Company) {
                                 val groupName = groups.find { it.id == ledger.group_id }?.group_name ?: ""
                                 
                                 Surface(
-                                    color = if (index == selectedIndex) Color(0xFF0D47A1) else Color(0xFFFFE082),
+                                    color = if (index == selectedIndex) Color(0xFF1E293B) else Color(0xFFF8FAFC),
                                     contentColor = if (index == selectedIndex) Color.White else Color.Black,
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -365,7 +377,7 @@ fun LedgersTab(company: Company) {
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            modifier = Modifier.fillMaxWidth(0.95f),
+            modifier = Modifier.widthIn(max = 800.dp).fillMaxWidth(0.95f),
             properties = DialogProperties(usePlatformDefaultWidth = false),
             title = { Text("Ledger Creation") },
             text = {
@@ -380,6 +392,16 @@ fun LedgersTab(company: Company) {
                         .verticalScroll(scrollState),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    if (saveError != null) {
+                        Text(
+                            text = saveError!!,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
                     // Section 1: General
                     Column {
                         InventoryField("Name", name) { 
@@ -475,6 +497,36 @@ fun LedgersTab(company: Company) {
                         HorizontalDivider()
                     }
 
+                    if (groupName.contains("Income", ignoreCase = true) || groupName.contains("Expense", ignoreCase = true)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Inventory & Costing", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Inventory values are affected", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                                Switch(checked = inventoryAffected, onCheckedChange = { inventoryAffected = it })
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Cost Centres are applicable", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                                Switch(checked = costCentresApplicable, onCheckedChange = { costCentresApplicable = it })
+                            }
+                            
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                            Text("Statutory Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                            InventoryDropdown("Is GST Applicable", listOf("Applicable", "Not Applicable", "Undefined"), gstApplicableType) {
+                                gstApplicableType = it
+                            }
+                            
+                            if (gstApplicableType == "Applicable") {
+                                InventoryField("HSN/SAC Code", hsnSacCode) { hsnSacCode = it }
+                                InventoryField("HSN/SAC Description", hsnSacDesc) { hsnSacDesc = it }
+                                InventoryField("GST Rate (%)", taxRate) { taxRate = it }
+                                InventoryDropdown("Type of Supply", listOf("Goods", "Services", "Capital Goods"), supplyType) {
+                                    supplyType = it
+                                }
+                            }
+                        }
+                        HorizontalDivider()
+                    }
+
                     // Section 5: Opening Balance
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -487,55 +539,83 @@ fun LedgersTab(company: Company) {
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    scope.launch {
-                        val newLedger = Ledger(
-                            company_id = company.id!!,
-                            ledger_name = name,
-                            alias = alias.ifEmpty { null },
-                            group_id = selectedGroupId!!,
-                            mailing_name = mailingName.ifEmpty { null },
-                            address = address.ifEmpty { null },
-                            state = state.ifEmpty { null },
-                            country = country.ifEmpty { null },
-                            pincode = pincode.ifEmpty { null },
-                            pan_it_number = panItNumber.ifEmpty { null },
-                            gst_registration_type = gstRegistrationType,
-                            gstin_uin = gstinUin.ifEmpty { null },
-                            
-                            // Bank
-                            bank_acc_no = bankAccNo.ifEmpty { null },
-                            bank_ifsc = bankIfsc.ifEmpty { null },
-                            bank_name = bankName.ifEmpty { null },
-                            bank_branch = bankBranch.ifEmpty { null },
-                            bank_swift = bankSwift.ifEmpty { null },
-                            
-                            // Party
-                            bill_by_bill = billByBill,
-                            credit_period = creditPeriod.toIntOrNull(),
-                            credit_limit = creditLimit.toDoubleOrNull(),
-                            
-                            // Tax
-                            duty_tax_type = dutyTaxType,
-                            gst_tax_sub_type = gstTaxSubType,
-                            tax_rate = taxRate.toDoubleOrNull(),
+                Button(
+                    onClick = {
+                        scope.launch {
+                            saveError = null
+                            isSaving = true
+                            try {
+                                val newLedger = Ledger(
+                                    company_id = company.id!!,
+                                    ledger_name = name,
+                                    alias = alias.ifEmpty { null },
+                                    group_id = selectedGroupId!!,
+                                    mailing_name = mailingName.ifEmpty { null },
+                                    address = address.ifEmpty { null },
+                                    state = state.ifEmpty { null },
+                                    country = country.ifEmpty { null },
+                                    pincode = pincode.ifEmpty { null },
+                                    pan_it_number = panItNumber.ifEmpty { null },
+                                    gst_registration_type = gstRegistrationType,
+                                    gstin_uin = gstinUin.ifEmpty { null },
+                                    
+                                    // Bank
+                                    bank_acc_no = bankAccNo.ifEmpty { null },
+                                    bank_ifsc = bankIfsc.ifEmpty { null },
+                                    bank_name = bankName.ifEmpty { null },
+                                    bank_branch = bankBranch.ifEmpty { null },
+                                    bank_swift = bankSwift.ifEmpty { null },
+                                    
+                                    // Party
+                                    bill_by_bill = billByBill,
+                                    credit_period = creditPeriod.toIntOrNull(),
+                                    credit_limit = creditLimit.toDoubleOrNull(),
+                                    
+                                    // Tax
+                                    duty_tax_type = dutyTaxType,
+                                    gst_tax_sub_type = gstTaxSubType,
+                                    tax_rate = taxRate.toDoubleOrNull(),
 
-                            opening_balance = openingBalance.toDoubleOrNull() ?: 0.0,
-                            opening_balance_type = openingBalanceType,
-                            current_balance = openingBalance.toDoubleOrNull() ?: 0.0
-                        )
-                        supabase.from("ledgers").insert(newLedger)
-                        showDialog = false
-                        // Reset fields
-                        name = ""; alias = ""; mailingName = ""; address = ""; state = ""; country = ""; pincode = ""
-                        isMailingNameSynced = true
-                        panItNumber = ""; gstinUin = ""; openingBalance = "0"; openingBalanceType = "Dr"
-                        bankAccNo = ""; bankIfsc = ""; bankName = ""; bankBranch = ""; bankSwift = ""
-                        billByBill = false; creditPeriod = ""; creditLimit = ""
-                        taxRate = "0"
-                        fetchData()
+                                    // Revenue/Expense
+                                    inventory_affected = inventoryAffected,
+                                    cost_centres_applicable = costCentresApplicable,
+                                    gst_applicable_type = gstApplicableType,
+                                    supply_type = supplyType,
+                                    hsn_sac_code = hsnSacCode.ifEmpty { null },
+                                    hsn_sac_desc = hsnSacDesc.ifEmpty { null },
+
+                                    opening_balance = openingBalance.toDoubleOrNull() ?: 0.0,
+                                    opening_balance_type = openingBalanceType,
+                                    current_balance = openingBalance.toDoubleOrNull() ?: 0.0
+                                )
+                                supabase.from("ledgers").insert(newLedger)
+                                showDialog = false
+                                // Reset fields
+                                name = ""; alias = ""; mailingName = ""; address = ""; state = ""; country = ""; pincode = ""
+                                isMailingNameSynced = true
+                                panItNumber = ""; gstinUin = ""; openingBalance = "0"; openingBalanceType = "Dr"
+                                bankAccNo = ""; bankIfsc = ""; bankName = ""; bankBranch = ""; bankSwift = ""
+                                billByBill = false; creditPeriod = ""; creditLimit = ""
+                                taxRate = "0"
+                                inventoryAffected = false; costCentresApplicable = false
+                                gstApplicableType = "Applicable"; hsnSacCode = ""; hsnSacDesc = ""
+                                fetchData()
+                            } catch (e: Exception) {
+                                println("Error saving ledger: ${e.message}")
+                                saveError = "Failed to save ledger. Please check your connection."
+                            } finally {
+                                isSaving = false
+                            }
+                        }
+                    },
+                    enabled = !isSaving
+                ) {
+                    if (isSaving) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                    } else {
+                        Text("Save")
                     }
-                }) { Text("Save") }
+                }
             },
             dismissButton = {
                 TextButton(onClick = { 
@@ -638,7 +718,7 @@ fun FilteredLedgersList(
                         LazyColumn(modifier = Modifier.weight(1f)) {
                             itemsIndexed(ledgers) { index, ledger ->
                                 Surface(
-                                    color = if (index == selectedIndex) Color(0xFF0D47A1) else Color(0xFFFFE082),
+                                    color = if (index == selectedIndex) Color(0xFF1E293B) else Color(0xFFF8FAFC),
                                     contentColor = if (index == selectedIndex) Color.White else Color.Black,
                                     modifier = Modifier
                                         .fillMaxWidth()

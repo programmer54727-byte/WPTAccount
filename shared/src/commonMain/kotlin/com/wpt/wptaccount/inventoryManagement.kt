@@ -211,7 +211,8 @@ fun UnitsTab(company: Company) {
                                 val avgRate = if (totalQty > 0) totalValue / totalQty else 0.0
 
                                 Surface(
-                                    color = Color(0xFFFFE082),
+                                    color = Color(0xFFF8FAFC),
+                                    contentColor = Color.Black,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 1.dp)
@@ -418,7 +419,8 @@ fun StockGroupsTab(company: Company) {
                                 val avgRate = if (totalQty > 0) totalValue / totalQty else 0.0
 
                                 Surface(
-                                    color = Color(0xFFFFE082),
+                                    color = Color(0xFFF8FAFC),
+                                    contentColor = Color.Black,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 1.dp)
@@ -585,6 +587,8 @@ fun StockItemsTab(company: Company) {
     // Opening Balance
     var qty by remember { mutableStateOf("0") }
     var rate by remember { mutableStateOf("0") }
+    var saveError by remember { mutableStateOf<String?>(null) }
+    var isSaving by remember { mutableStateOf(false) }
     
     val scope = rememberCoroutineScope()
 
@@ -716,7 +720,7 @@ fun StockItemsTab(company: Company) {
                                 val value = item.current_quantity * item.opening_rate
                                 
                                 Surface(
-                                    color = if (index == selectedIndex) Color(0xFF0D47A1) else Color(0xFFFFE082),
+                                    color = if (index == selectedIndex) Color(0xFF1E293B) else Color(0xFFF8FAFC),
                                     contentColor = if (index == selectedIndex) Color.White else Color.Black,
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -742,7 +746,7 @@ fun StockItemsTab(company: Company) {
                                                 style = MaterialTheme.typography.bodySmall
                                             )
                                             Text(
-                                                text = item.gst_rate.format(),
+                                                text = if (item.gst_rate % 1.0 == 0.0) "${item.gst_rate.toInt()}%" else "${item.gst_rate.format(2)}%",
                                                 modifier = Modifier.weight(0.8f),
                                                 style = MaterialTheme.typography.bodySmall
                                             )
@@ -822,17 +826,28 @@ fun StockItemsTab(company: Company) {
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            modifier = Modifier.fillMaxWidth(0.95f),
+            modifier = Modifier.widthIn(max = 800.dp).fillMaxWidth(0.95f),
             properties = DialogProperties(usePlatformDefaultWidth = false),
             title = { Text("Stock Item Creation") },
             text = {
                 val scrollState = rememberScrollState()
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth(0.9f)
+                        .fillMaxWidth()
+                        .heightIn(max = 500.dp)
                         .verticalScroll(scrollState),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    if (saveError != null) {
+                        Text(
+                            text = saveError!!,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
                     // Header Section
                     Column {
                         InventoryField("Name", name) { name = it }
@@ -893,33 +908,51 @@ fun StockItemsTab(company: Company) {
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    scope.launch {
-                        val item = StockItem(
-                            company_id = company.id!!,
-                            item_name = name,
-                            alias = alias,
-                            unit_id = selectedUnitId,
-                            group_id = selectedGroupId,
-                            gst_applicability = gstApplicability,
-                            hsn_sac_details = "Specify Details Here",
-                            hsn_sac_number = hsnNumber,
-                            hsn_description = hsnDescription,
-                            gst_rate_details = "Specify Details Here",
-                            taxability_type = taxabilityType,
-                            gst_rate = gstRate.toDoubleOrNull() ?: 0.0,
-                            type_of_supply = typeOfSupply,
-                            opening_quantity = qty.toDoubleOrNull() ?: 0.0,
-                            opening_rate = rate.toDoubleOrNull() ?: 0.0,
-                            current_quantity = qty.toDoubleOrNull() ?: 0.0
-                        )
-                        supabase.from("stock_items").insert(item)
-                        showDialog = false
-                        // Reset fields
-                        name = ""; alias = ""; qty = "0"; rate = "0"
-                        fetchData()
+                Button(
+                    onClick = {
+                        scope.launch {
+                            saveError = null
+                            isSaving = true
+                            try {
+                                val item = StockItem(
+                                    company_id = company.id!!,
+                                    item_name = name,
+                                    alias = alias,
+                                    unit_id = selectedUnitId,
+                                    group_id = selectedGroupId,
+                                    gst_applicability = gstApplicability,
+                                    hsn_sac_details = "Specify Details Here",
+                                    hsn_sac_number = hsnNumber,
+                                    hsn_description = hsnDescription,
+                                    gst_rate_details = "Specify Details Here",
+                                    taxability_type = taxabilityType,
+                                    gst_rate = gstRate.toDoubleOrNull() ?: 0.0,
+                                    type_of_supply = typeOfSupply,
+                                    opening_quantity = qty.toDoubleOrNull() ?: 0.0,
+                                    opening_rate = rate.toDoubleOrNull() ?: 0.0,
+                                    current_quantity = qty.toDoubleOrNull() ?: 0.0
+                                )
+                                supabase.from("stock_items").insert(item)
+                                showDialog = false
+                                // Reset fields
+                                name = ""; alias = ""; qty = "0"; rate = "0"
+                                fetchData()
+                            } catch (e: Exception) {
+                                println("Error saving stock item: ${e.message}")
+                                saveError = "Failed to save item. Please check your connection."
+                            } finally {
+                                isSaving = false
+                            }
+                        }
+                    },
+                    enabled = !isSaving
+                ) {
+                    if (isSaving) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                    } else {
+                        Text("Save")
                     }
-                }) { Text("Save") }
+                }
             },
             dismissButton = {
                 TextButton(onClick = { showDialog = false }) { Text("Cancel") }
@@ -1206,7 +1239,7 @@ fun FilteredStockItemsList(
                                 val value = item.current_quantity * item.opening_rate
                                 
                                 Surface(
-                                    color = if (index == selectedIndex) Color(0xFF0D47A1) else Color(0xFFFFE082),
+                                    color = if (index == selectedIndex) Color(0xFF1E293B) else Color(0xFFF8FAFC),
                                     contentColor = if (index == selectedIndex) Color.White else Color.Black,
                                     modifier = Modifier
                                         .fillMaxWidth()

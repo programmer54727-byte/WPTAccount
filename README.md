@@ -3,9 +3,9 @@
 This is a modern **Kotlin Multiplatform (KMP)** application that works on **Android**, **Desktop (JVM)**, and **Web (Wasm)**. It uses **Jetpack Compose** for the UI and **Supabase** as the backend.
 
 ## 🚀 Features
-- **User Authentication:** Sign up with email, optional OTP verification, and secure Login.
+- **User Authentication:** Secure email-based signup and login with sanitized error messages to prevent sensitive data leaks.
 - **Session Persistence:** Stay logged in across app restarts using `multiplatform-settings`.
-- **Company Management:** Create and manage multiple companies.
+- **Company Management:** Create and manage multiple companies with professional, centered form layouts.
 - **Automated Accounting Setup:**
     - Automatically creates **34 standard Tally groups** for every company.
     - Automatically initializes default ledgers (**Cash** and **Profit & Loss A/c**).
@@ -13,23 +13,27 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
 - **Ledger Management:**
     - **Groups & Ledgers:** Full management of accounting groups and individual ledgers with aggregated totals.
     - **Smart Adaptive Form:** Intelligent ledger creation dialog that dynamically shows/hides sections based on the chosen accounting group:
-        - **Bank Details:** Support for A/c No, IFSC, and Branch for Bank and Capital accounts.
+        - **Bank Details:** Auto-opens for bank-related and Capital accounts.
         - **Credit Control:** Bill-by-bill tracking and credit periods for Sundry Debtors/Creditors, Branches, Loans & Advances, and Current Liabilities.
-        - **Statutory Details:** GST and Tax calculation settings for Duties & Taxes.
+        - **Statutory Details:** Professional GST, HSN/SAC, and Tax calculation settings for Duties & Taxes, Income, and Expense groups.
+        - **Inventory & Costing:** Specialized fields for Income/Expense groups to track inventory impact and cost centre applicability.
         - **Optimized for Internal A/cs:** Automatically hides irrelevant sections for "Cash-in-Hand" and "Provisions" to speed up data entry.
     - **Automated Entry:** Intelligent auto-filling of mailing names from ledger names with optional manual override.
     - **Monthly Summaries:** Detailed drill-down view showing monthly **Debits**, **Credits**, and rolling **Balances**.
 - **Inventory Management:**
     - **Units & Groups:** Full lifecycle management with aggregated summaries (Total Qty, Avg Rate, Total Value).
-    - **Tally-Style Stock Summary:** Professional table layout displaying Particulars, HSN, GST, and Closing Balances.
+    - **Tally-Style Stock Summary:** Professional table layout displaying Particulars, HSN, GST (formatted as %), and Closing Balances.
     - **Monthly Summary Drill-down:** Detailed monthly breakdown of Inwards, Outwards, and rolling Closing Balances with Rate columns.
 - **Professional Workflows:**
     - **Keyboard Navigation:** Full support for **Arrow keys** to select items and **Enter** to drill down project-wide.
     - **System-Based Rotation:** Follows standard Android auto-rotate settings for all reports, giving users control over their viewing orientation.
     - **System Back Handling:** Native back button support on Android for intuitive screen navigation.
-- **Responsive & Dense UI:**
-    - **Horizontal Table Scrolling:** Wide financial tables now feature smooth horizontal scrolling in portrait mode, ensuring all data (Quantity, Rate, Value) is accessible without squashing columns.
-    - **High-Density Lists:** Optimized padding and header heights to display **5-6+ items** simultaneously on mobile.
+    - **Robust Data Saving:** Comprehensive error handling (try-catch) on all save operations to prevent app crashes and provide clear user feedback.
+- **Responsive & Modern UI:**
+    - **Modern Enterprise Theme:** High-end **Slate & Navy** color palette for a professional financial experience.
+    - **Horizontal Table Scrolling:** Wide financial tables feature smooth horizontal scrolling in portrait mode, ensuring all data is accessible.
+    - **Centered Desktop Forms:** All entry forms are centered with a `800.dp` max-width on desktop for a polished, web-like feel.
+    - **High-Density Lists:** Optimized padding and header heights to maximize data visibility on mobile.
 - **Cross-Platform:** 100% shared UI and business logic across Android, Desktop, and Web.
 - **Secure Backend:** Uses Supabase Auth and advanced Row Level Security (RLS) policies for data isolation.
 

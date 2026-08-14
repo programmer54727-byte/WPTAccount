@@ -40,6 +40,8 @@ fun GstDetailsScreen(
     
     var einvoiceApplicable by remember { mutableStateOf(false) }
     var registrationName by remember { mutableStateOf("") }
+    var saveError by remember { mutableStateOf<String?>(null) }
+    var isSaving by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
@@ -83,29 +85,46 @@ fun GstDetailsScreen(
                     }
                 },
                 actions = {
-                    Button(onClick = {
-                        scope.launch {
-                            val newDetails = GstDetails(
-                                company_id = company.id!!,
-                                registration_status = regStatus,
-                                state = state,
-                                registration_type = regType,
-                                is_other_territory_assessee = isOtherTerritory,
-                                gstin_uin = gstin,
-                                gstr1_periodicity = periodicity,
-                                gst_username = gstUsername,
-                                filing_mode = modeOfFiling,
-                                eway_bill_applicable = ewayBillApplicable,
-                                eway_bill_date = ewayBillDate.ifEmpty { null },
-                                eway_bill_intrastate = ewayBillIntrastate,
-                                einvoice_applicable = einvoiceApplicable,
-                                registration_name = registrationName
-                            )
-                            supabase.from("gst_details").upsert(newDetails)
-                            onBack()
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                saveError = null
+                                isSaving = true
+                                try {
+                                    val newDetails = GstDetails(
+                                        id = gstDetails?.id, // CRITICAL FIX: Add ID to allow update instead of duplicate
+                                        company_id = company.id!!,
+                                        registration_status = regStatus,
+                                        state = state,
+                                        registration_type = regType,
+                                        is_other_territory_assessee = isOtherTerritory,
+                                        gstin_uin = gstin,
+                                        gstr1_periodicity = periodicity,
+                                        gst_username = gstUsername,
+                                        filing_mode = modeOfFiling,
+                                        eway_bill_applicable = ewayBillApplicable,
+                                        eway_bill_date = ewayBillDate.ifEmpty { null },
+                                        eway_bill_intrastate = ewayBillIntrastate,
+                                        einvoice_applicable = einvoiceApplicable,
+                                        registration_name = registrationName
+                                    )
+                                    supabase.from("gst_details").upsert(newDetails)
+                                    onBack()
+                                } catch (e: Exception) {
+                                    println("Error saving GST details: ${e.message}")
+                                    saveError = "Failed to save data. Please check your connection."
+                                } finally {
+                                    isSaving = false
+                                }
+                            }
+                        },
+                        enabled = !isSaving
+                    ) {
+                        if (isSaving) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                        } else {
+                            Text("Save")
                         }
-                    }) {
-                        Text("Save")
                     }
                 }
             )
@@ -116,44 +135,56 @@ fun GstDetailsScreen(
                 CircularProgressIndicator()
             }
         } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp)
-                    .verticalScroll(scrollState),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Registration status : ", modifier = Modifier.width(150.dp))
-                    Text(regStatus, fontWeight = FontWeight.Bold)
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = 800.dp)
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 16.dp)
+                        .verticalScroll(scrollState),
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    if (saveError != null) {
+                        Text(
+                            text = saveError!!,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.fillMaxWidth(),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Registration status : ", modifier = Modifier.width(150.dp))
+                        Text(regStatus, fontWeight = FontWeight.Bold)
+                    }
+
+                    DividerWithLabel("GST Registration Details")
+                    
+                    GstField("State", state) { state = it }
+                    GstDropdown("Registration type", listOf("Regular", "Composition"), regType) { regType = it }
+                    GstSwitch("Assessee of Other Territory", isOtherTerritory) { isOtherTerritory = it }
+                    GstField("GSTIN/UIN", gstin) { gstin = it }
+                    GstDropdown("Periodicity of GSTR-1", listOf("Monthly", "Quarterly"), periodicity) { periodicity = it }
+
+                    DividerWithLabel("Connected GST Details")
+                    GstField("GST Username", gstUsername) { gstUsername = it }
+                    GstField("Mode of Filing", modeOfFiling) { modeOfFiling = it }
+
+                    DividerWithLabel("e-Way Bill Details")
+                    GstSwitch("e-Way Bill applicable", ewayBillApplicable) { ewayBillApplicable = it }
+                    if (ewayBillApplicable) {
+                        GstField("Applicable from", ewayBillDate) { ewayBillDate = it }
+                        GstSwitch("Applicable for intrastate", ewayBillIntrastate) { ewayBillIntrastate = it }
+                    }
+
+                    DividerWithLabel("e-Invoice Details")
+                    GstSwitch("e-Invoicing applicable", einvoiceApplicable) { einvoiceApplicable = it }
+
+                    GstField("Registration Name", registrationName) { registrationName = it }
+                    
+                    Spacer(modifier = Modifier.height(100.dp))
                 }
-
-                DividerWithLabel("GST Registration Details")
-                
-                GstField("State", state) { state = it }
-                GstDropdown("Registration type", listOf("Regular", "Composition"), regType) { regType = it }
-                GstSwitch("Assessee of Other Territory", isOtherTerritory) { isOtherTerritory = it }
-                GstField("GSTIN/UIN", gstin) { gstin = it }
-                GstDropdown("Periodicity of GSTR-1", listOf("Monthly", "Quarterly"), periodicity) { periodicity = it }
-
-                DividerWithLabel("Connected GST Details")
-                GstField("GST Username", gstUsername) { gstUsername = it }
-                GstField("Mode of Filing", modeOfFiling) { modeOfFiling = it }
-
-                DividerWithLabel("e-Way Bill Details")
-                GstSwitch("e-Way Bill applicable", ewayBillApplicable) { ewayBillApplicable = it }
-                if (ewayBillApplicable) {
-                    GstField("Applicable from", ewayBillDate) { ewayBillDate = it }
-                    GstSwitch("Applicable for intrastate", ewayBillIntrastate) { ewayBillIntrastate = it }
-                }
-
-                DividerWithLabel("e-Invoice Details")
-                GstSwitch("e-Invoicing applicable", einvoiceApplicable) { einvoiceApplicable = it }
-
-                GstField("Registration Name", registrationName) { registrationName = it }
-                
-                Spacer(modifier = Modifier.height(100.dp)) // Extra space for future expansion
             }
         }
     }
