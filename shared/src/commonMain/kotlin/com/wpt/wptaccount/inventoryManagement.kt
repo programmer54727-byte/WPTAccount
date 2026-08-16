@@ -141,6 +141,11 @@ fun UnitsTab(company: Company) {
     var units by remember { mutableStateOf<List<UnitOfMeasure>>(emptyList()) }
     var items by remember { mutableStateOf<List<StockItem>>(emptyList()) }
     var selectedUnitForItems by remember { mutableStateOf<UnitOfMeasure?>(null) }
+    
+    // Selection and Navigation
+    var selectedIndex by remember { mutableStateOf(0) }
+    val focusRequester = remember { FocusRequester() }
+    
     var showDialog by remember { mutableStateOf(false) }
     var unitToDelete by remember { mutableStateOf<UnitOfMeasure?>(null) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
@@ -160,7 +165,10 @@ fun UnitsTab(company: Company) {
         }
     }
 
-    LaunchedEffect(Unit) { fetchData() }
+    LaunchedEffect(Unit) { 
+        fetchData()
+        focusRequester.requestFocus()
+    }
 
     BackHandler(enabled = selectedUnitForItems != null) {
         selectedUnitForItems = null
@@ -175,7 +183,31 @@ fun UnitsTab(company: Company) {
             onBack = { selectedUnitForItems = null }
         )
     } else {
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .focusRequester(focusRequester)
+                .focusable()
+                .onPreviewKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyDown) {
+                        when (event.key) {
+                            Key.DirectionDown -> {
+                                if (selectedIndex < units.size - 1) selectedIndex++
+                                true
+                            }
+                            Key.DirectionUp -> {
+                                if (selectedIndex > 0) selectedIndex--
+                                true
+                            }
+                            Key.Enter -> {
+                                if (units.isNotEmpty()) selectedUnitForItems = units[selectedIndex]
+                                true
+                            }
+                            else -> false
+                        }
+                    } else false
+                }
+        ) {
             val isMobile = maxWidth < 600.dp
             val qtyWidth = if (isMobile) 70.dp else 100.dp
             val rateWidth = if (isMobile) 70.dp else 100.dp
@@ -183,13 +215,14 @@ fun UnitsTab(company: Company) {
             val scrollState = rememberScrollState()
 
             Box(modifier = Modifier.fillMaxSize()) {
+                val constraints = this@BoxWithConstraints
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                         .horizontalScroll(scrollState)
                 ) {
-                    val contentWidth = if (isMobile) 800.dp else this@BoxWithConstraints.maxWidth
+                    val contentWidth = if (isMobile) 800.dp else constraints.maxWidth
                     
                     Column(modifier = Modifier.width(contentWidth)) {
                         // Table Header
@@ -204,19 +237,25 @@ fun UnitsTab(company: Company) {
                         HorizontalDivider(thickness = 1.dp, color = Color.Black)
 
                         LazyColumn(modifier = Modifier.weight(1f)) {
-                            items(units) { unit ->
+                            itemsIndexed(units) { index, unit ->
                                 val unitItems = items.filter { it.unit_id == unit.id }
                                 val totalQty = unitItems.sumOf { it.current_quantity }
                                 val totalValue = unitItems.sumOf { it.current_quantity * it.opening_rate }
                                 val avgRate = if (totalQty > 0) totalValue / totalQty else 0.0
 
                                 Surface(
-                                    color = Color(0xFFF8FAFC),
-                                    contentColor = Color.Black,
+                                    color = if (index == selectedIndex) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                    contentColor = if (index == selectedIndex) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 1.dp)
-                                        .clickable { selectedUnitForItems = unit }
+                                        .clickable { 
+                                            if (selectedIndex == index) {
+                                                selectedUnitForItems = unit
+                                            } else {
+                                                selectedIndex = index
+                                            }
+                                        }
                                 ) {
                                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Text(unit.unit_symbol, modifier = Modifier.weight(1f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
@@ -226,7 +265,7 @@ fun UnitsTab(company: Company) {
                                         Text(totalValue.format(), modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                         
                                         IconButton(onClick = { unitToDelete = unit }, modifier = Modifier.size(40.dp)) {
-                                            Icon(Icons.Default.Delete, contentDescription = "Delete Unit", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                                            Icon(Icons.Default.Delete, contentDescription = "Delete Unit", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
                                         }
                                     }
                                 }
@@ -338,6 +377,11 @@ fun StockGroupsTab(company: Company) {
     var items by remember { mutableStateOf<List<StockItem>>(emptyList()) }
     var units by remember { mutableStateOf<List<UnitOfMeasure>>(emptyList()) }
     var selectedGroupForItems by remember { mutableStateOf<StockGroup?>(null) }
+    
+    // Selection and Navigation
+    var selectedIndex by remember { mutableStateOf(0) }
+    val focusRequester = remember { FocusRequester() }
+    
     var showDialog by remember { mutableStateOf(false) }
     var groupToDelete by remember { mutableStateOf<StockGroup?>(null) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
@@ -364,7 +408,10 @@ fun StockGroupsTab(company: Company) {
         }
     }
 
-    LaunchedEffect(Unit) { fetchData() }
+    LaunchedEffect(Unit) { 
+        fetchData()
+        focusRequester.requestFocus()
+    }
 
     BackHandler(enabled = selectedGroupForItems != null) {
         selectedGroupForItems = null
@@ -379,7 +426,31 @@ fun StockGroupsTab(company: Company) {
             onBack = { selectedGroupForItems = null }
         )
     } else {
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .focusRequester(focusRequester)
+                .focusable()
+                .onPreviewKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyDown) {
+                        when (event.key) {
+                            Key.DirectionDown -> {
+                                if (selectedIndex < groups.size - 1) selectedIndex++
+                                true
+                            }
+                            Key.DirectionUp -> {
+                                if (selectedIndex > 0) selectedIndex--
+                                true
+                            }
+                            Key.Enter -> {
+                                if (groups.isNotEmpty()) selectedGroupForItems = groups[selectedIndex]
+                                true
+                            }
+                            else -> false
+                        }
+                    } else false
+                }
+        ) {
             val isMobile = maxWidth < 600.dp
             val qtyWidth = if (isMobile) 70.dp else 100.dp
             val rateWidth = if (isMobile) 70.dp else 100.dp
@@ -387,13 +458,14 @@ fun StockGroupsTab(company: Company) {
             val scrollState = rememberScrollState()
 
             Box(modifier = Modifier.fillMaxSize()) {
+                val constraints = this@BoxWithConstraints
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                         .horizontalScroll(scrollState)
                 ) {
-                    val contentWidth = if (isMobile) 800.dp else this@BoxWithConstraints.maxWidth
+                    val contentWidth = if (isMobile) 800.dp else constraints.maxWidth
                     
                     Column(modifier = Modifier.width(contentWidth)) {
                         // Table Header
@@ -407,7 +479,7 @@ fun StockGroupsTab(company: Company) {
                         HorizontalDivider(thickness = 1.dp, color = Color.Black)
 
                         LazyColumn(modifier = Modifier.weight(1f)) {
-                            items(groups) { group ->
+                            itemsIndexed(groups) { index, group ->
                                 val groupItems = items.filter { it.group_id == group.id }
                                 val totalValue = groupItems.sumOf { it.current_quantity * it.opening_rate }
                                 
@@ -419,12 +491,18 @@ fun StockGroupsTab(company: Company) {
                                 val avgRate = if (totalQty > 0) totalValue / totalQty else 0.0
 
                                 Surface(
-                                    color = Color(0xFFF8FAFC),
-                                    contentColor = Color.Black,
+                                    color = if (index == selectedIndex) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                    contentColor = if (index == selectedIndex) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 1.dp)
-                                        .clickable { selectedGroupForItems = group }
+                                        .clickable { 
+                                            if (selectedIndex == index) {
+                                                selectedGroupForItems = group
+                                            } else {
+                                                selectedIndex = index
+                                            }
+                                        }
                                 ) {
                                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Text(group.group_name, modifier = Modifier.weight(1f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
@@ -439,7 +517,7 @@ fun StockGroupsTab(company: Company) {
                                         Text(totalValue.format(), modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                         
                                         IconButton(onClick = { groupToDelete = group }, modifier = Modifier.size(40.dp)) {
-                                            Icon(Icons.Default.Delete, contentDescription = "Delete Group", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                                            Icon(Icons.Default.Delete, contentDescription = "Delete Group", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
                                         }
                                     }
                                 }
@@ -662,13 +740,14 @@ fun StockItemsTab(company: Company) {
             val scrollState = rememberScrollState()
 
             Box(modifier = Modifier.fillMaxSize()) {
+                val constraints = this@BoxWithConstraints
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                         .horizontalScroll(scrollState)
                 ) {
-                    val contentWidth = if (isMobile) 800.dp else this@BoxWithConstraints.maxWidth
+                    val contentWidth = if (isMobile) 800.dp else constraints.maxWidth
                     
                     Column(modifier = Modifier.width(contentWidth)) {
                         // Table Header
@@ -720,14 +799,17 @@ fun StockItemsTab(company: Company) {
                                 val value = item.current_quantity * item.opening_rate
                                 
                                 Surface(
-                                    color = if (index == selectedIndex) Color(0xFF1E293B) else Color(0xFFF8FAFC),
-                                    contentColor = if (index == selectedIndex) Color.White else Color.Black,
+                                    color = if (index == selectedIndex) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                    contentColor = if (index == selectedIndex) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 1.dp)
                                         .clickable { 
-                                            selectedIndex = index
-                                            isSummaryMode = true 
+                                            if (selectedIndex == index) {
+                                                isSummaryMode = true
+                                            } else {
+                                                selectedIndex = index
+                                            }
                                         }
                                 ) {
                                     Row(
@@ -856,46 +938,44 @@ fun StockItemsTab(company: Company) {
 
                     HorizontalDivider()
 
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        // Left Column: General
-                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            InventoryDropdown("Under", groups.map { it.group_name }.plus("Primary"), 
-                                groups.find { it.id == selectedGroupId }?.group_name ?: "Primary") {
-                                selectedGroupId = groups.find { g -> g.group_name == it }?.id
-                            }
-                            InventoryDropdown("Units", units.map { it.unit_symbol }, 
-                                units.find { it.id == selectedUnitId }?.unit_symbol ?: "") {
-                                selectedUnitId = units.find { u -> u.unit_symbol == it }?.id ?: ""
-                            }
+                    // Section 1: General
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        InventoryDropdown("Under", groups.map { it.group_name }.plus("Primary"), 
+                            groups.find { it.id == selectedGroupId }?.group_name ?: "Primary") {
+                            selectedGroupId = groups.find { g -> g.group_name == it }?.id
                         }
-
-                        Spacer(Modifier.width(16.dp))
-
-                        // Right Column: Statutory
-                        Column(modifier = Modifier.weight(1.2f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Statutory Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                            InventoryDropdown("GST applicability", listOf("Applicable", "Not Applicable", "Undefined"), gstApplicability) { gstApplicability = it }
-                            
-                            if (gstApplicability == "Applicable") {
-                                Text("HSN/SAC & Related Details", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                                InventoryField("HSN/SAC", hsnNumber) { hsnNumber = it }
-                                InventoryField("Description", hsnDescription) { hsnDescription = it }
-                                
-                                Spacer(Modifier.height(8.dp))
-                                Text("GST Rate & Related Details", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                                
-                                InventoryDropdown("Taxability Type", listOf("Taxable", "Nil Rated", "Exempt"), taxabilityType) { taxabilityType = it }
-                                if (taxabilityType == "Taxable") {
-                                    InventoryField("GST Rate (%)", gstRate) { gstRate = it }
-                                }
-                                InventoryDropdown("Type of Supply", listOf("Goods", "Services", "Capital Goods"), typeOfSupply) { typeOfSupply = it }
-                            }
+                        InventoryDropdown("Units", units.map { it.unit_symbol }, 
+                            units.find { it.id == selectedUnitId }?.unit_symbol ?: "") {
+                            selectedUnitId = units.find { u -> u.unit_symbol == it }?.id ?: ""
                         }
                     }
 
                     HorizontalDivider()
 
-                    // Footer Section: Opening Balance
+                    // Section 2: Statutory
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Statutory Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        InventoryDropdown("GST applicability", listOf("Applicable", "Not Applicable", "Undefined"), gstApplicability) { gstApplicability = it }
+                        
+                        if (gstApplicability == "Applicable") {
+                            Text("HSN/SAC & Related Details", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            InventoryField("HSN/SAC", hsnNumber) { hsnNumber = it }
+                            InventoryField("Description", hsnDescription) { hsnDescription = it }
+                            
+                            Spacer(Modifier.height(8.dp))
+                            Text("GST Rate & Related Details", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            
+                            InventoryDropdown("Taxability Type", listOf("Taxable", "Nil Rated", "Exempt"), taxabilityType) { taxabilityType = it }
+                            if (taxabilityType == "Taxable") {
+                                InventoryField("GST Rate (%)", gstRate) { gstRate = it }
+                            }
+                            InventoryDropdown("Type of Supply", listOf("Goods", "Services", "Capital Goods"), typeOfSupply) { typeOfSupply = it }
+                        }
+                    }
+
+                    HorizontalDivider()
+
+                    // Section 3: Opening Balance
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text("Opening Balance", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -996,13 +1076,14 @@ fun StockItemMonthlySummary(
             val scrollState = rememberScrollState()
 
             Box(modifier = Modifier.fillMaxSize()) {
+                val constraints = this@BoxWithConstraints
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp)
                         .horizontalScroll(scrollState)
                 ) {
-                val contentWidth = if (isMobile) 1000.dp else this@BoxWithConstraints.maxWidth
+                val contentWidth = if (isMobile) 1000.dp else constraints.maxWidth
                     
                     Column(modifier = Modifier.width(contentWidth)) {
                         // Header
@@ -1182,13 +1263,14 @@ fun FilteredStockItemsList(
             val scrollState = rememberScrollState()
 
             Box(modifier = Modifier.fillMaxSize()) {
+                val constraints = this@BoxWithConstraints
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                         .horizontalScroll(scrollState)
                 ) {
-                    val contentWidth = if (isMobile) 800.dp else this@BoxWithConstraints.maxWidth
+                    val contentWidth = if (isMobile) 800.dp else constraints.maxWidth
                     
                     Column(modifier = Modifier.width(contentWidth)) {
                         // Header with Back Button
@@ -1239,14 +1321,17 @@ fun FilteredStockItemsList(
                                 val value = item.current_quantity * item.opening_rate
                                 
                                 Surface(
-                                    color = if (index == selectedIndex) Color(0xFF1E293B) else Color(0xFFF8FAFC),
-                                    contentColor = if (index == selectedIndex) Color.White else Color.Black,
+                                    color = if (index == selectedIndex) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                    contentColor = if (index == selectedIndex) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 1.dp)
                                         .clickable { 
-                                            selectedIndex = index
-                                            isSummaryMode = true 
+                                            if (selectedIndex == index) {
+                                                isSummaryMode = true
+                                            } else {
+                                                selectedIndex = index
+                                            }
                                         }
                                 ) {
                                     Row(

@@ -79,6 +79,11 @@ fun LedgerGroupsTab(company: Company) {
     var groups by remember { mutableStateOf<List<AccountingGroup>>(emptyList()) }
     var ledgers by remember { mutableStateOf<List<Ledger>>(emptyList()) }
     var selectedGroupForLedgers by remember { mutableStateOf<AccountingGroup?>(null) }
+    
+    // Selection and Navigation
+    var selectedIndex by remember { mutableStateOf(0) }
+    val focusRequester = remember { FocusRequester() }
+    
     val scope = rememberCoroutineScope()
 
     fun fetchData() {
@@ -93,7 +98,10 @@ fun LedgerGroupsTab(company: Company) {
         }
     }
 
-    LaunchedEffect(Unit) { fetchData() }
+    LaunchedEffect(Unit) { 
+        fetchData()
+        focusRequester.requestFocus()
+    }
 
     BackHandler(enabled = selectedGroupForLedgers != null) {
         selectedGroupForLedgers = null
@@ -108,7 +116,31 @@ fun LedgerGroupsTab(company: Company) {
             onBack = { selectedGroupForLedgers = null }
         )
     } else {
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .focusRequester(focusRequester)
+                .focusable()
+                .onPreviewKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyDown) {
+                        when (event.key) {
+                            Key.DirectionDown -> {
+                                if (selectedIndex < groups.size - 1) selectedIndex++
+                                true
+                            }
+                            Key.DirectionUp -> {
+                                if (selectedIndex > 0) selectedIndex--
+                                true
+                            }
+                            Key.Enter -> {
+                                if (groups.isNotEmpty()) selectedGroupForLedgers = groups[selectedIndex]
+                                true
+                            }
+                            else -> false
+                        }
+                    } else false
+                }
+        ) {
             val isMobile = maxWidth < 600.dp
             val balanceWidth = if (isMobile) 100.dp else 150.dp
             val scrollState = rememberScrollState()
@@ -132,17 +164,23 @@ fun LedgerGroupsTab(company: Company) {
                     HorizontalDivider(thickness = 1.dp, color = Color.Black)
 
                     LazyColumn(modifier = Modifier.weight(1f)) {
-                        items(groups) { group ->
+                        itemsIndexed(groups) { index, group ->
                             val groupLedgers = ledgers.filter { it.group_id == group.id }
                             val totalBalance = groupLedgers.sumOf { it.current_balance }
 
                             Surface(
-                                color = Color(0xFFF8FAFC),
-                                contentColor = Color.Black,
+                                color = if (index == selectedIndex) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                contentColor = if (index == selectedIndex) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 1.dp)
-                                    .clickable { selectedGroupForLedgers = group }
+                                    .clickable { 
+                                        if (selectedIndex == index) {
+                                            selectedGroupForLedgers = group
+                                        } else {
+                                            selectedIndex = index
+                                        }
+                                    }
                             ) {
                                 Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Text(group.group_name, modifier = Modifier.weight(1f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
@@ -311,14 +349,17 @@ fun LedgersTab(company: Company) {
                                 val groupName = groups.find { it.id == ledger.group_id }?.group_name ?: ""
                                 
                                 Surface(
-                                    color = if (index == selectedIndex) Color(0xFF1E293B) else Color(0xFFF8FAFC),
-                                    contentColor = if (index == selectedIndex) Color.White else Color.Black,
+                                    color = if (index == selectedIndex) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                    contentColor = if (index == selectedIndex) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 1.dp)
                                         .clickable { 
-                                            selectedIndex = index
-                                            isSummaryMode = true 
+                                            if (selectedIndex == index) {
+                                                isSummaryMode = true 
+                                            } else {
+                                                selectedIndex = index
+                                            }
                                         }
                                 ) {
                                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -385,6 +426,36 @@ fun LedgersTab(company: Company) {
                 val selectedGroup = groups.find { it.id == selectedGroupId }
                 val groupName = selectedGroup?.group_name ?: ""
                 
+                // Group Categorization
+                val isBankRelated = groupName.contains("Bank", ignoreCase = true)
+                val isPartyRelated = groupName.contains("Sundry", ignoreCase = true) || 
+                                    groupName.contains("Branch", ignoreCase = true) || 
+                                    groupName.contains("Current Liabilities", ignoreCase = true) || 
+                                    groupName.contains("Loans & Advances", ignoreCase = true)
+                val isLoanRelated = groupName.contains("Loans", ignoreCase = true) || 
+                                   groupName.contains("Secured", ignoreCase = true) || 
+                                   groupName.contains("Unsecured", ignoreCase = true)
+                val isRevenueRelated = groupName.contains("Sales", ignoreCase = true) || 
+                                      groupName.contains("Purchase", ignoreCase = true) || 
+                                      groupName.contains("Income", ignoreCase = true) || 
+                                      groupName.contains("Expense", ignoreCase = true)
+                val isFixedAsset = groupName.contains("Fixed Assets", ignoreCase = true) || 
+                                  groupName.contains("Investments", ignoreCase = true)
+                val isCapital = groupName.contains("Capital", ignoreCase = true)
+                
+                val isInternalOnly = groupName.contains("Cash-in-Hand", ignoreCase = true) || 
+                                    groupName.contains("Provisions", ignoreCase = true) || 
+                                    groupName.contains("Reserves", ignoreCase = true) || 
+                                    groupName.contains("Retained", ignoreCase = true) || 
+                                    groupName.contains("Suspense", ignoreCase = true)
+
+                // Auto-set inventory affected for Sales/Purchase
+                LaunchedEffect(groupName) {
+                    if (groupName.contains("Sales", ignoreCase = true) || groupName.contains("Purchase", ignoreCase = true)) {
+                        inventoryAffected = true
+                    }
+                }
+
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -417,11 +488,8 @@ fun LedgersTab(company: Company) {
 
                     HorizontalDivider()
 
-                    // Section 2: Mailing Details
-                    val isInternalAccount = groupName.contains("Cash-in-Hand", ignoreCase = true) || 
-                                           groupName.contains("Provisions", ignoreCase = true)
-                    
-                    if (!isInternalAccount) {
+                    // Section 2: Mailing Details (Hidden for Internal accounts)
+                    if (!isInternalOnly) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("Mailing Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                             InventoryField("Name", mailingName) { 
@@ -436,25 +504,24 @@ fun LedgersTab(company: Company) {
 
                         HorizontalDivider()
 
-                        // Section 3: Tax Registration
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Tax Registration Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                            InventoryField("PAN/IT No.", panItNumber) { panItNumber = it }
-                            InventoryDropdown("Registration Type", listOf("Regular", "Composition", "Consumer", "Unregistered"), gstRegistrationType) {
-                                gstRegistrationType = it
+                        // Section 3: Tax Registration (Show for Parties, Loans, Capital)
+                        if (isPartyRelated || isLoanRelated || isCapital || isFixedAsset) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("Tax Registration Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                InventoryField("PAN/IT No.", panItNumber) { panItNumber = it }
+                                InventoryDropdown("Registration Type", listOf("Regular", "Composition", "Consumer", "Unregistered"), gstRegistrationType) {
+                                    gstRegistrationType = it
+                                }
+                                if (gstRegistrationType == "Regular" || gstRegistrationType == "Composition") {
+                                    InventoryField("GSTIN/UIN", gstinUin) { gstinUin = it }
+                                }
                             }
-                            if (gstRegistrationType == "Regular" || gstRegistrationType == "Composition") {
-                                InventoryField("GSTIN/UIN", gstinUin) { gstinUin = it }
-                            }
+                            HorizontalDivider()
                         }
-
-                        HorizontalDivider()
                     }
 
-                    // Section 4: Dynamic Group-Specific Details
-                    if ((groupName.contains("Bank", ignoreCase = true) || 
-                         groupName.contains("Capital", ignoreCase = true) || 
-                         groupName.contains("Current Liabilities", ignoreCase = true)) && !isInternalAccount) {
+                    // Section 4: Bank Details (Visible for Bank, Capital, Parties, Loans)
+                    if (isBankRelated || isCapital || isPartyRelated || isLoanRelated) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("Bank Account Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                             InventoryField("A/c No.", bankAccNo) { bankAccNo = it }
@@ -466,11 +533,8 @@ fun LedgersTab(company: Company) {
                         HorizontalDivider()
                     }
 
-                    if (groupName.contains("Sundry", ignoreCase = true) || 
-                        groupName.contains("Branch", ignoreCase = true) ||
-                        groupName.contains("Loans & Advances", ignoreCase = true) ||
-                        groupName.contains("Current Assets", ignoreCase = true) ||
-                        groupName.contains("Current Liabilities", ignoreCase = true)) {
+                    // Section 5: Credit Control (Visible for Parties, Branches, Loans, Assets/Liabilities)
+                    if (isPartyRelated || isLoanRelated) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("Credit Control Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -483,6 +547,7 @@ fun LedgersTab(company: Company) {
                         HorizontalDivider()
                     }
 
+                    // Section 6: Tax Details (For Duties & Taxes only)
                     if (groupName.contains("Duties & Taxes", ignoreCase = true)) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("Tax Calculation Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
@@ -497,7 +562,8 @@ fun LedgersTab(company: Company) {
                         HorizontalDivider()
                     }
 
-                    if (groupName.contains("Income", ignoreCase = true) || groupName.contains("Expense", ignoreCase = true)) {
+                    // Section 7: Inventory & Costing (For Revenue and Assets)
+                    if (isRevenueRelated || isFixedAsset) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("Inventory & Costing", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -519,7 +585,7 @@ fun LedgersTab(company: Company) {
                                 InventoryField("HSN/SAC Code", hsnSacCode) { hsnSacCode = it }
                                 InventoryField("HSN/SAC Description", hsnSacDesc) { hsnSacDesc = it }
                                 InventoryField("GST Rate (%)", taxRate) { taxRate = it }
-                                InventoryDropdown("Type of Supply", listOf("Goods", "Services", "Capital Goods"), supplyType) {
+                                InventoryDropdown("Type of Supply", if (isFixedAsset) listOf("Capital Goods") else listOf("Goods", "Services"), supplyType) {
                                     supplyType = it
                                 }
                             }
@@ -527,7 +593,7 @@ fun LedgersTab(company: Company) {
                         HorizontalDivider()
                     }
 
-                    // Section 5: Opening Balance
+                    // Section 8: Opening Balance
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             InventoryField("Opening Balance", openingBalance, modifier = Modifier.weight(1f)) { openingBalance = it }
@@ -718,14 +784,17 @@ fun FilteredLedgersList(
                         LazyColumn(modifier = Modifier.weight(1f)) {
                             itemsIndexed(ledgers) { index, ledger ->
                                 Surface(
-                                    color = if (index == selectedIndex) Color(0xFF1E293B) else Color(0xFFF8FAFC),
-                                    contentColor = if (index == selectedIndex) Color.White else Color.Black,
+                                    color = if (index == selectedIndex) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                    contentColor = if (index == selectedIndex) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 1.dp)
                                         .clickable { 
-                                            selectedIndex = index
-                                            isSummaryMode = true 
+                                            if (selectedIndex == index) {
+                                                isSummaryMode = true
+                                            } else {
+                                                selectedIndex = index
+                                            }
                                         }
                                 ) {
                                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {

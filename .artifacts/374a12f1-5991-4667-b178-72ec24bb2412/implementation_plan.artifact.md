@@ -1,45 +1,51 @@
-# Implementation Plan - Support Income and Expense Groups
+# Implementation Plan - Professional Group-Specific Ledger Logic
 
-This plan updates the Ledger creation system to handle **Direct/Indirect Expenses** and **Direct/Indirect Income** with professional fields such as "Inventory Affected" and detailed GST configurations.
+This plan implements a comprehensive "Smart Form" system that categorizes all 34 default accounting groups and shows only the relevant professional fields for each. This ensures the app behaves exactly like professional ERP software (TallyPrime).
+
+## Comprehensive Group Categorization
+
+| Category | Included Groups | Visible Sections |
+| :--- | :--- | :--- |
+| **Banking** | Bank Accounts, Bank OCC A/c, Bank OD A/c | Bank Details, Mailing Details |
+| **Parties & Loans** | Sundry Debtors/Creditors, Branch/Divisions, Current Liabilities, Loans & Advances (Asset), Secured/Unsecured Loans, Loans (Liability) | **Credit Control**, Bank Details, Mailing Details, Tax Registration (PAN) |
+| **Revenue/Nominal** | Purchase/Sales Accounts, All Direct/Indirect Income & Expenses | **Inventory Affected**, Cost Centres, Statutory Details |
+| **Capital** | Capital Account | Bank Details, Mailing Details, Tax Registration (PAN) |
+| **Fixed Assets** | Fixed Assets, Investments | Statutory Details (Type: Capital Goods), Mailing Details |
+| **Internal/Minimal** | Cash-in-Hand, Provisions, Reserves & Surplus, Retained Earnings, Suspense A/c | General Information, Opening Balance only |
 
 ## Proposed Changes
 
 ### [shared](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared)
 
-#### [MODIFY] [Ledger.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/Ledger.kt)
-- Add new fields to support revenue/expense accounting:
-    - `inventory_affected`: Boolean (default false)
-    - `cost_centres_applicable`: Boolean (default false)
-    - `gst_applicable_type`: String (e.g., "Applicable", "Not Applicable")
-    - `supply_type`: String (e.g., "Goods", "Services")
-    - `hsn_sac_code`: String?
-    - `hsn_sac_desc`: String?
-
 #### [MODIFY] [ledgerManagement.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/ledgerManagement.kt)
-- **Smart Group Logic**:
-    - Identify "Income" and "Expense" groups (Direct and Indirect).
-    - **Hide**: Mailing, Bank, and Credit sections for these groups to keep the form clean.
-    - **Show**:
-        - **Inventory & Costing Section**: Includes toggles for "Inventory Affected" and "Cost Centres".
-        - **GST Configuration Section**: Shows if GST is "Applicable". Includes HSN/SAC, Tax Rate, and Supply Type.
-- **Improved Validation**: Ensure that if "Inventory Affected" is selected, the user is aware it will impact stock costs.
-
-#### [MODIFY] [supabasetableandpolicy.sql](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/supabasetableandpolicy.sql)
-- Provide a migration script to add these new columns to the `ledgers` table.
+- **Implement Category Logic**: Create helper flags inside the `LedgerCreation` dialog:
+    - `isBankRelated`
+    - `isPartyOrLoan`
+    - `isRevenueRelated`
+    - `isAssetRelated`
+    - `isInternalOnly` (True for Cash, Provisions, Reserves, etc.)
+- **Update Conditional UI**:
+    - Use these flags to wrap the `Column` sections for Mailing, Tax, Bank, Credit, and Inventory.
+    - **Inventory Affected Toggle**: Specifically show and enable this for Purchase, Sales, and Direct Expenses.
+    - **Bank Details**: Enable for Parties and Loans (to store payment/disbursement info).
+- **Default State Handling**:
+    - If `isRevenueRelated` is true, automatically set `inventoryAffected` to `true` for Purchase/Sales.
 
 ## User Review Required
 
+> [!IMPORTANT]
+> **Loans & Liabilities**: I am enabling "Credit Control" (Bill-by-bill) and "Bank Details" for all Loan groups. This allows you to track loan disbursements and set repayment periods, which is essential for audit-ready accounting.
+
 > [!TIP]
-> This "Smart Form" approach ensures that if you are creating a "Salary Expense", you only see relevant options like "Cost Centres", without being bothered by "A/c Number" or "Mailing Address" fields.
+> After this update, if you create a "Wages" ledger (Direct Expense), you will see "Inventory Affected" and "GST". If you create "Petty Cash", you will only see the "Name".
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `./gradlew :shared:compileKotlinJvm` to verify data model and UI logic.
+- Run `./gradlew :shared:compileKotlinJvm` to verify UI logic.
 
 ### Manual Verification
-1.  **Expense Creation**: Select "Indirect Expenses".
-    - **Expected**: Mailing/Bank sections hide. "Inventory Affected" and GST sections appear.
-2.  **Income Creation**: Select "Direct Income".
-    - **Expected**: Similar behavior to Expenses.
-3.  **Data Persistence**: Save an expense with HSN details and verify it stores correctly.
+1.  **Test Loan**: Select "Secured Loans". Verify Bank and Mailing details appear.
+2.  **Test Purchase**: Select "Purchase Accounts". Verify "Inventory Affected" appears and defaults to Yes.
+3.  **Test Asset**: Select "Fixed Assets". Verify GST details appear.
+4.  **Test Internal**: Select "Reserves & Surplus". Verify Mailing/Bank/Tax sections are hidden.
