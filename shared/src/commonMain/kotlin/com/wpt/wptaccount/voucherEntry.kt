@@ -64,6 +64,40 @@ fun VoucherEntryScreen(
 
     val scope = rememberCoroutineScope()
 
+    suspend fun updateLedgerBalance(ledgerId: String, amount: Double, entryType: String) {
+        val ledger = supabase.from("ledgers").select {
+            filter { eq("id", ledgerId) }
+        }.decodeSingle<Ledger>()
+        
+        val group = groups.find { it.id == ledger.group_id }
+        val groupName = group?.group_name ?: ""
+        
+        // Define nature: True if normal balance is Debit (Assets/Expenses)
+        val isDebitNature = groupName.contains("Asset", ignoreCase = true) || 
+                           groupName.contains("Expense", ignoreCase = true) || 
+                           groupName.contains("Cash", ignoreCase = true) || 
+                           groupName.contains("Bank", ignoreCase = true) || 
+                           groupName.contains("Purchase", ignoreCase = true) || 
+                           groupName.contains("Stock", ignoreCase = true) || 
+                           groupName.contains("Investments", ignoreCase = true) || 
+                           groupName.contains("Advances", ignoreCase = true) || 
+                           groupName.contains("Deposits", ignoreCase = true)
+
+        val adjustment = if (isDebitNature) {
+            if (entryType == "Debit") amount else -amount
+        } else {
+            if (entryType == "Credit") amount else -amount
+        }
+
+        val newBalance = ledger.current_balance + adjustment
+        
+        supabase.from("ledgers").update({
+            set("current_balance", newBalance)
+        }) {
+            filter { eq("id", ledgerId) }
+        }
+    }
+
     fun fetchData() {
         scope.launch {
             try {
@@ -352,22 +386,26 @@ fun VoucherEntryScreen(
                                     }
                                 }
 
-                                // 3. Save Accounting Entries
+                                // 3. Save Accounting Entries & Update Balances
                                 // Party Entry
+                                val partyEntryType = if (voucherType == "Sale") "Debit" else "Credit"
                                 supabase.from("voucher_entries").insert(VoucherEntry(
                                     voucher_id = voucherId,
                                     ledger_id = selectedPartyId!!,
                                     amount = grandTotal,
-                                    entry_type = if (voucherType == "Sale") "Debit" else "Credit"
+                                    entry_type = partyEntryType
                                 ))
+                                updateLedgerBalance(selectedPartyId!!, grandTotal, partyEntryType)
                                 
                                 // Sales/Purchase Entry
+                                val ledgerEntryType = if (voucherType == "Sale") "Credit" else "Debit"
                                 supabase.from("voucher_entries").insert(VoucherEntry(
                                     voucher_id = voucherId,
                                     ledger_id = selectedLedgerId!!,
                                     amount = itemSubTotal,
-                                    entry_type = if (voucherType == "Sale") "Credit" else "Debit"
+                                    entry_type = ledgerEntryType
                                 ))
+                                updateLedgerBalance(selectedLedgerId!!, itemSubTotal, ledgerEntryType)
 
                                 // Tax Ledger Entries
                                 taxEntries.forEach { tax ->
@@ -376,8 +414,9 @@ fun VoucherEntryScreen(
                                             voucher_id = voucherId,
                                             ledger_id = tax.ledgerId,
                                             amount = tax.amount,
-                                            entry_type = if (voucherType == "Sale") "Credit" else "Debit"
+                                            entry_type = ledgerEntryType
                                         ))
+                                        updateLedgerBalance(tax.ledgerId, tax.amount, ledgerEntryType)
                                     }
                                 }
                                 

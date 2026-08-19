@@ -1,46 +1,39 @@
-# Implementation Plan - Dynamic Monthly Stock Summary
+# Implementation Plan - Fix Ledger Balance Updates
 
-This plan details how to replace the static monthly stock summary with real data fetched from Sale and Purchase vouchers. This will provide an accurate view of item movements (Inwards/Outwards) and rolling balances month-by-month.
+The user reported that ledger balances (like CGST 9%) are not updating after saving a Sale or Purchase voucher. This is because the app currently creates the accounting entries but does not update the `current_balance` summary column in the `ledgers` table.
 
 ## Proposed Changes
 
 ### [shared](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared)
 
-#### [MODIFY] [inventoryManagement.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/inventoryManagement.kt)
-- **Data Fetching in `StockItemMonthlySummary`**:
-    - Add a `LaunchedEffect` to fetch all `voucher_stock_items` associated with the current `item.id`.
-    - Join with the `vouchers` table to get the `date` and `voucher_type`.
-- **Processing Logic**:
-    - Group the fetched entries by month (April to March).
-    - Calculate **Inwards** (Total quantity and value from "Purchase" vouchers).
-    - Calculate **Outwards** (Total quantity and value from "Sale" vouchers).
-    - Calculate the **Rolling Closing Balance**:
-        - `Opening Balance` (April) = `Item's initial opening balance`.
-        - `Monthly Closing` = `Previous Closing` + `Monthly Inwards` - `Monthly Outwards`.
-- **UI Update**:
-    - Replace the empty strings in `SummaryRow` with the calculated monthly values.
-    - Update the **Grand Total** row to show the sum of all movements during the financial year.
+#### [MODIFY] [voucherEntry.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/voucherEntry.kt)
+- **Implement `updateLedgerBalance` Helper**:
+    - This internal function will fetch the latest balance of a ledger, determine its group's nature (Asset, Liability, etc.), and calculate the new balance based on the Debit/Credit entry.
+    - **Logic**:
+        - **Asset / Expense**: New Balance = `Current + Debit - Credit`.
+        - **Liability / Income**: New Balance = `Current - Debit + Credit`.
+- **Integrate into Save Logic**:
+    - Update the **Party Ledger** balance.
+    - Update the **Sales/Purchase Ledger** balance.
+    - Update all **Tax Ledger** balances.
+- **Atomic Updates**: Similar to the stock item fix, we will fetch the latest balance immediately before updating to ensure accuracy in multi-user environments.
 
 ## User Review Required
 
-> [!NOTE]
-> The summary will follow the standard financial year (April to March). If you have made entries in other months, they will appear in their respective rows.
+> [!IMPORTANT]
+> **Balance Synchronization**: This change ensures that the "Closing Balance" you see in your Ledger list is always in sync with your actual vouchers.
 
-> [!TIP]
-> This logic ensures that every time you save a Sale or Purchase, your Monthly Summary is updated instantly, providing a real-time audit trail for your inventory.
+> [!NOTE]
+> For "Duties & Taxes" (like CGST 9%), these are typically Liabilities. A Credit entry (which happens during a Sale) will increase the balance (money owed to the government).
 
 ## Verification Plan
 
-### Automated Tests
-- Run `./gradlew :shared:compileKotlinJvm` to verify data processing logic.
-
 ### Manual Verification
-1.  Open **Inventory > Items > [Select an Item] > Monthly Summary**.
-2.  **Initial State**: Should show the item's opening balance in the first row.
-3.  **Transaction Test**:
-    - Go to **Sale** and sell 5 units of this item in the month of August.
-    - Go back to the **Monthly Summary**.
-    - **Expected Result**: The "August" row should show 5 units in the "Outwards" column and the "Closing Balance" should decrease by 5.
-4.  **Purchase Test**:
-    - Record a **Purchase** for 10 units in September.
-    - **Expected Result**: The "September" row should show 10 units in "Inwards".
+1.  Check the current balance of "CGST 9%" (e.g., 0.00).
+2.  Create a **Sale** voucher.
+    - Add an item for 1000.
+    - Add "CGST 9%" ledger row (Amount: 90).
+3.  Save the voucher.
+4.  Go to **Ledgers**.
+5.  **Expected Result**: "CGST 9%" should now show a balance of **90.00**.
+6.  Repeat for a **Purchase** to verify the balance decreases/increases correctly.
