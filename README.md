@@ -10,30 +10,30 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - Automatically creates **34 standard Tally groups** for every company.
     - Automatically initializes default ledgers (**Cash** and **Profit & Loss A/c**).
     - **Smart Check:** Automatically initializes groups/ledgers for older companies when opened.
+- **Voucher Management (Sale & Purchase):**
+    - **Tally-Style Searchable Selectors:** Type names to filter parties, ledgers, or items instantly with full keyboard support (Arrows + Enter).
+    - **On-the-fly Creation (Alt+C):** Create missing ledgers or stock items directly from the voucher entry screen using keyboard shortcuts.
+    - **Flexible Tax Ledgers:** Replaced auto-GST with manual tax ledger selection from "Duties & Taxes", supporting custom rates (e.g., CGST 2.5%, SGST 2.5%) with automatic amount calculation.
+    - **Atomic Saving Logic:** Integrated transaction handling that saves the voucher, stock movements, and ledger entries while updating inventory hand-levels in one robust step.
 - **Ledger Management:**
     - **Groups & Ledgers:** Full management of accounting groups and individual ledgers with aggregated totals.
-    - **Smart Adaptive Form:** Intelligent ledger creation dialog that dynamically shows/hides sections based on the chosen accounting group:
-        - **Bank Details:** Auto-opens for bank-related and Capital accounts.
-        - **Credit Control:** Bill-by-bill tracking and credit periods for Sundry Debtors/Creditors, Branches, Loans & Advances, and Current Liabilities.
-        - **Statutory Details:** Professional GST, HSN/SAC, and Tax calculation settings for Duties & Taxes, Income, and Expense groups.
-        - **Inventory & Costing:** Specialized fields for Income/Expense groups to track inventory impact and cost centre applicability.
-        - **Optimized for Internal A/cs:** Automatically hides irrelevant sections for "Cash-in-Hand" and "Provisions" to speed up data entry.
+    - **Smart Adaptive Form:** Intelligent ledger creation dialog that dynamically shows/hides sections based on the chosen accounting group (Bank, Loans, Revenue, Assets, etc.).
     - **Automated Entry:** Intelligent auto-filling of mailing names from ledger names with optional manual override.
-    - **Monthly Summaries:** Detailed drill-down view showing monthly **Debits**, **Credits**, and rolling **Balances**.
 - **Inventory Management:**
     - **Units & Groups:** Full lifecycle management with aggregated summaries (Total Qty, Avg Rate, Total Value).
-    - **Tally-Style Stock Summary:** Professional table layout displaying Particulars, HSN, GST (formatted as %), and Closing Balances.
-    - **Monthly Summary Drill-down:** Detailed monthly breakdown of Inwards, Outwards, and rolling Closing Balances with Rate columns.
+    - **Tally-Style Stock Summary:** Professional table layout displaying Particulars, HSN, and GST (formatted as %).
+- **Dynamic Reporting Engine:**
+    - **Live Monthly Summaries:** Real-time calculation of Inwards, Outwards, and rolling Closing Balances fetched directly from voucher data.
+    - **Accounting Precision:** Rolling balance logic for ledgers that correctly handles Debit (Dr) vs. Credit (Cr) types across the financial year (April to March).
 - **Professional Workflows:**
     - **Keyboard Navigation:** Full support for **Arrow keys** to select items and **Enter** to drill down project-wide.
+    - **Intentional Interaction:** Implemented a "Tap to Select, Double-tap to Open" model to prevent accidental navigation on mobile and desktop.
     - **System-Based Rotation:** Follows standard Android auto-rotate settings for all reports, giving users control over their viewing orientation.
-    - **System Back Handling:** Native back button support on Android for intuitive screen navigation.
-    - **Robust Data Saving:** Comprehensive error handling (try-catch) on all save operations to prevent app crashes and provide clear user feedback.
+    - **Robust Data Saving:** Comprehensive error handling (try-catch) on all save operations with detailed feedback to prevent app crashes.
 - **Responsive & Modern UI:**
-    - **Modern Enterprise Theme:** High-end **Slate & Navy** color palette for a professional financial experience.
+    - **Subtle Integrated Theme:** Modern Material 3 container-based palette that blends perfectly with the application background for a premium feel.
     - **Horizontal Table Scrolling:** Wide financial tables feature smooth horizontal scrolling in portrait mode, ensuring all data is accessible.
-    - **Centered Desktop Forms:** All entry forms are centered with a `800.dp` max-width on desktop for a polished, web-like feel.
-    - **High-Density Lists:** Optimized padding and header heights to maximize data visibility on mobile.
+    - **Centered Desktop Forms:** All entry forms are centered with a `800.dp` max-width on desktop for a polished, professional experience.
 - **Cross-Platform:** 100% shared UI and business logic across Android, Desktop, and Web.
 - **Secure Backend:** Uses Supabase Auth and advanced Row Level Security (RLS) policies for data isolation.
 
@@ -59,7 +59,7 @@ supabase.key=YOUR_SUPABASE_ANON_KEY
 ```
 
 ### 3. Database Schema
-Copy and run the SQL commands from `shared/src/commonMain/kotlin/com/wpt/wptaccount/supabasetableandpolicy.sql` in your **Supabase SQL Editor** to create the tables (`companies`, `groups`, `ledgers`, `vouchers`, `voucher_entries`, `units`, `stock_groups`, `stock_items`) and RLS policies.
+Copy and run the SQL commands from `shared/src/commonMain/kotlin/com/wpt/wptaccount/supabasetableandpolicy.sql` in your **Supabase SQL Editor** to create the tables and RLS policies.
 
 ### 4. Run the Project
 - **Android:** Select the `androidApp` configuration.

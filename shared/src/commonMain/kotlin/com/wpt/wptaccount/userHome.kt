@@ -37,6 +37,8 @@ fun UserHome(
     onStockSummaryClick: () -> Unit,
     onGstDetailsClick: () -> Unit,
     onLedgerClick: () -> Unit,
+    onSaleClick: () -> Unit,
+    onPurchaseClick: () -> Unit,
     onBack: () -> Unit
 ) {
     var isInitializing by remember { mutableStateOf(false) }
@@ -96,8 +98,8 @@ fun UserHome(
                     ScreenType.Home -> { /* Already here */ }
                     ScreenType.Dashboard -> onDashboardClick()
                     ScreenType.Exit -> onBack()
-                    ScreenType.Sale -> { /* TODO */ }
-                    ScreenType.Purchase -> { /* TODO */ }
+                    ScreenType.Sale -> onSaleClick()
+                    ScreenType.Purchase -> onPurchaseClick()
                     ScreenType.Payment -> { /* TODO */ }
                     ScreenType.Receipt -> { /* TODO */ }
                     ScreenType.Ledger -> onLedgerClick()
@@ -172,8 +174,10 @@ fun UserHome(
                                     "Dashboard" -> onDashboardClick()
                                     "Stock Summary" -> onStockSummaryClick()
                                     "Ledger" -> onLedgerClick()
+                                    "Sale" -> onSaleClick()
+                                    "Purchase" -> onPurchaseClick()
                                     "Balance Sheet", "Profit & Loss", "Cash Flow" -> { /* TODO */ }
-                                    "Sale", "Purchase", "Payment", "Receipt", "Contra", "Journal", "Credit Note", "Debit Note" -> { /* TODO */ }
+                                    "Payment", "Receipt", "Contra", "Journal", "Credit Note", "Debit Note" -> { /* TODO */ }
                                 }
                             }
                         }

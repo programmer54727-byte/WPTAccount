@@ -26,10 +26,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.window.DialogProperties
+
+data class MonthlyStockData(
+    val monthName: String,
+    var inwardQty: Double = 0.0,
+    var inwardValue: Double = 0.0,
+    var outwardQty: Double = 0.0,
+    var outwardValue: Double = 0.0,
+    var closingQty: Double = 0.0,
+    var closingValue: Double = 0.0
+)
 
 @Composable
 fun InventoryField(label: String, value: String, modifier: Modifier = Modifier, enabled: Boolean = true, onValueChange: (String) -> Unit) {
@@ -1052,6 +1063,67 @@ fun StockItemMonthlySummary(
         "April", "May", "June", "July", "August", "September",
         "October", "November", "December", "January", "February", "March"
     )
+    val monthSequence = listOf(4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3)
+
+    // Initialize with empty months to prevent NullPointerException
+    var monthlyDataMap by remember { 
+        mutableStateOf(monthSequence.associateWith { m -> 
+            MonthlyStockData(months[monthSequence.indexOf(m)]) 
+        }) 
+    }
+    var isLoading by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
+
+    fun fetchData() {
+        scope.launch {
+            try {
+                isLoading = true
+                val entries = supabase.from("voucher_stock_items").select(Columns.raw("quantity, rate, amount, vouchers(date, voucher_type, company_id)")) {
+                    filter { eq("stock_item_id", item.id!!) }
+                }.decodeList<VoucherStockItemWithVoucher>()
+
+                val dataMap = monthSequence.associateWith { m -> 
+                    MonthlyStockData(months[monthSequence.indexOf(m)]) 
+                }.toMutableMap()
+
+                entries.forEach { entry ->
+                    val dateParts = entry.vouchers.date.split("-")
+                    if (dateParts.size == 3) {
+                        val month = dateParts[1].toInt()
+                        val monthData = dataMap[month]
+                        if (monthData != null) {
+                            if (entry.vouchers.voucher_type == "Purchase") {
+                                monthData.inwardQty += entry.quantity
+                                monthData.inwardValue += entry.amount
+                            } else if (entry.vouchers.voucher_type == "Sale") {
+                                monthData.outwardQty += entry.quantity
+                                monthData.outwardValue += entry.amount
+                            }
+                        }
+                    }
+                }
+
+                var currentQty = item.opening_quantity
+                var currentValue = item.opening_quantity * item.opening_rate
+                
+                monthSequence.forEach { m ->
+                    val monthData = dataMap[m]!!
+                    monthData.closingQty = currentQty + monthData.inwardQty - monthData.outwardQty
+                    monthData.closingValue = currentValue + monthData.inwardValue - monthData.outwardValue
+                    currentQty = monthData.closingQty
+                    currentValue = monthData.closingValue
+                }
+
+                monthlyDataMap = dataMap
+            } catch (e: Exception) {
+                println("Error fetching monthly summary: ${e.message}")
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    LaunchedEffect(item.id) { fetchData() }
     
     val openingValue = item.opening_quantity * item.opening_rate
 
@@ -1071,74 +1143,91 @@ fun StockItemMonthlySummary(
             }
         }
     ) { padding ->
-        BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(padding)) {
-            val isMobile = maxWidth < 600.dp
-            val scrollState = rememberScrollState()
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(padding)) {
+                val isMobile = maxWidth < 600.dp
+                val scrollState = rememberScrollState()
 
-            Box(modifier = Modifier.fillMaxSize()) {
-                val constraints = this@BoxWithConstraints
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
-                        .horizontalScroll(scrollState)
-                ) {
-                val contentWidth = if (isMobile) 1000.dp else constraints.maxWidth
-                    
-                    Column(modifier = Modifier.width(contentWidth)) {
-                        // Header
-                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-                            Text("Particulars", modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            SummaryColumnHeader("Inwards", Modifier.weight(2.5f))
-                            SummaryColumnHeader("Outwards", Modifier.weight(2.5f))
-                            SummaryColumnHeader("Closing Balance", Modifier.weight(2.5f))
-                        }
-                        HorizontalDivider(thickness = 2.dp, color = Color.Black)
+                Box(modifier = Modifier.fillMaxSize()) {
+                    val constraints = this@BoxWithConstraints
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp)
+                            .horizontalScroll(scrollState)
+                    ) {
+                    val contentWidth = if (isMobile) 1000.dp else constraints.maxWidth
+                        
+                        Column(modifier = Modifier.width(contentWidth)) {
+                            // Header
+                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+                                Text("Particulars", modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                                SummaryColumnHeader("Inwards", Modifier.weight(2.5f))
+                                SummaryColumnHeader("Outwards", Modifier.weight(2.5f))
+                                SummaryColumnHeader("Closing Balance", Modifier.weight(2.5f))
+                            }
+                            HorizontalDivider(thickness = 2.dp, color = Color.Black)
 
-                        LazyColumn(modifier = Modifier.weight(1f)) {
-                            // Opening Balance Row
-                            item {
-                                SummaryRow(
-                                    label = "Opening Balance",
-                                    italic = true,
-                                    closingQty = "${item.opening_quantity.format()} $unitSymbol",
-                                    closingRate = item.opening_rate.format(),
-                                    closingValue = openingValue.format()
-                                )
+                            LazyColumn(modifier = Modifier.weight(1f)) {
+                                // Opening Balance Row
+                                item {
+                                    SummaryRow(
+                                        label = "Opening Balance",
+                                        italic = true,
+                                        closingQty = "${item.opening_quantity.format()} $unitSymbol",
+                                        closingRate = item.opening_rate.format(),
+                                        closingValue = openingValue.format()
+                                    )
+                                }
+
+                                // Monthly Rows
+                                items(monthSequence) { m ->
+                                    val data = monthlyDataMap[m]!!
+                                    val avgRateIn = if (data.inwardQty > 0) data.inwardValue / data.inwardQty else 0.0
+                                    val avgRateOut = if (data.outwardQty > 0) data.outwardValue / data.outwardQty else 0.0
+                                    val avgRateClosing = if (data.closingQty > 0) data.closingValue / data.closingQty else 0.0
+
+                                    SummaryRow(
+                                        label = data.monthName,
+                                        inwardQty = if (data.inwardQty != 0.0) "${data.inwardQty.format()} $unitSymbol" else "",
+                                        inwardRate = if (data.inwardQty != 0.0) avgRateIn.format() else "",
+                                        inwardValue = if (data.inwardQty != 0.0) data.inwardValue.format() else "",
+                                        outwardQty = if (data.outwardQty != 0.0) "${data.outwardQty.format()} $unitSymbol" else "",
+                                        outwardRate = if (data.outwardQty != 0.0) avgRateOut.format() else "",
+                                        outwardValue = if (data.outwardQty != 0.0) data.outwardValue.format() else "",
+                                        closingQty = "${data.closingQty.format()} $unitSymbol",
+                                        closingRate = avgRateClosing.format(),
+                                        closingValue = data.closingValue.format()
+                                    )
+                                }
                             }
 
-                            // Monthly Rows (Showing movement during the year)
-                            items(months) { month ->
-                                SummaryRow(
-                                    label = month,
-                                    inwardQty = "",
-                                    inwardRate = "",
-                                    inwardValue = "",
-                                    outwardQty = "",
-                                    outwardRate = "",
-                                    outwardValue = "",
-                                    closingQty = "${item.opening_quantity.format()} $unitSymbol", // Showing current balance
-                                    closingRate = item.opening_rate.format(),
-                                    closingValue = openingValue.format()
-                                )
-                            }
-                        }
+                            HorizontalDivider(thickness = 2.dp, color = Color.Black)
+                            // Grand Total Row
+                            val totalInQty = monthlyDataMap.values.sumOf { it.inwardQty }
+                            val totalInVal = monthlyDataMap.values.sumOf { it.inwardValue }
+                            val totalOutQty = monthlyDataMap.values.sumOf { it.outwardQty }
+                            val totalOutVal = monthlyDataMap.values.sumOf { it.outwardValue }
+                            val finalData = monthlyDataMap[3]!! // March is the last month
 
-                        HorizontalDivider(thickness = 2.dp, color = Color.Black)
-                        // Grand Total Row (Total movements during the year)
-                        SummaryRow(
-                            label = "Grand Total",
-                            bold = true,
-                            inwardQty = "0 $unitSymbol",
-                            inwardRate = "0.00",
-                            inwardValue = "0.00",
-                            outwardQty = "0 $unitSymbol",
-                            outwardRate = "0.00",
-                            outwardValue = "0.00",
-                            closingQty = "${item.opening_quantity.format()} $unitSymbol",
-                            closingRate = item.opening_rate.format(),
-                            closingValue = openingValue.format()
-                        )
+                            SummaryRow(
+                                label = "Grand Total",
+                                bold = true,
+                                inwardQty = "${totalInQty.format()} $unitSymbol",
+                                inwardRate = (if (totalInQty > 0) totalInVal / totalInQty else 0.0).format(),
+                                inwardValue = totalInVal.format(),
+                                outwardQty = "${totalOutQty.format()} $unitSymbol",
+                                outwardRate = (if (totalOutQty > 0) totalOutVal / totalOutQty else 0.0).format(),
+                                outwardValue = totalOutVal.format(),
+                                closingQty = "${finalData.closingQty.format()} $unitSymbol",
+                                closingRate = (if (finalData.closingQty > 0) finalData.closingValue / finalData.closingQty else 0.0).format(),
+                                closingValue = finalData.closingValue.format()
+                            )
+                        }
                     }
                 }
             }

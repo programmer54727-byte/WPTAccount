@@ -26,10 +26,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.window.DialogProperties
+
+data class MonthlyLedgerData(
+    val monthName: String,
+    var debit: Double = 0.0,
+    var credit: Double = 0.0,
+    var balance: Double = 0.0
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -823,6 +831,64 @@ fun LedgerMonthlySummary(
         "April", "May", "June", "July", "August", "September",
         "October", "November", "December", "January", "February", "March"
     )
+    val monthSequence = listOf(4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3)
+
+    // Initialize with empty months to prevent NullPointerException
+    var monthlyDataMap by remember { 
+        mutableStateOf(monthSequence.associateWith { m -> 
+            MonthlyLedgerData(months[monthSequence.indexOf(m)]) 
+        }) 
+    }
+    var isLoading by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
+
+    fun fetchData() {
+        scope.launch {
+            try {
+                isLoading = true
+                val entries = supabase.from("voucher_entries").select(Columns.raw("amount, entry_type, vouchers(date, company_id, voucher_type)")) {
+                    filter { eq("ledger_id", ledger.id!!) }
+                }.decodeList<VoucherEntryWithVoucher>()
+
+                val dataMap = monthSequence.associateWith { m -> 
+                    MonthlyLedgerData(months[monthSequence.indexOf(m)]) 
+                }.toMutableMap()
+
+                entries.forEach { entry ->
+                    val dateParts = entry.vouchers.date.split("-")
+                    if (dateParts.size == 3) {
+                        val month = dateParts[1].toInt()
+                        val monthData = dataMap[month]
+                        if (monthData != null) {
+                            if (entry.entry_type == "Debit") {
+                                monthData.debit += entry.amount
+                            } else {
+                                monthData.credit += entry.amount
+                            }
+                        }
+                    }
+                }
+
+                var currentBalance = ledger.opening_balance
+                val isDebitType = ledger.opening_balance_type == "Dr"
+                if (!isDebitType) currentBalance = -currentBalance
+
+                monthSequence.forEach { m ->
+                    val monthData = dataMap[m]!!
+                    currentBalance += (monthData.debit - monthData.credit)
+                    monthData.balance = currentBalance
+                }
+
+                monthlyDataMap = dataMap
+            } catch (e: Exception) {
+                println("Error fetching ledger summary: ${e.message}")
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    LaunchedEffect(ledger.id) { fetchData() }
     
     Scaffold(
         topBar = {
@@ -840,59 +906,72 @@ fun LedgerMonthlySummary(
             }
         }
     ) { padding ->
-        BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(padding)) {
-            val isMobile = maxWidth < 600.dp
-            val scrollState = rememberScrollState()
-            val constraints = this@BoxWithConstraints
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(padding)) {
+                val isMobile = maxWidth < 600.dp
+                val scrollState = rememberScrollState()
+                val constraints = this@BoxWithConstraints
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-                    .horizontalScroll(scrollState)
-            ) {
-                val contentWidth = if (isMobile) 800.dp else constraints.maxWidth
-                
-                Column(modifier = Modifier.width(contentWidth)) {
-                    // Header
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-                        Text("Particulars", modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                        SummaryColumnHeader("Debit", Modifier.weight(1f))
-                        SummaryColumnHeader("Credit", Modifier.weight(1f))
-                        SummaryColumnHeader("Closing Balance", Modifier.weight(1.5f))
-                    }
-                    HorizontalDivider(thickness = 2.dp, color = Color.Black)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                        .horizontalScroll(scrollState)
+                ) {
+                    val contentWidth = if (isMobile) 800.dp else constraints.maxWidth
+                    
+                    Column(modifier = Modifier.width(contentWidth)) {
+                        // Header
+                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+                            Text("Particulars", modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            SummaryColumnHeader("Debit", Modifier.weight(1f))
+                            SummaryColumnHeader("Credit", Modifier.weight(1f))
+                            SummaryColumnHeader("Closing Balance", Modifier.weight(1.5f))
+                        }
+                        HorizontalDivider(thickness = 2.dp, color = Color.Black)
 
-                    LazyColumn(modifier = Modifier.weight(1f)) {
-                        // Opening Balance Row
-                        item {
-                            LedgerSummaryRow(
-                                label = "Opening Balance",
-                                italic = true,
-                                closingValue = ledger.opening_balance.format()
-                            )
+                        LazyColumn(modifier = Modifier.weight(1f)) {
+                            // Opening Balance Row
+                            item {
+                                LedgerSummaryRow(
+                                    label = "Opening Balance",
+                                    italic = true,
+                                    closingValue = "${ledger.opening_balance.format()} ${ledger.opening_balance_type}"
+                                )
+                            }
+
+                            // Monthly Rows
+                            items(monthSequence) { m ->
+                                val data = monthlyDataMap[m]!!
+                                val balType = if (data.balance >= 0) "Dr" else "Cr"
+                                LedgerSummaryRow(
+                                    label = data.monthName,
+                                    debit = if (data.debit != 0.0) data.debit.format() else "",
+                                    credit = if (data.credit != 0.0) data.credit.format() else "",
+                                    closingValue = "${kotlin.math.abs(data.balance).format()} $balType"
+                                )
+                            }
                         }
 
-                        // Monthly Rows
-                        items(months) { month ->
-                            LedgerSummaryRow(
-                                label = month,
-                                debit = "0.00",
-                                credit = "0.00",
-                                closingValue = ledger.current_balance.format()
-                            )
-                        }
-                    }
+                        HorizontalDivider(thickness = 2.dp, color = Color.Black)
+                        // Grand Total Row
+                        val totalDebit = monthlyDataMap.values.sumOf { it.debit }
+                        val totalCredit = monthlyDataMap.values.sumOf { it.credit }
+                        val finalBal = monthlyDataMap[3]?.balance ?: 0.0
+                        val finalBalType = if (finalBal >= 0) "Dr" else "Cr"
 
-                    HorizontalDivider(thickness = 2.dp, color = Color.Black)
-                    // Grand Total Row
-                    LedgerSummaryRow(
-                        label = "Grand Total",
-                        bold = true,
-                        debit = "0.00",
-                        credit = "0.00",
-                        closingValue = ledger.current_balance.format()
-                    )
+                        LedgerSummaryRow(
+                            label = "Grand Total",
+                            bold = true,
+                            debit = totalDebit.format(),
+                            credit = totalCredit.format(),
+                            closingValue = "${kotlin.math.abs(finalBal).format()} $finalBalType"
+                        )
+                    }
                 }
             }
         }

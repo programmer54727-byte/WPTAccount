@@ -149,8 +149,12 @@ create table if not exists public.vouchers (
   company_id uuid not null references public.companies(id) on delete cascade,
   voucher_type text not null, -- Sale, Purchase, Payment, Receipt, Contra, Journal, CreditNote, DebitNote
   voucher_number text,
+  reference_no text, -- Supplier Invoice No / Ref No
+  reference_date date,
+  party_ledger_id uuid references public.ledgers(id) on delete set null,
   date date default current_date not null,
   narration text,
+  total_amount decimal default 0,
   created_at timestamp with time zone default now() not null
 );
 
@@ -212,7 +216,46 @@ using (exists (
   where vouchers.id = voucher_entries.voucher_id and companies.owner_id = auth.uid()
 ));
 
--- 16. Create the gst_details table
+-- 16. Create the voucher_stock_items table
+create table if not exists public.voucher_stock_items (
+  id uuid primary key default gen_random_uuid(),
+  voucher_id uuid not null references public.vouchers(id) on delete cascade,
+  stock_item_id uuid not null references public.stock_items(id) on delete cascade,
+  quantity decimal not null,
+  rate decimal not null,
+  amount decimal not null,
+  created_at timestamp with time zone default now() not null
+);
+
+-- 17. Enable Row Level Security (RLS) for voucher_stock_items
+alter table public.voucher_stock_items enable row level security;
+
+-- 18. Create Security Policies for voucher_stock_items
+create policy "Users can see stock entries of their vouchers"
+on public.voucher_stock_items for select
+using (exists (
+  select 1 from public.vouchers
+  join public.companies on vouchers.company_id = companies.id
+  where vouchers.id = voucher_stock_items.voucher_id and companies.owner_id = auth.uid()
+));
+
+create policy "Users can create stock entries in their vouchers"
+on public.voucher_stock_items for insert
+with check (exists (
+  select 1 from public.vouchers
+  join public.companies on vouchers.company_id = companies.id
+  where vouchers.id = voucher_stock_items.voucher_id and companies.owner_id = auth.uid()
+));
+
+create policy "Users can delete stock entries of their vouchers"
+on public.voucher_stock_items for delete
+using (exists (
+  select 1 from public.vouchers
+  join public.companies on vouchers.company_id = companies.id
+  where vouchers.id = voucher_stock_items.voucher_id and companies.owner_id = auth.uid()
+));
+
+-- 19. Create the gst_details table
 create table if not exists public.gst_details (
   id uuid primary key default gen_random_uuid(),
   company_id uuid not null references public.companies(id) on delete cascade,

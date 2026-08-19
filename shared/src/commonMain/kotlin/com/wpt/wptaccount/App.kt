@@ -52,7 +52,7 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
         CompositionLocalProvider(LocalScreenOrientation provides onOrientationRequest) {
             BackHandler(enabled = currentScreen != null && currentScreen != "landing" && currentScreen != "company_list") {
                 when (currentScreen) {
-                    "inventory_management", "gst_details", "company_dashboard", "ledger_management" -> currentScreen = "company_home"
+                    "inventory_management", "gst_details", "company_dashboard", "ledger_management", "voucher_sale", "voucher_purchase" -> currentScreen = "company_home"
                     "company_home", "create_company" -> currentScreen = "company_list"
                     "login", "signup" -> currentScreen = "landing"
                 }
@@ -105,6 +105,8 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                     onStockSummaryClick = { currentScreen = "inventory_management" },
                                     onGstDetailsClick = { currentScreen = "gst_details" },
                                     onLedgerClick = { currentScreen = "ledger_management" },
+                                    onSaleClick = { currentScreen = "voucher_sale" },
+                                    onPurchaseClick = { currentScreen = "voucher_purchase" },
                                     onBack = { currentScreen = "company_list" }
                                 )
                             } ?: run {
@@ -147,6 +149,28 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                             selectedCompany?.let { company ->
                                 LedgerManagement(
                                     company = company,
+                                    onBack = { currentScreen = "company_home" }
+                                )
+                            } ?: run {
+                                currentScreen = "company_list"
+                            }
+                        }
+                        "voucher_sale" -> {
+                            selectedCompany?.let { company ->
+                                VoucherEntryScreen(
+                                    company = company,
+                                    voucherType = "Sale",
+                                    onBack = { currentScreen = "company_home" }
+                                )
+                            } ?: run {
+                                currentScreen = "company_list"
+                            }
+                        }
+                        "voucher_purchase" -> {
+                            selectedCompany?.let { company ->
+                                VoucherEntryScreen(
+                                    company = company,
+                                    voucherType = "Purchase",
                                     onBack = { currentScreen = "company_home" }
                                 )
                             } ?: run {
