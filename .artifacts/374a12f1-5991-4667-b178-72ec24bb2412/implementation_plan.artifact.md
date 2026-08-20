@@ -1,39 +1,36 @@
-# Implementation Plan - Fix Ledger Balance Updates
+# Implementation Plan - Fix Voucher Saving and Ledger Updates
 
-The user reported that ledger balances (like CGST 9%) are not updating after saving a Sale or Purchase voucher. This is because the app currently creates the accounting entries but does not update the `current_balance` summary column in the `ledgers` table.
+This plan fixes the "Failed to save" error and ensures that ledger balances are accurately updated. It addresses the issues with Supabase update syntax and improves error visibility.
 
 ## Proposed Changes
 
 ### [shared](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared)
 
 #### [MODIFY] [voucherEntry.kt](file:///C:/Users/sayye/AndroidStudioProjects/WPTAccount/shared/src/commonMain/kotlin/com/wpt/wptaccount/voucherEntry.kt)
-- **Implement `updateLedgerBalance` Helper**:
-    - This internal function will fetch the latest balance of a ledger, determine its group's nature (Asset, Liability, etc.), and calculate the new balance based on the Debit/Credit entry.
-    - **Logic**:
-        - **Asset / Expense**: New Balance = `Current + Debit - Credit`.
-        - **Liability / Income**: New Balance = `Current - Debit + Credit`.
-- **Integrate into Save Logic**:
-    - Update the **Party Ledger** balance.
-    - Update the **Sales/Purchase Ledger** balance.
-    - Update all **Tax Ledger** balances.
-- **Atomic Updates**: Similar to the stock item fix, we will fetch the latest balance immediately before updating to ensure accuracy in multi-user environments.
+- **Fix Update Syntax**:
+    - Replace the problematic `set("column", value)` syntax with a safer map-based update: `update(mapOf("current_balance" to newBalance))`.
+    - Apply this to both `updateLedgerBalance` and the stock quantity update loop.
+- **Robust Nature Detection**:
+    - Improve `updateLedgerBalance` to fetch the ledger and its group's nature directly from the database if the local `groups` list is empty or out of sync.
+- **Safe Date Handling**:
+    - Ensure the `dbDate` conversion handles potential formatting errors gracefully.
+- **Detailed Error Reporting**:
+    - Update the UI to show the full error message from Supabase so we can see if it's a "Missing Column" or "Constraint Violation" error.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> **Balance Synchronization**: This change ensures that the "Closing Balance" you see in your Ledger list is always in sync with your actual vouchers.
+> **SQL Confirmation**: Please make sure you have run the latest SQL script (adding `reference_no` and `party_ledger_id` to `vouchers`) in your Supabase Dashboard. If these columns are missing, the save will fail.
 
-> [!NOTE]
-> For "Duties & Taxes" (like CGST 9%), these are typically Liabilities. A Credit entry (which happens during a Sale) will increase the balance (money owed to the government).
+> [!TIP]
+> Once this fix is applied, if a save fails, the red text at the bottom will tell you **exactly** what went wrong (e.g., "column 'reference_no' does not exist").
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Check the current balance of "CGST 9%" (e.g., 0.00).
-2.  Create a **Sale** voucher.
-    - Add an item for 1000.
-    - Add "CGST 9%" ledger row (Amount: 90).
-3.  Save the voucher.
-4.  Go to **Ledgers**.
-5.  **Expected Result**: "CGST 9%" should now show a balance of **90.00**.
-6.  Repeat for a **Purchase** to verify the balance decreases/increases correctly.
+1.  Open **Purchase Creation**.
+2.  Add items and tax ledgers.
+3.  Click **Save**.
+4.  **Expected Result**:
+    - If it saves: The app returns home, and the ledger balances are updated.
+    - If it fails: A red message appears with a specific reason (not just "Unknown error").

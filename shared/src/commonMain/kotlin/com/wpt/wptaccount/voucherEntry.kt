@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 @Serializable
 data class ItemRow(
@@ -72,16 +74,7 @@ fun VoucherEntryScreen(
         val group = groups.find { it.id == ledger.group_id }
         val groupName = group?.group_name ?: ""
         
-        // Define nature: True if normal balance is Debit (Assets/Expenses)
-        val isDebitNature = groupName.contains("Asset", ignoreCase = true) || 
-                           groupName.contains("Expense", ignoreCase = true) || 
-                           groupName.contains("Cash", ignoreCase = true) || 
-                           groupName.contains("Bank", ignoreCase = true) || 
-                           groupName.contains("Purchase", ignoreCase = true) || 
-                           groupName.contains("Stock", ignoreCase = true) || 
-                           groupName.contains("Investments", ignoreCase = true) || 
-                           groupName.contains("Advances", ignoreCase = true) || 
-                           groupName.contains("Deposits", ignoreCase = true)
+        val isDebitNature = isDebitNature(groupName)
 
         val adjustment = if (isDebitNature) {
             if (entryType == "Debit") amount else -amount
@@ -91,8 +84,8 @@ fun VoucherEntryScreen(
 
         val newBalance = ledger.current_balance + adjustment
         
-        supabase.from("ledgers").update({
-            set("current_balance", newBalance)
+        supabase.from("ledgers").update(buildJsonObject {
+            put("current_balance", newBalance)
         }) {
             filter { eq("id", ledgerId) }
         }
@@ -379,8 +372,9 @@ fun VoucherEntryScreen(
                                         val stockItem = stockItems.find { it.id == row.stockItemId }
                                         if (stockItem != null) {
                                             val adjustment = if (voucherType == "Purchase") qtyVal else -qtyVal
-                                            supabase.from("stock_items").update({
-                                                set("current_quantity", stockItem.current_quantity + adjustment)
+                                            val newQty = stockItem.current_quantity + adjustment
+                                            supabase.from("stock_items").update(buildJsonObject {
+                                                put("current_quantity", newQty)
                                             }) { filter { eq("id", stockItem.id!!) } }
                                         }
                                     }

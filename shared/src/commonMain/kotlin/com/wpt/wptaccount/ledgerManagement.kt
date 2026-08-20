@@ -193,7 +193,13 @@ fun LedgerGroupsTab(company: Company) {
                                 Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Text(group.group_name, modifier = Modifier.weight(1f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
                                     Text(group.nature ?: "", modifier = Modifier.width(80.dp), style = MaterialTheme.typography.bodySmall)
-                                    Text(totalBalance.format(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                    Text(
+                                        totalBalance.formatWithSign(isDebitNature(group.group_name)), 
+                                        modifier = Modifier.width(balanceWidth), 
+                                        textAlign = TextAlign.End, 
+                                        fontWeight = FontWeight.Bold, 
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
                                 }
                             }
                         }
@@ -293,6 +299,7 @@ fun LedgersTab(company: Company) {
         LedgerMonthlySummary(
             company = company,
             ledger = ledgers[selectedIndex],
+            groups = groups,
             onBack = { 
                 isSummaryMode = false 
                 scope.launch { focusRequester.requestFocus() }
@@ -371,10 +378,11 @@ fun LedgersTab(company: Company) {
                                         }
                                 ) {
                                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        val isDebit = isDebitNature(groupName)
                                         Text(ledger.ledger_name, modifier = Modifier.weight(1.5f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
                                         if (!isMobile) Text(groupName, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                                        Text(ledger.opening_balance.format(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                                        Text(ledger.current_balance.format(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                        Text(ledger.opening_balance.formatWithSign(isDebit), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                                        Text(ledger.current_balance.formatWithSign(isDebit), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                         
                                         IconButton(onClick = { ledgerToDelete = ledger }, modifier = Modifier.size(40.dp)) {
                                             Icon(Icons.Default.Delete, contentDescription = "Delete Ledger", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
@@ -726,6 +734,7 @@ fun FilteredLedgersList(
         LedgerMonthlySummary(
             company = company,
             ledger = ledgers[selectedIndex],
+            groups = groups,
             onBack = { 
                 isSummaryMode = false 
                 scope.launch { focusRequester.requestFocus() }
@@ -806,9 +815,10 @@ fun FilteredLedgersList(
                                         }
                                 ) {
                                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        val isDebit = groups.find { it.id == ledger.group_id }?.let { isDebitNature(it.group_name) } ?: true
                                         Text(ledger.ledger_name, modifier = Modifier.weight(1.5f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
-                                        Text(ledger.opening_balance.format(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                                        Text(ledger.current_balance.format(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                        Text(ledger.opening_balance.formatWithSign(isDebit), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                                        Text(ledger.current_balance.formatWithSign(isDebit), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                         Spacer(Modifier.width(40.dp))
                                     }
                                 }
@@ -825,6 +835,7 @@ fun FilteredLedgersList(
 fun LedgerMonthlySummary(
     company: Company,
     ledger: Ledger,
+    groups: List<AccountingGroup>,
     onBack: () -> Unit
 ) {
     val months = listOf(
@@ -937,22 +948,23 @@ fun LedgerMonthlySummary(
                         LazyColumn(modifier = Modifier.weight(1f)) {
                             // Opening Balance Row
                             item {
+                                val isDebit = groups.find { it.id == ledger.group_id }?.let { isDebitNature(it.group_name) } ?: true
                                 LedgerSummaryRow(
                                     label = "Opening Balance",
                                     italic = true,
-                                    closingValue = "${ledger.opening_balance.format()} ${ledger.opening_balance_type}"
+                                    closingValue = ledger.opening_balance.formatWithSign(isDebit)
                                 )
                             }
 
                             // Monthly Rows
                             items(monthSequence) { m ->
                                 val data = monthlyDataMap[m]!!
-                                val balType = if (data.balance >= 0) "Dr" else "Cr"
+                                val isDebit = groups.find { it.id == ledger.group_id }?.let { isDebitNature(it.group_name) } ?: true
                                 LedgerSummaryRow(
                                     label = data.monthName,
                                     debit = if (data.debit != 0.0) data.debit.format() else "",
                                     credit = if (data.credit != 0.0) data.credit.format() else "",
-                                    closingValue = "${kotlin.math.abs(data.balance).format()} $balType"
+                                    closingValue = data.balance.formatWithSign(isDebit)
                                 )
                             }
                         }
@@ -962,14 +974,14 @@ fun LedgerMonthlySummary(
                         val totalDebit = monthlyDataMap.values.sumOf { it.debit }
                         val totalCredit = monthlyDataMap.values.sumOf { it.credit }
                         val finalBal = monthlyDataMap[3]?.balance ?: 0.0
-                        val finalBalType = if (finalBal >= 0) "Dr" else "Cr"
+                        val isDebit = groups.find { it.id == ledger.group_id }?.let { isDebitNature(it.group_name) } ?: true
 
                         LedgerSummaryRow(
                             label = "Grand Total",
                             bold = true,
                             debit = totalDebit.format(),
                             credit = totalCredit.format(),
-                            closingValue = "${kotlin.math.abs(finalBal).format()} $finalBalType"
+                            closingValue = finalBal.formatWithSign(isDebit)
                         )
                     }
                 }
