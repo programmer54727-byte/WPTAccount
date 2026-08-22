@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,6 +40,11 @@ data class MonthlyLedgerData(
     var balance: Double = 0.0
 )
 
+data class LedgerBalance(
+    val opening: Double = 0.0,
+    val closing: Double = 0.0
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LedgerManagement(
@@ -46,15 +52,33 @@ fun LedgerManagement(
     onBack: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(0) }
+    var selectedPeriod by remember { mutableStateOf(company.getDefaultPeriod()) }
+    var showPeriodDialog by remember { mutableStateOf(false) }
+
     val tabs = listOf("Groups", "Ledgers")
     
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Ledger: ${company.company_name}", style = MaterialTheme.typography.titleMedium) },
+                title = { 
+                    Column {
+                        Text("Ledger: ${company.company_name}", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Period: ${selectedPeriod.startDate} to ${selectedPeriod.endDate}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.clickable { showPeriodDialog = true }
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showPeriodDialog = true }) {
+                        Icon(Icons.Default.Event, contentDescription = "Change Period")
                     }
                 }
             )
@@ -75,37 +99,98 @@ fun LedgerManagement(
             }
             
             when (selectedTab) {
-                0 -> LedgerGroupsTab(company)
-                1 -> LedgersTab(company)
+                0 -> LedgerGroupsTab(company, selectedPeriod)
+                1 -> LedgersTab(company, selectedPeriod)
             }
         }
+    }
+
+    if (showPeriodDialog) {
+        var start by remember { mutableStateOf(selectedPeriod.startDate) }
+        var end by remember { mutableStateOf(selectedPeriod.endDate) }
+
+        AlertDialog(
+            onDismissRequest = { showPeriodDialog = false },
+            title = { Text("Change Period") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = start,
+                        onValueChange = { start = it },
+                        label = { Text("Start Date (YYYY-MM-DD)") }
+                    )
+                    OutlinedTextField(
+                        value = end,
+                        onValueChange = { end = it },
+                        label = { Text("End Date (YYYY-MM-DD)") }
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    selectedPeriod = AccountPeriod(start, end)
+                    showPeriodDialog = false
+                }) { Text("Change") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPeriodDialog = false }) { Text("Cancel") }
+            }
+        )
     }
 }
 
 @Composable
-fun LedgerGroupsTab(company: Company) {
+fun LedgerGroupsTab(company: Company, period: AccountPeriod) {
     var groups by remember { mutableStateOf<List<AccountingGroup>>(emptyList()) }
     var ledgers by remember { mutableStateOf<List<Ledger>>(emptyList()) }
     var selectedGroupForLedgers by remember { mutableStateOf<AccountingGroup?>(null) }
     
     // Selection and Navigation
     var selectedIndex by remember { mutableStateOf(0) }
+    var balances by remember { mutableStateOf<Map<String, LedgerBalance>>(emptyMap()) }
     val focusRequester = remember { FocusRequester() }
     
     val scope = rememberCoroutineScope()
 
     fun fetchData() {
         scope.launch {
-            groups = supabase.from("groups").select {
-                filter { eq("company_id", company.id!!) }
-            }.decodeList<AccountingGroup>()
+            try {
+                groups = supabase.from("groups").select {
+                    filter { eq("company_id", company.id!!) }
+                }.decodeList<AccountingGroup>()
             
-            ledgers = supabase.from("ledgers").select {
-                filter { eq("company_id", company.id!!) }
-            }.decodeList<Ledger>()
+                ledgers = supabase.from("ledgers").select {
+                    filter { eq("company_id", company.id!!) }
+                }.decodeList<Ledger>()
+
+                val allEntries = supabase.from("voucher_entries").select(Columns.raw("ledger_id, amount, entry_type, vouchers(date, company_id)")) {
+                    filter { eq("vouchers.company_id", company.id!!) }
+                }.decodeList<VoucherEntryWithVoucher>()
+
+                val calcBalances = ledgers.associate { ledger ->
+                    var opening = ledger.opening_balance
+                    if (ledger.opening_balance_type == "Cr") opening = -opening
+                
+                    var periodTotal = 0.0
+                    allEntries.filter { it.ledger_id == ledger.id }.forEach { entry ->
+                        val sign = if (entry.entry_type == "Debit") 1.0 else -1.0
+                        if (entry.vouchers.date < period.startDate) {
+                            opening += entry.amount * sign
+                        } else if (entry.vouchers.date <= period.endDate) {
+                            periodTotal += entry.amount * sign
+                        }
+                    }
+                    ledger.id!! to LedgerBalance(opening, opening + periodTotal)
+                }
+                balances = calcBalances
+            } catch (e: Exception) {
+                println("Error fetching groups/ledgers: ${e.message}")
+            }
         }
     }
 
+    LaunchedEffect(period) { fetchData() }
+    
     LaunchedEffect(Unit) { 
         fetchData()
         focusRequester.requestFocus()
@@ -116,13 +201,13 @@ fun LedgerGroupsTab(company: Company) {
     }
 
     if (selectedGroupForLedgers != null) {
-        FilteredLedgersList(
-            company = company,
-            title = "Ledgers in ${selectedGroupForLedgers!!.group_name}",
-            ledgers = ledgers.filter { it.group_id == selectedGroupForLedgers!!.id },
-            groups = groups,
-            onBack = { selectedGroupForLedgers = null }
-        )
+                        FilteredLedgersList(
+                            company = company,
+                            title = "Ledgers in ${selectedGroupForLedgers!!.group_name}",
+                            ledgers = ledgers.filter { it.group_id == selectedGroupForLedgers!!.id },
+                            period = period,
+                            onBack = { selectedGroupForLedgers = null }
+                        )
     } else {
         BoxWithConstraints(
             modifier = Modifier
@@ -174,7 +259,9 @@ fun LedgerGroupsTab(company: Company) {
                     LazyColumn(modifier = Modifier.weight(1f)) {
                         itemsIndexed(groups) { index, group ->
                             val groupLedgers = ledgers.filter { it.group_id == group.id }
-                            val totalBalance = groupLedgers.sumOf { it.current_balance }
+                            val totalBalance = groupLedgers.sumOf { ledger -> 
+                                balances[ledger.id]?.closing ?: ledger.current_balance 
+                            }
 
                             Surface(
                                 color = if (index == selectedIndex) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
@@ -194,7 +281,7 @@ fun LedgerGroupsTab(company: Company) {
                                     Text(group.group_name, modifier = Modifier.weight(1f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
                                     Text(group.nature ?: "", modifier = Modifier.width(80.dp), style = MaterialTheme.typography.bodySmall)
                                     Text(
-                                        totalBalance.formatWithSign(isDebitNature(group.group_name)), 
+                                        totalBalance.formatWithSign(), 
                                         modifier = Modifier.width(balanceWidth), 
                                         textAlign = TextAlign.End, 
                                         fontWeight = FontWeight.Bold, 
@@ -211,7 +298,7 @@ fun LedgerGroupsTab(company: Company) {
 }
 
 @Composable
-fun LedgersTab(company: Company) {
+fun LedgersTab(company: Company, period: AccountPeriod) {
     var ledgers by remember { mutableStateOf<List<Ledger>>(emptyList()) }
     var groups by remember { mutableStateOf<List<AccountingGroup>>(emptyList()) }
     var showDialog by remember { mutableStateOf(false) }
@@ -269,23 +356,55 @@ fun LedgersTab(company: Company) {
 
     var saveError by remember { mutableStateOf<String?>(null) }
     var isSaving by remember { mutableStateOf(false) }
+    var balances by remember { mutableStateOf<Map<String, LedgerBalance>>(emptyMap()) }
     
     val scope = rememberCoroutineScope()
 
     fun fetchData() {
         scope.launch {
-            ledgers = supabase.from("ledgers").select {
-                filter { eq("company_id", company.id!!) }
-            }.decodeList<Ledger>()
+            try {
+                ledgers = supabase.from("ledgers").select {
+                    filter { eq("company_id", company.id!!) }
+                }.decodeList<Ledger>()
             
-            groups = supabase.from("groups").select {
-                filter { eq("company_id", company.id!!) }
-            }.decodeList<AccountingGroup>()
+                groups = supabase.from("groups").select {
+                    filter { eq("company_id", company.id!!) }
+                }.decodeList<AccountingGroup>()
             
-            if (groups.isNotEmpty() && selectedGroupId == null) selectedGroupId = groups[0].id
+                val allEntries = supabase.from("voucher_entries").select(Columns.raw("ledger_id, amount, entry_type, vouchers(date, company_id)")) {
+                    filter { eq("vouchers.company_id", company.id!!) }
+                }.decodeList<VoucherEntryWithVoucher>()
+
+                val calcBalances = ledgers.associate { ledger ->
+                    var opening = ledger.opening_balance
+                    if (ledger.opening_balance_type == "Cr") opening = -opening
+                
+                    var periodDebit = 0.0
+                    var periodCredit = 0.0
+                
+                    allEntries.filter { it.ledger_id == ledger.id }.forEach { entry ->
+                        if (entry.vouchers.date < period.startDate) {
+                            if (entry.entry_type == "Debit") opening += entry.amount
+                            else opening -= entry.amount
+                        } else if (entry.vouchers.date <= period.endDate) {
+                            if (entry.entry_type == "Debit") periodDebit += entry.amount
+                            else periodCredit += entry.amount
+                        }
+                    }
+                
+                    ledger.id!! to LedgerBalance(opening, opening + periodDebit - periodCredit)
+                }
+                balances = calcBalances
+
+                if (groups.isNotEmpty() && selectedGroupId == null) selectedGroupId = groups[0].id
+            } catch (e: Exception) {
+                println("Error fetching ledgers: ${e.message}")
+            }
         }
     }
 
+    LaunchedEffect(period) { fetchData() }
+    
     LaunchedEffect(Unit) { 
         fetchData()
         focusRequester.requestFocus()
@@ -299,7 +418,7 @@ fun LedgersTab(company: Company) {
         LedgerMonthlySummary(
             company = company,
             ledger = ledgers[selectedIndex],
-            groups = groups,
+            period = period,
             onBack = { 
                 isSummaryMode = false 
                 scope.launch { focusRequester.requestFocus() }
@@ -378,11 +497,12 @@ fun LedgersTab(company: Company) {
                                         }
                                 ) {
                                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        val isDebit = isDebitNature(groupName)
+                                        val ledgerBalance = balances[ledger.id] ?: LedgerBalance(ledger.opening_balance, ledger.current_balance)
+                                        
                                         Text(ledger.ledger_name, modifier = Modifier.weight(1.5f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
                                         if (!isMobile) Text(groupName, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                                        Text(ledger.opening_balance.formatWithSign(isDebit), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                                        Text(ledger.current_balance.formatWithSign(isDebit), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                        Text(ledgerBalance.opening.formatWithSign(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                                        Text(ledgerBalance.closing.formatWithSign(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                         
                                         IconButton(onClick = { ledgerToDelete = ledger }, modifier = Modifier.size(40.dp)) {
                                             Icon(Icons.Default.Delete, contentDescription = "Delete Ledger", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
@@ -668,7 +788,7 @@ fun LedgersTab(company: Company) {
 
                                     opening_balance = openingBalance.toDoubleOrNull() ?: 0.0,
                                     opening_balance_type = openingBalanceType,
-                                    current_balance = openingBalance.toDoubleOrNull() ?: 0.0
+                                    current_balance = if (openingBalanceType == "Cr") -(openingBalance.toDoubleOrNull() ?: 0.0) else (openingBalance.toDoubleOrNull() ?: 0.0)
                                 )
                                 supabase.from("ledgers").insert(newLedger)
                                 showDialog = false
@@ -714,15 +834,53 @@ fun FilteredLedgersList(
     company: Company,
     title: String,
     ledgers: List<Ledger>,
-    groups: List<AccountingGroup>,
+    period: AccountPeriod,
     onBack: () -> Unit
 ) {
     var selectedIndex by remember { mutableStateOf(0) }
     var isSummaryMode by remember { mutableStateOf(false) }
+    var balances by remember { mutableStateOf<Map<String, LedgerBalance>>(emptyMap()) }
+    
     val focusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
 
+    fun fetchData() {
+        scope.launch {
+            try {
+                val allEntries = supabase.from("voucher_entries").select(Columns.raw("ledger_id, amount, entry_type, vouchers(date, company_id)")) {
+                    filter { eq("vouchers.company_id", company.id!!) }
+                }.decodeList<VoucherEntryWithVoucher>()
+
+                val calcBalances = ledgers.associate { ledger ->
+                    var opening = ledger.opening_balance
+                    if (ledger.opening_balance_type == "Cr") opening = -opening
+                
+                    var periodDebit = 0.0
+                    var periodCredit = 0.0
+                
+                    allEntries.filter { it.ledger_id == ledger.id }.forEach { entry ->
+                        if (entry.vouchers.date < period.startDate) {
+                            if (entry.entry_type == "Debit") opening += entry.amount
+                            else opening -= entry.amount
+                        } else if (entry.vouchers.date <= period.endDate) {
+                            if (entry.entry_type == "Debit") periodDebit += entry.amount
+                            else periodCredit += entry.amount
+                        }
+                    }
+                
+                    ledger.id!! to LedgerBalance(opening, opening + periodDebit - periodCredit)
+                }
+                balances = calcBalances
+            } catch (e: Exception) {
+                println("Error fetching filtered ledger balances: ${e.message}")
+            }
+        }
+    }
+
+    LaunchedEffect(period) { fetchData() }
+    
     LaunchedEffect(Unit) {
+        fetchData()
         focusRequester.requestFocus()
     }
 
@@ -734,7 +892,7 @@ fun FilteredLedgersList(
         LedgerMonthlySummary(
             company = company,
             ledger = ledgers[selectedIndex],
-            groups = groups,
+            period = period,
             onBack = { 
                 isSummaryMode = false 
                 scope.launch { focusRequester.requestFocus() }
@@ -800,6 +958,8 @@ fun FilteredLedgersList(
 
                         LazyColumn(modifier = Modifier.weight(1f)) {
                             itemsIndexed(ledgers) { index, ledger ->
+                                val ledgerBalance = balances[ledger.id] ?: LedgerBalance(ledger.opening_balance, ledger.current_balance)
+
                                 Surface(
                                     color = if (index == selectedIndex) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
                                     contentColor = if (index == selectedIndex) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
@@ -815,10 +975,9 @@ fun FilteredLedgersList(
                                         }
                                 ) {
                                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        val isDebit = groups.find { it.id == ledger.group_id }?.let { isDebitNature(it.group_name) } ?: true
                                         Text(ledger.ledger_name, modifier = Modifier.weight(1.5f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
-                                        Text(ledger.opening_balance.formatWithSign(isDebit), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                                        Text(ledger.current_balance.formatWithSign(isDebit), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                        Text(ledgerBalance.opening.formatWithSign(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                                        Text(ledgerBalance.closing.formatWithSign(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                         Spacer(Modifier.width(40.dp))
                                     }
                                 }
@@ -835,7 +994,7 @@ fun FilteredLedgersList(
 fun LedgerMonthlySummary(
     company: Company,
     ledger: Ledger,
-    groups: List<AccountingGroup>,
+    period: AccountPeriod,
     onBack: () -> Unit
 ) {
     val months = listOf(
@@ -850,6 +1009,7 @@ fun LedgerMonthlySummary(
             MonthlyLedgerData(months[monthSequence.indexOf(m)]) 
         }) 
     }
+    var effectiveOpeningBalanceState by remember { mutableStateOf(0.0) }
     var isLoading by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
 
@@ -865,24 +1025,34 @@ fun LedgerMonthlySummary(
                     MonthlyLedgerData(months[monthSequence.indexOf(m)]) 
                 }.toMutableMap()
 
+                var opening = ledger.opening_balance
+                if (ledger.opening_balance_type == "Cr") opening = -opening
+
                 entries.forEach { entry ->
-                    val dateParts = entry.vouchers.date.split("-")
-                    if (dateParts.size == 3) {
-                        val month = dateParts[1].toInt()
-                        val monthData = dataMap[month]
-                        if (monthData != null) {
-                            if (entry.entry_type == "Debit") {
-                                monthData.debit += entry.amount
-                            } else {
-                                monthData.credit += entry.amount
+                    if (entry.vouchers.date < period.startDate) {
+                        if (entry.entry_type == "Debit") {
+                            opening += entry.amount
+                        } else {
+                            opening -= entry.amount
+                        }
+                    } else if (entry.vouchers.date <= period.endDate) {
+                        val dateParts = entry.vouchers.date.split("-")
+                        if (dateParts.size == 3) {
+                            val month = dateParts[1].toInt()
+                            val monthData = dataMap[month]
+                            if (monthData != null) {
+                                if (entry.entry_type == "Debit") {
+                                    monthData.debit += entry.amount
+                                } else {
+                                    monthData.credit += entry.amount
+                                }
                             }
                         }
                     }
                 }
 
-                var currentBalance = ledger.opening_balance
-                val isDebitType = ledger.opening_balance_type == "Dr"
-                if (!isDebitType) currentBalance = -currentBalance
+                effectiveOpeningBalanceState = opening
+                var currentBalance = opening
 
                 monthSequence.forEach { m ->
                     val monthData = dataMap[m]!!
@@ -899,7 +1069,7 @@ fun LedgerMonthlySummary(
         }
     }
 
-    LaunchedEffect(ledger.id) { fetchData() }
+    LaunchedEffect(ledger.id, period) { fetchData() }
     
     Scaffold(
         topBar = {
@@ -911,7 +1081,7 @@ fun LedgerMonthlySummary(
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
                         Text(ledger.ledger_name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         Text("Monthly Summary", style = MaterialTheme.typography.bodySmall)
-                        Text("For 1-Apr-2024 to 31-Mar-2025", style = MaterialTheme.typography.bodySmall)
+                        Text("For ${period.startDate} to ${period.endDate}", style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
@@ -948,23 +1118,21 @@ fun LedgerMonthlySummary(
                         LazyColumn(modifier = Modifier.weight(1f)) {
                             // Opening Balance Row
                             item {
-                                val isDebit = groups.find { it.id == ledger.group_id }?.let { isDebitNature(it.group_name) } ?: true
                                 LedgerSummaryRow(
                                     label = "Opening Balance",
                                     italic = true,
-                                    closingValue = ledger.opening_balance.formatWithSign(isDebit)
+                                    closingValue = effectiveOpeningBalanceState.formatWithSign()
                                 )
                             }
 
                             // Monthly Rows
                             items(monthSequence) { m ->
                                 val data = monthlyDataMap[m]!!
-                                val isDebit = groups.find { it.id == ledger.group_id }?.let { isDebitNature(it.group_name) } ?: true
                                 LedgerSummaryRow(
                                     label = data.monthName,
                                     debit = if (data.debit != 0.0) data.debit.format() else "",
                                     credit = if (data.credit != 0.0) data.credit.format() else "",
-                                    closingValue = data.balance.formatWithSign(isDebit)
+                                    closingValue = data.balance.formatWithSign()
                                 )
                             }
                         }
@@ -974,14 +1142,13 @@ fun LedgerMonthlySummary(
                         val totalDebit = monthlyDataMap.values.sumOf { it.debit }
                         val totalCredit = monthlyDataMap.values.sumOf { it.credit }
                         val finalBal = monthlyDataMap[3]?.balance ?: 0.0
-                        val isDebit = groups.find { it.id == ledger.group_id }?.let { isDebitNature(it.group_name) } ?: true
 
                         LedgerSummaryRow(
                             label = "Grand Total",
                             bold = true,
                             debit = totalDebit.format(),
                             credit = totalCredit.format(),
-                            closingValue = finalBal.formatWithSign(isDebit)
+                            closingValue = finalBal.formatWithSign()
                         )
                     }
                 }

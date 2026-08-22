@@ -3,6 +3,12 @@ package com.wpt.wptaccount
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class AccountPeriod(
+    val startDate: String, // YYYY-MM-DD
+    val endDate: String    // YYYY-MM-DD
+)
+
+@Serializable
 data class Company(
     val id: String? = null,
     val company_name: String,

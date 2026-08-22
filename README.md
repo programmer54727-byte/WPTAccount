@@ -24,10 +24,12 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **Tally-Style Stock Summary:** Professional table layout displaying Particulars, HSN, and GST (formatted as %).
 - **Dynamic Reporting Engine:**
     - **Live Monthly Summaries:** Real-time calculation of Inwards, Outwards, and rolling Closing Balances fetched directly from voucher data.
-    - **Accounting Precision:** Rolling balance logic for ledgers that correctly handles Debit (Dr) vs. Credit (Cr) types across the financial year (April to March).
+    - **Accounting Precision:** Rolling balance logic for ledgers that correctly handles Debit (Dr) vs. Credit (Cr) types.
+    - **Period Awareness:** Selectable accounting periods (e.g., Financial Year) that automatically calculate "Effective Opening Balances" by summing all historical transactions prior to the period start date.
 - **Professional Workflows:**
     - **Keyboard Navigation:** Full support for **Arrow keys** to select items and **Enter** to drill down project-wide.
     - **Intentional Interaction:** Implemented a "Tap to Select, Double-tap to Open" model to prevent accidental navigation on mobile and desktop.
+    - **Period Selection:** Integrated date-range selection in reports to switch between financial years or custom periods instantly.
     - **System-Based Rotation:** Follows standard Android auto-rotate settings for all reports, giving users control over their viewing orientation.
     - **Robust Data Saving:** Comprehensive error handling (try-catch) on all save operations with detailed feedback to prevent app crashes.
 - **Responsive & Modern UI:**

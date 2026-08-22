@@ -17,7 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -71,17 +73,8 @@ fun VoucherEntryScreen(
             filter { eq("id", ledgerId) }
         }.decodeSingle<Ledger>()
         
-        val group = groups.find { it.id == ledger.group_id }
-        val groupName = group?.group_name ?: ""
-        
-        val isDebitNature = isDebitNature(groupName)
-
-        val adjustment = if (isDebitNature) {
-            if (entryType == "Debit") amount else -amount
-        } else {
-            if (entryType == "Credit") amount else -amount
-        }
-
+        // Universal Rule: Debit adds (+), Credit subtracts (-)
+        val adjustment = if (entryType == "Debit") amount else -amount
         val newBalance = ledger.current_balance + adjustment
         
         supabase.from("ledgers").update(buildJsonObject {
@@ -333,87 +326,89 @@ fun VoucherEntryScreen(
                         scope.launch {
                             try {
                                 isSaving = true
+                                errorMessage = null
                                 
-                                // Safe date conversion: DD-MM-YYYY -> YYYY-MM-DD
-                                val dbDate = try {
-                                    val parts = date.split("-")
-                                    if (parts.size == 3) "${parts[2]}-${parts[1]}-${parts[0]}" else date
-                                } catch (e: Exception) { date }
+                                withContext(NonCancellable) {
+                                    // Safe date conversion: DD-MM-YYYY -> YYYY-MM-DD
+                                    val dbDate = try {
+                                        val parts = date.split("-")
+                                        if (parts.size == 3) "${parts[2]}-${parts[1]}-${parts[0]}" else date
+                                    } catch (e: Exception) { date }
 
-                                // 1. Create Voucher
-                                val voucher = Voucher(
-                                    company_id = company.id!!,
-                                    voucher_type = voucherType,
-                                    reference_no = refNo.ifEmpty { null },
-                                    party_ledger_id = selectedPartyId,
-                                    date = dbDate,
-                                    narration = narration,
-                                    total_amount = grandTotal
-                                )
-                                val savedVoucher = supabase.from("vouchers").insert(voucher) {
-                                    select()
-                                }.decodeSingle<Voucher>()
-                                
-                                val voucherId = savedVoucher.id!!
+                                    // 1. Create Voucher
+                                    val voucher = Voucher(
+                                        company_id = company.id!!,
+                                        voucher_type = voucherType,
+                                        reference_no = refNo.ifEmpty { null },
+                                        party_ledger_id = selectedPartyId,
+                                        date = dbDate,
+                                        narration = narration,
+                                        total_amount = grandTotal
+                                    )
+                                    val savedVoucher = supabase.from("vouchers").insert(voucher) {
+                                        select()
+                                    }.decodeSingle<Voucher>()
+                                    
+                                    val voucherId = savedVoucher.id!!
 
-                                // 2. Save Stock Items & Update Quantities
-                                items.forEach { row ->
-                                    if (row.stockItemId.isNotEmpty()) {
-                                        val qtyVal = row.qty.toDoubleOrNull() ?: 0.0
-                                        supabase.from("voucher_stock_items").insert(VoucherStockItem(
-                                            voucher_id = voucherId,
-                                            stock_item_id = row.stockItemId,
-                                            quantity = qtyVal,
-                                            rate = row.rate.toDoubleOrNull() ?: 0.0,
-                                            amount = row.amount
-                                        ))
-                                        
-                                        // Update actual stock
-                                        val stockItem = stockItems.find { it.id == row.stockItemId }
-                                        if (stockItem != null) {
-                                            val adjustment = if (voucherType == "Purchase") qtyVal else -qtyVal
-                                            val newQty = stockItem.current_quantity + adjustment
-                                            supabase.from("stock_items").update(buildJsonObject {
-                                                put("current_quantity", newQty)
-                                            }) { filter { eq("id", stockItem.id!!) } }
+                                    // 2. Save Stock Items & Update Quantities
+                                    items.forEach { row ->
+                                        if (row.stockItemId.isNotEmpty()) {
+                                            val qtyVal = row.qty.toDoubleOrNull() ?: 0.0
+                                            supabase.from("voucher_stock_items").insert(VoucherStockItem(
+                                                voucher_id = voucherId,
+                                                stock_item_id = row.stockItemId,
+                                                quantity = qtyVal,
+                                                rate = row.rate.toDoubleOrNull() ?: 0.0,
+                                                amount = row.amount
+                                            ))
+                                            
+                                            // Update actual stock
+                                            val stockItem = stockItems.find { it.id == row.stockItemId }
+                                            if (stockItem != null) {
+                                                val adjustment = if (voucherType == "Purchase") qtyVal else -qtyVal
+                                                val newQty = stockItem.current_quantity + adjustment
+                                                supabase.from("stock_items").update(buildJsonObject {
+                                                    put("current_quantity", newQty)
+                                                }) { filter { eq("id", stockItem.id!!) } }
+                                            }
+                                        }
+                                    }
+
+                                    // 3. Save Accounting Entries & Update Balances
+                                    // Party Entry
+                                    val partyEntryType = if (voucherType == "Sale") "Debit" else "Credit"
+                                    supabase.from("voucher_entries").insert(VoucherEntry(
+                                        voucher_id = voucherId,
+                                        ledger_id = selectedPartyId!!,
+                                        amount = grandTotal,
+                                        entry_type = partyEntryType
+                                    ))
+                                    updateLedgerBalance(selectedPartyId!!, grandTotal, partyEntryType)
+                                    
+                                    // Sales/Purchase Entry
+                                    val ledgerEntryType = if (voucherType == "Sale") "Credit" else "Debit"
+                                    supabase.from("voucher_entries").insert(VoucherEntry(
+                                        voucher_id = voucherId,
+                                        ledger_id = selectedLedgerId!!,
+                                        amount = itemSubTotal,
+                                        entry_type = ledgerEntryType
+                                    ))
+                                    updateLedgerBalance(selectedLedgerId!!, itemSubTotal, ledgerEntryType)
+
+                                    // Tax Ledger Entries
+                                    taxEntries.forEach { tax ->
+                                        if (tax.ledgerId.isNotEmpty()) {
+                                            supabase.from("voucher_entries").insert(VoucherEntry(
+                                                voucher_id = voucherId,
+                                                ledger_id = tax.ledgerId,
+                                                amount = tax.amount,
+                                                entry_type = ledgerEntryType
+                                            ))
+                                            updateLedgerBalance(tax.ledgerId, tax.amount, ledgerEntryType)
                                         }
                                     }
                                 }
-
-                                // 3. Save Accounting Entries & Update Balances
-                                // Party Entry
-                                val partyEntryType = if (voucherType == "Sale") "Debit" else "Credit"
-                                supabase.from("voucher_entries").insert(VoucherEntry(
-                                    voucher_id = voucherId,
-                                    ledger_id = selectedPartyId!!,
-                                    amount = grandTotal,
-                                    entry_type = partyEntryType
-                                ))
-                                updateLedgerBalance(selectedPartyId!!, grandTotal, partyEntryType)
-                                
-                                // Sales/Purchase Entry
-                                val ledgerEntryType = if (voucherType == "Sale") "Credit" else "Debit"
-                                supabase.from("voucher_entries").insert(VoucherEntry(
-                                    voucher_id = voucherId,
-                                    ledger_id = selectedLedgerId!!,
-                                    amount = itemSubTotal,
-                                    entry_type = ledgerEntryType
-                                ))
-                                updateLedgerBalance(selectedLedgerId!!, itemSubTotal, ledgerEntryType)
-
-                                // Tax Ledger Entries
-                                taxEntries.forEach { tax ->
-                                    if (tax.ledgerId.isNotEmpty()) {
-                                        supabase.from("voucher_entries").insert(VoucherEntry(
-                                            voucher_id = voucherId,
-                                            ledger_id = tax.ledgerId,
-                                            amount = tax.amount,
-                                            entry_type = ledgerEntryType
-                                        ))
-                                        updateLedgerBalance(tax.ledgerId, tax.amount, ledgerEntryType)
-                                    }
-                                }
-                                
                                 onBack()
                             } catch (e: Exception) {
                                 println("Save error details: ${e.message}")

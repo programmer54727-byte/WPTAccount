@@ -21,22 +21,51 @@ fun Double.format(digits: Int = 2): String {
 
 fun isDebitNature(groupName: String): Boolean {
     val name = groupName.lowercase()
+    
+    // Check for explicit markers first
+    if (name.contains("(asset)")) return true
+    if (name.contains("(liability)")) return false
+
+    // Explicit exclusions for Credit nature groups (Liabilities/Income)
+    if (name.contains("creditor") || 
+        name.contains("provision") || 
+        name.contains("reserve") || 
+        name.contains("capital") || 
+        name.contains("sales") || 
+        name.contains("income") || 
+        name.contains("duty") || 
+        name.contains("tax") ||
+        name.contains("loan")) return false
+
+    // Explicit inclusions for Debit nature groups (Assets/Expenses)
     return name.contains("asset") || 
            name.contains("expense") || 
            name.contains("cash") || 
            name.contains("bank") || 
            name.contains("purchase") || 
            name.contains("stock") || 
-           name.contains("investments") || 
-           name.contains("advances") || 
-           name.contains("deposits")
+           name.contains("investment") || 
+           name.contains("advance") || 
+           name.contains("deposit") ||
+           name.contains("debtor") ||
+           name.contains("branch") ||
+           name.contains("division")
 }
 
-fun Double.formatWithSign(isDebitNature: Boolean): String {
+fun Double.formatWithSign(): String {
     val formatted = kotlin.math.abs(this).format(2)
-    return if (isDebitNature) {
-        if (this >= 0) "$formatted Dr" else "$formatted Cr"
-    } else {
-        if (this >= 0) "$formatted Cr" else "$formatted Dr"
+    // Professional Signed Balance Logic:
+    // Positive values are Debit, Negative values are Credit.
+    return if (this >= 0) "$formatted Dr" else "$formatted Cr"
+}
+
+fun Company.getDefaultPeriod(): AccountPeriod {
+    val start = financial_year_beginning ?: "2024-04-01"
+    val parts = start.split("-")
+    if (parts.size == 3) {
+        val startYear = parts[0].toInt()
+        val nextYear = startYear + 1
+        return AccountPeriod(start, "$nextYear-03-31")
     }
+    return AccountPeriod("2024-04-01", "2025-03-31")
 }

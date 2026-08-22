@@ -48,6 +48,7 @@ data class VoucherStockItemWithVoucher(
 
 @Serializable
 data class VoucherEntryWithVoucher(
+    val ledger_id: String = "",
     val amount: Double,
     val entry_type: String,
     val vouchers: Voucher
