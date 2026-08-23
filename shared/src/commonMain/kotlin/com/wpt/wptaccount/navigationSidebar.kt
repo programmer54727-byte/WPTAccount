@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
 enum class ScreenType {
-    Home, Dashboard, BalanceSheet, ProfitAndLoss, CashFlow, Stock, Sale, Purchase, Payment, Receipt, Contra, Journal, CreditNote, DebitNote, Ledger, Exit
+    Home, Dashboard, BalanceSheet, ProfitAndLoss, CashFlow, Stock, Sale, Purchase, Payment, Receipt, Contra, Journal, CreditNote, DebitNote, Ledger, Gst, Exit
 }
 
 @Composable
@@ -213,6 +213,14 @@ private fun DrawerContent(
         label = { Text("Ledger") },
         selected = currentScreen == ScreenType.Ledger,
         onClick = { onNavigate(ScreenType.Ledger) },
+        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+    )
+
+    NavigationDrawerItem(
+        icon = { Icon(Icons.Default.Description, contentDescription = null) }, // Using Description icon for GST
+        label = { Text("GST Details") },
+        selected = currentScreen == ScreenType.Gst,
+        onClick = { onNavigate(ScreenType.Gst) },
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
     

@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -49,6 +50,12 @@ data class LedgerBalance(
 @Composable
 fun LedgerManagement(
     company: Company,
+    onHomeClick: () -> Unit,
+    onDashboardClick: () -> Unit,
+    onStockSummaryClick: () -> Unit,
+    onGstDetailsClick: () -> Unit,
+    onSaleClick: () -> Unit,
+    onPurchaseClick: () -> Unit,
     onBack: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(0) }
@@ -57,35 +64,71 @@ fun LedgerManagement(
 
     val tabs = listOf("Groups", "Ledgers")
     
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { 
-                    Column {
-                        Text("Ledger: ${company.company_name}", style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            "Period: ${selectedPeriod.startDate} to ${selectedPeriod.endDate}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.clickable { showPeriodDialog = true }
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showPeriodDialog = true }) {
-                        Icon(Icons.Default.Event, contentDescription = "Change Period")
-                    }
-                }
-            )
+    AppNavigationDrawer(
+        currentScreen = ScreenType.Ledger,
+        companyName = company.company_name,
+        onNavigate = { screen ->
+            when (screen) {
+                ScreenType.Home -> onHomeClick()
+                ScreenType.Dashboard -> onDashboardClick()
+                ScreenType.Exit -> onBack()
+                ScreenType.Sale -> onSaleClick()
+                ScreenType.Purchase -> onPurchaseClick()
+                ScreenType.Payment -> { /* TODO */ }
+                ScreenType.Receipt -> { /* TODO */ }
+                ScreenType.Ledger -> { /* Already here */ }
+                ScreenType.Contra -> { /* TODO */ }
+                ScreenType.Journal -> { /* TODO */ }
+                ScreenType.CreditNote -> { /* TODO */ }
+                ScreenType.DebitNote -> { /* TODO */ }
+                ScreenType.BalanceSheet -> { /* TODO */ }
+                ScreenType.ProfitAndLoss -> { /* TODO */ }
+                ScreenType.CashFlow -> { /* TODO */ }
+                ScreenType.Stock -> onStockSummaryClick()
+                ScreenType.Gst -> onGstDetailsClick()
+            }
         }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
-            TabRow(
+    ) { _, onToggleDrawer, isDesktop ->
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { 
+                        Column {
+                            Text("Ledger: ${company.company_name}", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                "Period: ${selectedPeriod.startDate} to ${selectedPeriod.endDate}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.clickable { showPeriodDialog = true }
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        if (isDesktop) {
+                            IconButton(onClick = onBack) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            }
+                        } else {
+                            IconButton(onClick = onToggleDrawer) {
+                                Icon(Icons.Default.Menu, contentDescription = "Menu")
+                            }
+                        }
+                    },
+                    actions = {
+                        if (!isDesktop) {
+                            IconButton(onClick = onBack) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            }
+                        }
+                        IconButton(onClick = { showPeriodDialog = true }) {
+                            Icon(Icons.Default.Event, contentDescription = "Change Period")
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Column(modifier = Modifier.padding(padding)) {
+                TabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = MaterialTheme.colorScheme.surface
             ) {
@@ -98,9 +141,10 @@ fun LedgerManagement(
                 }
             }
             
-            when (selectedTab) {
-                0 -> LedgerGroupsTab(company, selectedPeriod)
-                1 -> LedgersTab(company, selectedPeriod)
+                when (selectedTab) {
+                    0 -> LedgerGroupsTab(company, selectedPeriod)
+                    1 -> LedgersTab(company, selectedPeriod)
+                }
             }
         }
     }

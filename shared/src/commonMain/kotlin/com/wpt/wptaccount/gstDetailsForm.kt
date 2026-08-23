@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,11 +19,17 @@ import kotlinx.coroutines.launch
 @Composable
 fun GstDetailsScreen(
     company: Company,
+    onHomeClick: () -> Unit,
+    onDashboardClick: () -> Unit,
+    onStockSummaryClick: () -> Unit,
+    onLedgerClick: () -> Unit,
+    onSaleClick: () -> Unit,
+    onPurchaseClick: () -> Unit,
     onBack: () -> Unit
 ) {
     var gstDetails by remember { mutableStateOf<GstDetails?>(null) }
     var isLoading by remember { mutableStateOf(true) }
-    
+
     // Form States
     var regStatus by remember { mutableStateOf("Active") }
     var state by remember { mutableStateOf(company.state ?: "") }
@@ -75,115 +82,153 @@ fun GstDetailsScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("GST Details") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    Button(
-                        onClick = {
-                            scope.launch {
-                                saveError = null
-                                isSaving = true
-                                try {
-                                    val newDetails = GstDetails(
-                                        id = gstDetails?.id, // CRITICAL FIX: Add ID to allow update instead of duplicate
-                                        company_id = company.id!!,
-                                        registration_status = regStatus,
-                                        state = state,
-                                        registration_type = regType,
-                                        is_other_territory_assessee = isOtherTerritory,
-                                        gstin_uin = gstin,
-                                        gstr1_periodicity = periodicity,
-                                        gst_username = gstUsername,
-                                        filing_mode = modeOfFiling,
-                                        eway_bill_applicable = ewayBillApplicable,
-                                        eway_bill_date = ewayBillDate.ifEmpty { null },
-                                        eway_bill_intrastate = ewayBillIntrastate,
-                                        einvoice_applicable = einvoiceApplicable,
-                                        registration_name = registrationName
-                                    )
-                                    supabase.from("gst_details").upsert(newDetails)
-                                    onBack()
-                                } catch (e: Exception) {
-                                    println("Error saving GST details: ${e.message}")
-                                    saveError = "Failed to save data. Please check your connection."
-                                } finally {
-                                    isSaving = false
-                                }
+    AppNavigationDrawer(
+        currentScreen = ScreenType.Gst,
+        companyName = company.company_name,
+        onNavigate = { screen ->
+            when (screen) {
+                ScreenType.Home -> onHomeClick()
+                ScreenType.Dashboard -> onDashboardClick()
+                ScreenType.Exit -> onBack()
+                ScreenType.Sale -> onSaleClick()
+                ScreenType.Purchase -> onPurchaseClick()
+                ScreenType.Payment -> { /* TODO */ }
+                ScreenType.Receipt -> { /* TODO */ }
+                ScreenType.Ledger -> onLedgerClick()
+                ScreenType.Contra -> { /* TODO */ }
+                ScreenType.Journal -> { /* TODO */ }
+                ScreenType.CreditNote -> { /* TODO */ }
+                ScreenType.DebitNote -> { /* TODO */ }
+                ScreenType.BalanceSheet -> { /* TODO */ }
+                ScreenType.ProfitAndLoss -> { /* TODO */ }
+                ScreenType.CashFlow -> { /* TODO */ }
+                ScreenType.Stock -> onStockSummaryClick()
+                ScreenType.Gst -> { /* Already here */ }
+            }
+        }
+    )
+{ _, onToggleDrawer, isDesktop ->
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("GST Details") },
+                    navigationIcon = {
+                        if (isDesktop) {
+                            IconButton(onClick = onBack) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                             }
-                        },
-                        enabled = !isSaving
-                    ) {
-                        if (isSaving) {
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
                         } else {
-                            Text("Save")
+                            IconButton(onClick = onToggleDrawer) {
+                                Icon(Icons.Default.Menu, contentDescription = "Menu")
+                            }
+                        }
+                    },
+                    actions = {
+                        if (!isDesktop) {
+                            IconButton(onClick = onBack) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            }
+                        }
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    saveError = null
+                                    isSaving = true
+                                    try {
+                                        val newDetails = GstDetails(
+                                            id = gstDetails?.id,
+                                            company_id = company.id!!,
+                                            registration_status = regStatus,
+                                            state = state,
+                                            registration_type = regType,
+                                            is_other_territory_assessee = isOtherTerritory,
+                                            gstin_uin = gstin,
+                                            gstr1_periodicity = periodicity,
+                                            gst_username = gstUsername,
+                                            filing_mode = modeOfFiling,
+                                            eway_bill_applicable = ewayBillApplicable,
+                                            eway_bill_date = ewayBillDate.ifEmpty { null },
+                                            eway_bill_intrastate = ewayBillIntrastate,
+                                            einvoice_applicable = einvoiceApplicable,
+                                            registration_name = registrationName
+                                        )
+                                        supabase.from("gst_details").upsert(newDetails)
+                                        onBack()
+                                    } catch (e: Exception) {
+                                        println("Error saving GST details: ${e.message}")
+                                        saveError = "Failed to save data. Please check your connection."
+                                    } finally {
+                                        isSaving = false
+                                    }
+                                }
+                            },
+                            enabled = !isSaving
+                        ) {
+                            if (isSaving) {
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                            } else {
+                                Text("Save")
+                            }
                         }
                     }
-                }
-            )
-        }
-    ) { padding ->
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                )
             }
-        } else {
-            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
-                Column(
-                    modifier = Modifier
-                        .widthIn(max = 800.dp)
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 16.dp)
-                        .verticalScroll(scrollState),
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
-                ) {
-                    if (saveError != null) {
-                        Text(
-                            text = saveError!!,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.fillMaxWidth(),
-                            fontWeight = FontWeight.Bold
-                        )
+        ) { padding ->
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
+                    Column(
+                        modifier = Modifier
+                            .widthIn(max = 800.dp)
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 16.dp)
+                            .verticalScroll(scrollState),
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        if (saveError != null) {
+                            Text(
+                                text = saveError!!,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.fillMaxWidth(),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Registration status : ", modifier = Modifier.width(150.dp))
+                            Text(regStatus, fontWeight = FontWeight.Bold)
+                        }
+
+                        DividerWithLabel("GST Registration Details")
+                        
+                        GstField("State", state) { state = it }
+                        GstDropdown("Registration type", listOf("Regular", "Composition"), regType) { regType = it }
+                        GstSwitch("Assessee of Other Territory", isOtherTerritory) { isOtherTerritory = it }
+                        GstField("GSTIN/UIN", gstin) { gstin = it }
+                        GstDropdown("Periodicity of GSTR-1", listOf("Monthly", "Quarterly"), periodicity) { periodicity = it }
+
+                        DividerWithLabel("Connected GST Details")
+                        GstField("GST Username", gstUsername) { gstUsername = it }
+                        GstField("Mode of Filing", modeOfFiling) { modeOfFiling = it }
+
+                        DividerWithLabel("e-Way Bill Details")
+                        GstSwitch("e-Way Bill applicable", ewayBillApplicable) { ewayBillApplicable = it }
+                        if (ewayBillApplicable) {
+                            GstField("Applicable from", ewayBillDate) { ewayBillDate = it }
+                            GstSwitch("Applicable for intrastate", ewayBillIntrastate) { ewayBillIntrastate = it }
+                        }
+
+                        DividerWithLabel("e-Invoice Details")
+                        GstSwitch("e-Invoicing applicable", einvoiceApplicable) { einvoiceApplicable = it }
+
+                        GstField("Registration Name", registrationName) { registrationName = it }
+                        
+                        Spacer(modifier = Modifier.height(100.dp))
                     }
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Registration status : ", modifier = Modifier.width(150.dp))
-                        Text(regStatus, fontWeight = FontWeight.Bold)
-                    }
-
-                    DividerWithLabel("GST Registration Details")
-                    
-                    GstField("State", state) { state = it }
-                    GstDropdown("Registration type", listOf("Regular", "Composition"), regType) { regType = it }
-                    GstSwitch("Assessee of Other Territory", isOtherTerritory) { isOtherTerritory = it }
-                    GstField("GSTIN/UIN", gstin) { gstin = it }
-                    GstDropdown("Periodicity of GSTR-1", listOf("Monthly", "Quarterly"), periodicity) { periodicity = it }
-
-                    DividerWithLabel("Connected GST Details")
-                    GstField("GST Username", gstUsername) { gstUsername = it }
-                    GstField("Mode of Filing", modeOfFiling) { modeOfFiling = it }
-
-                    DividerWithLabel("e-Way Bill Details")
-                    GstSwitch("e-Way Bill applicable", ewayBillApplicable) { ewayBillApplicable = it }
-                    if (ewayBillApplicable) {
-                        GstField("Applicable from", ewayBillDate) { ewayBillDate = it }
-                        GstSwitch("Applicable for intrastate", ewayBillIntrastate) { ewayBillIntrastate = it }
-                    }
-
-                    DividerWithLabel("e-Invoice Details")
-                    GstSwitch("e-Invoicing applicable", einvoiceApplicable) { einvoiceApplicable = it }
-
-                    GstField("Registration Name", registrationName) { registrationName = it }
-                    
-                    Spacer(modifier = Modifier.height(100.dp))
                 }
             }
         }

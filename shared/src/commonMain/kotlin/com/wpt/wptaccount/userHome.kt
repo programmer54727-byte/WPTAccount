@@ -111,6 +111,7 @@ fun UserHome(
                     ScreenType.ProfitAndLoss -> { /* TODO */ }
                     ScreenType.CashFlow -> { /* TODO */ }
                     ScreenType.Stock -> onStockSummaryClick()
+                    ScreenType.Gst -> onGstDetailsClick()
                 }
             }
         ) { _, onToggleDrawer, isDesktop ->
@@ -148,7 +149,8 @@ fun UserHome(
                         }
                     )
                 }
-            ) { padding ->
+            )
+{ padding ->
                 Column(
                     modifier = Modifier
                         .fillMaxSize()

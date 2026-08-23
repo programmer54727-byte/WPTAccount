@@ -1,5 +1,6 @@
 package com.wpt.wptaccount
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -7,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -29,7 +31,7 @@ data class ItemRow(
     var stockItemId: String = "",
     var qty: String = "1",
     var rate: String = "0",
-    var amount: Double = 0.0
+    var amount: String = "0"
 )
 
 @Serializable
@@ -44,6 +46,13 @@ data class TaxRow(
 fun VoucherEntryScreen(
     company: Company,
     voucherType: String, // "Sale" or "Purchase"
+    onHomeClick: () -> Unit,
+    onDashboardClick: () -> Unit,
+    onStockSummaryClick: () -> Unit,
+    onGstDetailsClick: () -> Unit,
+    onLedgerClick: () -> Unit,
+    onSaleClick: () -> Unit = {},
+    onPurchaseClick: () -> Unit = {},
     onBack: () -> Unit
 ) {
     var date by remember { mutableStateOf("17-08-2024") }
@@ -110,37 +119,75 @@ fun VoucherEntryScreen(
 
     LaunchedEffect(Unit) { fetchData() }
 
-    val itemSubTotal = items.sumOf { it.amount }
+    val itemSubTotal = items.sumOf { it.amount.toDoubleOrNull() ?: 0.0 }
     val taxTotal = taxEntries.sumOf { it.amount }
     val grandTotal = itemSubTotal + taxTotal
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("$voucherType Creation") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+    AppNavigationDrawer(
+        currentScreen = if (voucherType == "Sale") ScreenType.Sale else ScreenType.Purchase,
+        companyName = company.company_name,
+        onNavigate = { screen ->
+            when (screen) {
+                ScreenType.Home -> onHomeClick()
+                ScreenType.Dashboard -> onDashboardClick()
+                ScreenType.Exit -> onBack()
+                ScreenType.Sale -> onSaleClick()
+                ScreenType.Purchase -> onPurchaseClick()
+                ScreenType.Payment -> { /* TODO */ }
+                ScreenType.Receipt -> { /* TODO */ }
+                ScreenType.Ledger -> onLedgerClick()
+                ScreenType.Contra -> { /* TODO */ }
+                ScreenType.Journal -> { /* TODO */ }
+                ScreenType.CreditNote -> { /* TODO */ }
+                ScreenType.DebitNote -> { /* TODO */ }
+                ScreenType.BalanceSheet -> { /* TODO */ }
+                ScreenType.ProfitAndLoss -> { /* TODO */ }
+                ScreenType.CashFlow -> { /* TODO */ }
+                ScreenType.Stock -> onStockSummaryClick()
+                ScreenType.Gst -> onGstDetailsClick()
             }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+        }
+    ) { _, onToggleDrawer, isDesktop ->
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("$voucherType Creation") },
+                    navigationIcon = {
+                        if (isDesktop) {
+                            IconButton(onClick = onBack) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            }
+                        } else {
+                            IconButton(onClick = onToggleDrawer) {
+                                Icon(Icons.Default.Menu, contentDescription = "Menu")
+                            }
+                        }
+                    },
+                    actions = {
+                        if (!isDesktop) {
+                            IconButton(onClick = onBack) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            }
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(16.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
                 // Header Info
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     InventoryField("Date", date, modifier = Modifier.weight(1f)) { date = it }
                     InventoryField(if (voucherType == "Sale") "Ref No." else "Supplier Inv No.", refNo, modifier = Modifier.weight(1f)) { refNo = it }
                 }
@@ -172,69 +219,87 @@ fun VoucherEntryScreen(
 
                 // Items Table
                 Text("Inventory Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Name of Item", modifier = Modifier.weight(2f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
-                    Text("Quantity", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
-                    Text("Rate", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
-                    Text("Amount", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
-                    Spacer(Modifier.width(48.dp))
-                }
+                
+                val itemScrollState = rememberScrollState()
+                Column(modifier = Modifier.fillMaxWidth().horizontalScroll(itemScrollState)) {
+                    val contentWidth = 600.dp // Sufficient width for all columns
+                    
+                    Column(modifier = Modifier.width(contentWidth)) {
+                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text("Name of Item", modifier = Modifier.weight(2f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
+                            Text("Quantity", modifier = Modifier.width(80.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                            Text("Rate", modifier = Modifier.width(100.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                            Text("Amount", modifier = Modifier.width(120.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                            Spacer(Modifier.width(48.dp))
+                        }
 
-                items.forEachIndexed { index, row ->
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.weight(2f)) {
-                            TallySearchableInput(
-                                label = "",
-                                options = stockItems.map { it.item_name },
-                                selected = stockItems.find { it.id == row.stockItemId }?.item_name ?: "",
-                                onCreate = { showAddItem = true }
-                            ) { name ->
-                                val item = stockItems.find { it.item_name == name }
-                                if (item != null) {
-                                    items[index] = row.copy(
-                                        stockItemId = item.id!!,
-                                        rate = if (row.rate == "0") item.opening_rate.toString() else row.rate
-                                    ).apply {
-                                        amount = (qty.toDoubleOrNull() ?: 0.0) * (rate.toDoubleOrNull() ?: 0.0)
+                        items.forEachIndexed { index, row ->
+                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.weight(2f)) {
+                                    TallySearchableInput(
+                                        label = "",
+                                        options = stockItems.map { it.item_name },
+                                        selected = stockItems.find { it.id == row.stockItemId }?.item_name ?: "",
+                                        onCreate = { showAddItem = true }
+                                    ) { name ->
+                                        val item = stockItems.find { it.item_name == name }
+                                        if (item != null) {
+                                            val r = if (row.rate == "0") item.opening_rate.toString() else row.rate
+                                            val q = row.qty
+                                            val a = (q.toDoubleOrNull() ?: 0.0) * (r.toDoubleOrNull() ?: 0.0)
+                                            
+                                            items[index] = row.copy(
+                                                stockItemId = item.id!!,
+                                                rate = r,
+                                                amount = a.format(2)
+                                            )
+                                        }
                                     }
                                 }
-                            }
-                        }
-                        
-                        OutlinedTextField(
-                            value = row.qty,
-                            onValueChange = { 
-                                items[index] = row.copy(qty = it).apply {
-                                    amount = (it.toDoubleOrNull() ?: 0.0) * (rate.toDoubleOrNull() ?: 0.0)
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                            textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
-                            singleLine = true
-                        )
-                        
-                        OutlinedTextField(
-                            value = row.rate,
-                            onValueChange = { 
-                                items[index] = row.copy(rate = it).apply {
-                                    amount = (qty.toDoubleOrNull() ?: 0.0) * (it.toDoubleOrNull() ?: 0.0)
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                            textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
-                            singleLine = true
-                        )
-                        
-                        Text(
-                            text = row.amount.format(),
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.End,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Bold
-                        )
+                                
+                                OutlinedTextField(
+                                    value = row.qty,
+                                    onValueChange = { 
+                                        val q = it
+                                        val r = row.rate
+                                        val a = (q.toDoubleOrNull() ?: 0.0) * (r.toDoubleOrNull() ?: 0.0)
+                                        items[index] = row.copy(qty = q, amount = a.format(2))
+                                    },
+                                    modifier = Modifier.width(80.dp),
+                                    textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
+                                    singleLine = true
+                                )
+                                
+                                OutlinedTextField(
+                                    value = row.rate,
+                                    onValueChange = { 
+                                        val r = it
+                                        val q = row.qty
+                                        val a = (q.toDoubleOrNull() ?: 0.0) * (r.toDoubleOrNull() ?: 0.0)
+                                        items[index] = row.copy(rate = r, amount = a.format(2))
+                                    },
+                                    modifier = Modifier.width(100.dp),
+                                    textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
+                                    singleLine = true
+                                )
+                                
+                                OutlinedTextField(
+                                    value = row.amount,
+                                    onValueChange = { 
+                                        val a = it
+                                        val q = row.qty.toDoubleOrNull() ?: 1.0
+                                        val r = if (q != 0.0) (a.toDoubleOrNull() ?: 0.0) / q else 0.0
+                                        items[index] = row.copy(amount = a, rate = if (q != 0.0) r.format(2) else row.rate)
+                                    },
+                                    modifier = Modifier.width(120.dp),
+                                    textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End, fontWeight = FontWeight.Bold),
+                                    singleLine = true
+                                )
 
-                        IconButton(onClick = { items.removeAt(index) }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete Row", tint = MaterialTheme.colorScheme.error)
+                                IconButton(onClick = { items.removeAt(index) }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Delete Row", tint = MaterialTheme.colorScheme.error)
+                                }
+                            }
                         }
                     }
                 }
@@ -248,41 +313,49 @@ fun VoucherEntryScreen(
 
                 // Additional Ledgers (Taxes, Freight, etc.)
                 Text("Ledger Details (Taxes/Charges)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                taxEntries.forEachIndexed { index, row ->
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.weight(2f)) {
-                            TallySearchableInput(
-                                label = "",
-                                options = ledgers.map { it.ledger_name },
-                                selected = ledgers.find { it.id == row.ledgerId }?.ledger_name ?: "",
-                                onCreate = { showAddLedger = true }
-                            ) { name ->
-                                val ledger = ledgers.find { it.ledger_name == name }
-                                if (ledger != null) {
-                                    val rate = ledger.tax_rate ?: 0.0
-                                    taxEntries[index] = row.copy(
-                                        ledgerId = ledger.id!!,
-                                        taxRate = rate,
-                                        amount = itemSubTotal * rate / 100.0
-                                    )
+                
+                val ledgerScrollState = rememberScrollState()
+                Column(modifier = Modifier.fillMaxWidth().horizontalScroll(ledgerScrollState)) {
+                    val contentWidth = 600.dp
+                    
+                    Column(modifier = Modifier.width(contentWidth)) {
+                        taxEntries.forEachIndexed { index, row ->
+                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.weight(2f)) {
+                                    TallySearchableInput(
+                                        label = "",
+                                        options = ledgers.map { it.ledger_name },
+                                        selected = ledgers.find { it.id == row.ledgerId }?.ledger_name ?: "",
+                                        onCreate = { showAddLedger = true }
+                                    ) { name ->
+                                        val ledger = ledgers.find { it.ledger_name == name }
+                                        if (ledger != null) {
+                                            val rate = ledger.tax_rate ?: 0.0
+                                            taxEntries[index] = row.copy(
+                                                ledgerId = ledger.id!!,
+                                                taxRate = rate,
+                                                amount = itemSubTotal * rate / 100.0
+                                            )
+                                        }
+                                    }
+                                }
+                                
+                                Spacer(Modifier.width(180.dp)) // Equivalent to Qty (80) + Rate (100)
+                                
+                                OutlinedTextField(
+                                    value = row.amount.toString(),
+                                    onValueChange = { 
+                                        taxEntries[index] = row.copy(amount = it.toDoubleOrNull() ?: 0.0)
+                                    },
+                                    modifier = Modifier.width(120.dp),
+                                    textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
+                                    singleLine = true
+                                )
+
+                                IconButton(onClick = { taxEntries.removeAt(index) }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Delete Row", tint = MaterialTheme.colorScheme.error)
                                 }
                             }
-                        }
-                        
-                        Spacer(Modifier.weight(2f)) // Skip Qty/Rate columns for tax
-                        
-                        OutlinedTextField(
-                            value = row.amount.toString(),
-                            onValueChange = { 
-                                taxEntries[index] = row.copy(amount = it.toDoubleOrNull() ?: 0.0)
-                            },
-                            modifier = Modifier.weight(1f),
-                            textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
-                            singleLine = true
-                        )
-
-                        IconButton(onClick = { taxEntries.removeAt(index) }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete Row", tint = MaterialTheme.colorScheme.error)
                         }
                     }
                 }
@@ -360,7 +433,7 @@ fun VoucherEntryScreen(
                                                 stock_item_id = row.stockItemId,
                                                 quantity = qtyVal,
                                                 rate = row.rate.toDoubleOrNull() ?: 0.0,
-                                                amount = row.amount
+                                                amount = row.amount.toDoubleOrNull() ?: 0.0
                                             ))
                                             
                                             // Update actual stock
@@ -427,6 +500,7 @@ fun VoucherEntryScreen(
             }
         }
     }
+}
 
     if (showAddLedger) {
         CompactAddLedgerDialog(company, groups, onDismiss = { showAddLedger = false }) {

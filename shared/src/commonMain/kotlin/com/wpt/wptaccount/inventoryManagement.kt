@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -107,41 +108,86 @@ fun InventoryDropdown(label: String, options: List<String>, selected: String, mo
 @Composable
 fun InventoryManagement(
     company: Company,
+    onHomeClick: () -> Unit,
+    onDashboardClick: () -> Unit,
+    onGstDetailsClick: () -> Unit,
+    onLedgerClick: () -> Unit,
+    onSaleClick: () -> Unit,
+    onPurchaseClick: () -> Unit,
     onBack: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Units", "Groups", "Items")
-    
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Inventory: ${company.company_name}", style = MaterialTheme.typography.titleMedium) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+
+    AppNavigationDrawer(
+        currentScreen = ScreenType.Stock,
+        companyName = company.company_name,
+        onNavigate = { screen ->
+            when (screen) {
+                ScreenType.Home -> onHomeClick()
+                ScreenType.Dashboard -> onDashboardClick()
+                ScreenType.Exit -> onBack()
+                ScreenType.Sale -> onSaleClick()
+                ScreenType.Purchase -> onPurchaseClick()
+                ScreenType.Payment -> { /* TODO */ }
+                ScreenType.Receipt -> { /* TODO */ }
+                ScreenType.Ledger -> onLedgerClick()
+                ScreenType.Contra -> { /* TODO */ }
+                ScreenType.Journal -> { /* TODO */ }
+                ScreenType.CreditNote -> { /* TODO */ }
+                ScreenType.DebitNote -> { /* TODO */ }
+                ScreenType.BalanceSheet -> { /* TODO */ }
+                ScreenType.ProfitAndLoss -> { /* TODO */ }
+                ScreenType.CashFlow -> { /* TODO */ }
+                ScreenType.Stock -> { /* Already here */ }
+                ScreenType.Gst -> onGstDetailsClick()
+            }
+        }
+    ) { _, onToggleDrawer, isDesktop ->
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Inventory: ${company.company_name}", style = MaterialTheme.typography.titleMedium) },
+                    navigationIcon = {
+                        if (isDesktop) {
+                            IconButton(onClick = onBack) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            }
+                        } else {
+                            IconButton(onClick = onToggleDrawer) {
+                                Icon(Icons.Default.Menu, contentDescription = "Menu")
+                            }
+                        }
+                    },
+                    actions = {
+                        if (!isDesktop) {
+                            IconButton(onClick = onBack) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            }
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Column(modifier = Modifier.padding(padding)) {
+                TabRow(
+                    selectedTabIndex = selectedTab,
+                    containerColor = MaterialTheme.colorScheme.surface
+                ) {
+                    tabs.forEachIndexed { index, title ->
+                        Tab(
+                            selected = selectedTab == index,
+                            onClick = { selectedTab = index },
+                            text = { Text(title, style = MaterialTheme.typography.bodySmall) }
+                        )
                     }
                 }
-            )
-        }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
-            TabRow(
-                selectedTabIndex = selectedTab,
-                containerColor = MaterialTheme.colorScheme.surface
-            ) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        text = { Text(title, style = MaterialTheme.typography.bodySmall) }
-                    )
+
+                when (selectedTab) {
+                    0 -> UnitsTab(company)
+                    1 -> StockGroupsTab(company)
+                    2 -> StockItemsTab(company)
                 }
-            }
-            
-            when (selectedTab) {
-                0 -> UnitsTab(company)
-                1 -> StockGroupsTab(company)
-                2 -> StockItemsTab(company)
             }
         }
     }

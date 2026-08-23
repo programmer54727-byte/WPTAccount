@@ -119,6 +119,7 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                     company = company,
                                     onHomeClick = { currentScreen = "company_home" },
                                     onStockClick = { currentScreen = "inventory_management" },
+                                    onGstDetailsClick = { currentScreen = "gst_details" },
                                     onBack = { currentScreen = "company_list" }
                                 )
                             } ?: run {
@@ -129,6 +130,12 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                             selectedCompany?.let { company ->
                                 GstDetailsScreen(
                                     company = company,
+                                    onHomeClick = { currentScreen = "company_home" },
+                                    onDashboardClick = { currentScreen = "company_dashboard" },
+                                    onStockSummaryClick = { currentScreen = "inventory_management" },
+                                    onLedgerClick = { currentScreen = "ledger_management" },
+                                    onSaleClick = { currentScreen = "voucher_sale" },
+                                    onPurchaseClick = { currentScreen = "voucher_purchase" },
                                     onBack = { currentScreen = "company_home" }
                                 )
                             } ?: run {
@@ -139,6 +146,12 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                             selectedCompany?.let { company ->
                                 InventoryManagement(
                                     company = company,
+                                    onHomeClick = { currentScreen = "company_home" },
+                                    onDashboardClick = { currentScreen = "company_dashboard" },
+                                    onGstDetailsClick = { currentScreen = "gst_details" },
+                                    onLedgerClick = { currentScreen = "ledger_management" },
+                                    onSaleClick = { currentScreen = "voucher_sale" },
+                                    onPurchaseClick = { currentScreen = "voucher_purchase" },
                                     onBack = { currentScreen = "company_home" }
                                 )
                             } ?: run {
@@ -149,6 +162,12 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                             selectedCompany?.let { company ->
                                 LedgerManagement(
                                     company = company,
+                                    onHomeClick = { currentScreen = "company_home" },
+                                    onDashboardClick = { currentScreen = "company_dashboard" },
+                                    onStockSummaryClick = { currentScreen = "inventory_management" },
+                                    onGstDetailsClick = { currentScreen = "gst_details" },
+                                    onSaleClick = { currentScreen = "voucher_sale" },
+                                    onPurchaseClick = { currentScreen = "voucher_purchase" },
                                     onBack = { currentScreen = "company_home" }
                                 )
                             } ?: run {
@@ -160,6 +179,13 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                 VoucherEntryScreen(
                                     company = company,
                                     voucherType = "Sale",
+                                    onHomeClick = { currentScreen = "company_home" },
+                                    onDashboardClick = { currentScreen = "company_dashboard" },
+                                    onStockSummaryClick = { currentScreen = "inventory_management" },
+                                    onGstDetailsClick = { currentScreen = "gst_details" },
+                                    onLedgerClick = { currentScreen = "ledger_management" },
+                                    onSaleClick = { currentScreen = "voucher_sale" },
+                                    onPurchaseClick = { currentScreen = "voucher_purchase" },
                                     onBack = { currentScreen = "company_home" }
                                 )
                             } ?: run {
@@ -171,6 +197,13 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                 VoucherEntryScreen(
                                     company = company,
                                     voucherType = "Purchase",
+                                    onHomeClick = { currentScreen = "company_home" },
+                                    onDashboardClick = { currentScreen = "company_dashboard" },
+                                    onStockSummaryClick = { currentScreen = "inventory_management" },
+                                    onGstDetailsClick = { currentScreen = "gst_details" },
+                                    onLedgerClick = { currentScreen = "ledger_management" },
+                                    onSaleClick = { currentScreen = "voucher_sale" },
+                                    onPurchaseClick = { currentScreen = "voucher_purchase" },
                                     onBack = { currentScreen = "company_home" }
                                 )
                             } ?: run {
