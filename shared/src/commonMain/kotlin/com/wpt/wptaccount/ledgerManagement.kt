@@ -54,6 +54,7 @@ fun LedgerManagement(
     onDashboardClick: () -> Unit,
     onStockSummaryClick: () -> Unit,
     onGstDetailsClick: () -> Unit,
+    onVoucherListClick: () -> Unit,
     onSaleClick: () -> Unit,
     onPurchaseClick: () -> Unit,
     onBack: () -> Unit
@@ -86,6 +87,7 @@ fun LedgerManagement(
                 ScreenType.CashFlow -> { /* TODO */ }
                 ScreenType.Stock -> onStockSummaryClick()
                 ScreenType.Gst -> onGstDetailsClick()
+                ScreenType.DayBook -> onVoucherListClick()
             }
         }
     ) { _, onToggleDrawer, isDesktop ->
@@ -188,6 +190,8 @@ fun LedgerGroupsTab(company: Company, period: AccountPeriod) {
     var groups by remember { mutableStateOf<List<AccountingGroup>>(emptyList()) }
     var ledgers by remember { mutableStateOf<List<Ledger>>(emptyList()) }
     var selectedGroupForLedgers by remember { mutableStateOf<AccountingGroup?>(null) }
+    var groupToDelete by remember { mutableStateOf<AccountingGroup?>(null) }
+    var errorMsg by remember { mutableStateOf<String?>(null) }
     
     // Selection and Navigation
     var selectedIndex by remember { mutableStateOf(0) }
@@ -331,6 +335,9 @@ fun LedgerGroupsTab(company: Company, period: AccountPeriod) {
                                         fontWeight = FontWeight.Bold, 
                                         style = MaterialTheme.typography.bodySmall
                                     )
+                                    IconButton(onClick = { groupToDelete = group }, modifier = Modifier.size(40.dp)) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Delete Group", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                                    }
                                 }
                             }
                         }
@@ -338,6 +345,60 @@ fun LedgerGroupsTab(company: Company, period: AccountPeriod) {
                 }
             }
         }
+    }
+
+    if (groupToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { groupToDelete = null },
+            title = { Text("Delete Accounting Group") },
+            text = { Text("Are you sure you want to delete group '${groupToDelete?.group_name}'?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            groupToDelete?.id?.let { id ->
+                                // Check for usage in ledgers
+                                val ledgerUsages = supabase.from("ledgers").select {
+                                    filter { eq("group_id", id) }
+                                    limit(1)
+                                }.decodeList<Ledger>()
+
+                                // Check for usage in sub-groups
+                                val groupUsages = supabase.from("groups").select {
+                                    filter { eq("parent_group_id", id) }
+                                    limit(1)
+                                }.decodeList<AccountingGroup>()
+
+                                if (ledgerUsages.isNotEmpty() || groupUsages.isNotEmpty()) {
+                                    errorMsg = "Cannot delete group '${groupToDelete?.group_name}' because it contains ledgers or sub-groups."
+                                } else {
+                                    supabase.from("groups").delete {
+                                        filter { eq("id", id) }
+                                    }
+                                    fetchData()
+                                }
+                            }
+                            groupToDelete = null
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { groupToDelete = null }) { Text("Cancel") }
+            }
+        )
+    }
+
+    if (errorMsg != null) {
+        AlertDialog(
+            onDismissRequest = { errorMsg = null },
+            title = { Text("Cannot Delete") },
+            text = { Text(errorMsg!!) },
+            confirmButton = {
+                Button(onClick = { errorMsg = null }) { Text("OK") }
+            }
+        )
     }
 }
 
@@ -578,10 +639,20 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
                     onClick = {
                         scope.launch {
                             ledgerToDelete?.id?.let { id ->
-                                supabase.from("ledgers").delete {
-                                    filter { eq("id", id) }
+                                // Check for usage in voucher entries
+                                val usages = supabase.from("voucher_entries").select {
+                                    filter { eq("ledger_id", id) }
+                                    limit(1)
+                                }.decodeList<VoucherEntry>()
+
+                                if (usages.isNotEmpty()) {
+                                    saveError = "Cannot delete ledger '${ledgerToDelete?.ledger_name}' because it has existing voucher entries."
+                                } else {
+                                    supabase.from("ledgers").delete {
+                                        filter { eq("id", id) }
+                                    }
+                                    fetchData()
                                 }
-                                fetchData()
                             }
                             ledgerToDelete = null
                         }
@@ -591,6 +662,17 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
             },
             dismissButton = {
                 TextButton(onClick = { ledgerToDelete = null }) { Text("Cancel") }
+            }
+        )
+    }
+
+    if (saveError != null && !showDialog) {
+        AlertDialog(
+            onDismissRequest = { saveError = null },
+            title = { Text("Attention") },
+            text = { Text(saveError!!) },
+            confirmButton = {
+                Button(onClick = { saveError = null }) { Text("OK") }
             }
         )
     }

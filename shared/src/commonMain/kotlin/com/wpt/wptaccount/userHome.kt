@@ -37,6 +37,7 @@ fun UserHome(
     onStockSummaryClick: () -> Unit,
     onGstDetailsClick: () -> Unit,
     onLedgerClick: () -> Unit,
+    onVoucherListClick: () -> Unit,
     onSaleClick: () -> Unit,
     onPurchaseClick: () -> Unit,
     onBack: () -> Unit
@@ -78,7 +79,7 @@ fun UserHome(
         DashboardItem("Credit Note", Icons.AutoMirrored.Filled.AssignmentReturn, Color(0xFF9C27B0)),
         DashboardItem("Debit Note", Icons.AutoMirrored.Filled.KeyboardReturn, Color(0xFF00BCD4)),
         DashboardItem("Ledger", Icons.Default.AccountBalance, MaterialTheme.colorScheme.primary),
-
+        DashboardItem("Day Book", Icons.Default.Description, Color(0xFF607D8B)),
     )
 
     if (isInitializing) {
@@ -103,6 +104,7 @@ fun UserHome(
                     ScreenType.Payment -> { /* TODO */ }
                     ScreenType.Receipt -> { /* TODO */ }
                     ScreenType.Ledger -> onLedgerClick()
+                    ScreenType.DayBook -> onVoucherListClick()
                     ScreenType.Contra -> { /* TODO */ }
                     ScreenType.Journal -> { /* TODO */ }
                     ScreenType.CreditNote -> { /* TODO */ }
@@ -176,6 +178,7 @@ fun UserHome(
                                     "Dashboard" -> onDashboardClick()
                                     "Stock Summary" -> onStockSummaryClick()
                                     "Ledger" -> onLedgerClick()
+                                    "Day Book" -> onVoucherListClick()
                                     "Sale" -> onSaleClick()
                                     "Purchase" -> onPurchaseClick()
                                     "Balance Sheet", "Profit & Loss", "Cash Flow" -> { /* TODO */ }

@@ -120,6 +120,7 @@ fun InventoryManagement(
     onDashboardClick: () -> Unit,
     onGstDetailsClick: () -> Unit,
     onLedgerClick: () -> Unit,
+    onVoucherListClick: () -> Unit,
     onSaleClick: () -> Unit,
     onPurchaseClick: () -> Unit,
     onBack: () -> Unit
@@ -149,6 +150,7 @@ fun InventoryManagement(
                 ScreenType.CashFlow -> { /* TODO */ }
                 ScreenType.Stock -> { /* Already here */ }
                 ScreenType.Gst -> onGstDetailsClick()
+                ScreenType.DayBook -> onVoucherListClick()
             }
         }
     ) { _, onToggleDrawer, isDesktop ->
@@ -707,6 +709,7 @@ fun StockItemsTab(company: Company) {
     
     var showDialog by remember { mutableStateOf(false) }
     var itemToDelete by remember { mutableStateOf<StockItem?>(null) }
+    var errorMsg by remember { mutableStateOf<String?>(null) }
     
     // Selection and View Mode
     var selectedIndex by remember { mutableStateOf(0) }
@@ -953,10 +956,20 @@ fun StockItemsTab(company: Company) {
                     onClick = {
                         scope.launch {
                             itemToDelete?.id?.let { id ->
-                                supabase.from("stock_items").delete {
-                                    filter { eq("id", id) }
+                                // Check for usage in vouchers
+                                val usages = supabase.from("voucher_stock_items").select {
+                                    filter { eq("stock_item_id", id) }
+                                    limit(1)
+                                }.decodeList<VoucherStockItem>()
+
+                                if (usages.isNotEmpty()) {
+                                    errorMsg = "Cannot delete item '${itemToDelete?.item_name}' because it has been used in one or more voucher entries."
+                                } else {
+                                    supabase.from("stock_items").delete {
+                                        filter { eq("id", id) }
+                                    }
+                                    fetchData()
                                 }
-                                fetchData()
                             }
                             itemToDelete = null
                         }
@@ -966,6 +979,17 @@ fun StockItemsTab(company: Company) {
             },
             dismissButton = {
                 TextButton(onClick = { itemToDelete = null }) { Text("Cancel") }
+            }
+        )
+    }
+
+    if (errorMsg != null) {
+        AlertDialog(
+            onDismissRequest = { errorMsg = null },
+            title = { Text("Cannot Delete") },
+            text = { Text(errorMsg!!) },
+            confirmButton = {
+                Button(onClick = { errorMsg = null }) { Text("OK") }
             }
         )
     }

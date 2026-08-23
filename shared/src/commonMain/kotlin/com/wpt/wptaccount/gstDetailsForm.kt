@@ -23,6 +23,7 @@ fun GstDetailsScreen(
     onDashboardClick: () -> Unit,
     onStockSummaryClick: () -> Unit,
     onLedgerClick: () -> Unit,
+    onVoucherListClick: () -> Unit,
     onSaleClick: () -> Unit,
     onPurchaseClick: () -> Unit,
     onBack: () -> Unit
@@ -104,6 +105,7 @@ fun GstDetailsScreen(
                 ScreenType.CashFlow -> { /* TODO */ }
                 ScreenType.Stock -> onStockSummaryClick()
                 ScreenType.Gst -> { /* Already here */ }
+                ScreenType.DayBook -> onVoucherListClick()
             }
         }
     )

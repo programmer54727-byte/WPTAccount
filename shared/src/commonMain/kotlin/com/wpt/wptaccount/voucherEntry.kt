@@ -51,6 +51,7 @@ fun VoucherEntryScreen(
     onStockSummaryClick: () -> Unit,
     onGstDetailsClick: () -> Unit,
     onLedgerClick: () -> Unit,
+    onVoucherListClick: () -> Unit,
     onSaleClick: () -> Unit = {},
     onPurchaseClick: () -> Unit = {},
     onBack: () -> Unit
@@ -145,6 +146,7 @@ fun VoucherEntryScreen(
                 ScreenType.CashFlow -> { /* TODO */ }
                 ScreenType.Stock -> onStockSummaryClick()
                 ScreenType.Gst -> onGstDetailsClick()
+                ScreenType.DayBook -> onVoucherListClick()
             }
         }
     ) { _, onToggleDrawer, isDesktop ->

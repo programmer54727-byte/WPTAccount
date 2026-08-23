@@ -28,6 +28,7 @@ data class DashboardItem(
 fun CompanyDashboard(
     company: Company,
     onHomeClick: () -> Unit,
+    onVoucherListClick: () -> Unit,
     onStockClick: () -> Unit,
     onGstDetailsClick: () -> Unit,
     onBack: () -> Unit
@@ -56,6 +57,7 @@ fun CompanyDashboard(
                 ScreenType.CashFlow -> { /* TODO */ }
                 ScreenType.Stock -> onStockClick()
                 ScreenType.Gst -> onGstDetailsClick()
+                ScreenType.DayBook -> onVoucherListClick()
             }
         }
     ) { _, onToggleDrawer, isDesktop ->
