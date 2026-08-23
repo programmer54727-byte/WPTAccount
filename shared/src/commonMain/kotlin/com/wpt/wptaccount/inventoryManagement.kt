@@ -25,6 +25,7 @@ import androidx.compose.ui.input.key.*
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
@@ -44,13 +45,20 @@ data class MonthlyStockData(
 )
 
 @Composable
-fun InventoryField(label: String, value: String, modifier: Modifier = Modifier, enabled: Boolean = true, onValueChange: (String) -> Unit) {
+fun InventoryField(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    labelWidth: Dp = 150.dp,
+    onValueChange: (String) -> Unit
+) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier.padding(vertical = 4.dp)) {
         if (label.isNotEmpty()) {
             Text(
                 text = "$label : ", 
                 style = MaterialTheme.typography.bodySmall, 
-                modifier = Modifier.width(150.dp),
+                modifier = Modifier.width(labelWidth),
                 textAlign = TextAlign.End
             )
             Spacer(Modifier.width(8.dp))

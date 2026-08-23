@@ -187,9 +187,24 @@ fun VoucherEntryScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                 // Header Info
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    InventoryField("Date", date, modifier = Modifier.weight(1f)) { date = it }
-                    InventoryField(if (voucherType == "Sale") "Ref No." else "Supplier Inv No.", refNo, modifier = Modifier.weight(1f)) { refNo = it }
+                val headerScrollState = rememberScrollState()
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(headerScrollState),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    InventoryField(
+                        label = "Date",
+                        value = date,
+                        modifier = Modifier.width(200.dp),
+                        labelWidth = 60.dp
+                    ) { date = it }
+                    
+                    InventoryField(
+                        label = if (voucherType == "Sale") "Ref No." else "Supplier Inv No.",
+                        value = refNo,
+                        modifier = Modifier.width(250.dp),
+                        labelWidth = 100.dp
+                    ) { refNo = it }
                 }
 
                 TallySearchableInput(
