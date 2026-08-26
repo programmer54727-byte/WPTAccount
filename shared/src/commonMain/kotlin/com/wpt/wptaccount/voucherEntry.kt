@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -54,9 +55,14 @@ fun VoucherEntryScreen(
     onVoucherListClick: () -> Unit,
     onSaleClick: () -> Unit = {},
     onPurchaseClick: () -> Unit = {},
+    onPaymentClick: () -> Unit = {},
+    onReceiptClick: () -> Unit = {},
+    onContraClick: () -> Unit = {},
+    onJournalClick: () -> Unit = {},
     onBack: () -> Unit
 ) {
     var date by remember { mutableStateOf("17-08-2024") }
+    var voucherNo by remember { mutableStateOf("") }
     var refNo by remember { mutableStateOf("") }
     var selectedPartyId by remember { mutableStateOf<String?>(null) }
     var selectedLedgerId by remember { mutableStateOf<String?>(null) } // Sales or Purchase A/c
@@ -72,27 +78,15 @@ fun VoucherEntryScreen(
     var isSaving by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    // Bill-wise Details State
+    var showBillWiseDialog by remember { mutableStateOf(false) }
+    val partyReferences = remember { mutableStateListOf<VoucherReference>() }
+
     // Dialog States for Alt+C
     var showAddLedger by remember { mutableStateOf(false) }
     var showAddItem by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
-
-    suspend fun updateLedgerBalance(ledgerId: String, amount: Double, entryType: String) {
-        val ledger = supabase.from("ledgers").select {
-            filter { eq("id", ledgerId) }
-        }.decodeSingle<Ledger>()
-        
-        // Universal Rule: Debit adds (+), Credit subtracts (-)
-        val adjustment = if (entryType == "Debit") amount else -amount
-        val newBalance = ledger.current_balance + adjustment
-        
-        supabase.from("ledgers").update(buildJsonObject {
-            put("current_balance", newBalance)
-        }) {
-            filter { eq("id", ledgerId) }
-        }
-    }
 
     fun fetchData() {
         scope.launch {
@@ -109,6 +103,24 @@ fun VoucherEntryScreen(
                 stockItems = supabase.from("stock_items").select {
                     filter { eq("company_id", company.id!!) }
                 }.decodeList<StockItem>()
+
+                // Fetch last voucher number to auto-increment
+                val lastVouchers = supabase.from("vouchers").select {
+                    filter {
+                        eq("company_id", company.id!!)
+                        eq("voucher_type", voucherType)
+                    }
+                    order("created_at", order = Order.DESCENDING)
+                    limit(1)
+                }.decodeList<Voucher>()
+
+                if (lastVouchers.isNotEmpty()) {
+                    val lastNo = lastVouchers[0].voucher_number
+                    val nextNo = (lastNo?.toIntOrNull() ?: 0) + 1
+                    voucherNo = nextNo.toString()
+                } else {
+                    voucherNo = "1"
+                }
             } catch (e: Exception) {
                 println("Fetch error: ${e.message}")
                 errorMessage = "Failed to load data"
@@ -134,11 +146,11 @@ fun VoucherEntryScreen(
                 ScreenType.Exit -> onBack()
                 ScreenType.Sale -> onSaleClick()
                 ScreenType.Purchase -> onPurchaseClick()
-                ScreenType.Payment -> { /* TODO */ }
-                ScreenType.Receipt -> { /* TODO */ }
+                ScreenType.Payment -> onPaymentClick()
+                ScreenType.Receipt -> onReceiptClick()
                 ScreenType.Ledger -> onLedgerClick()
-                ScreenType.Contra -> { /* TODO */ }
-                ScreenType.Journal -> { /* TODO */ }
+                ScreenType.Contra -> onContraClick()
+                ScreenType.Journal -> onJournalClick()
                 ScreenType.CreditNote -> { /* TODO */ }
                 ScreenType.DebitNote -> { /* TODO */ }
                 ScreenType.BalanceSheet -> { /* TODO */ }
@@ -200,6 +212,13 @@ fun VoucherEntryScreen(
                         modifier = Modifier.width(200.dp),
                         labelWidth = 60.dp
                     ) { date = it }
+
+                    InventoryField(
+                        label = "Voucher No.",
+                        value = voucherNo,
+                        modifier = Modifier.width(150.dp),
+                        labelWidth = 80.dp
+                    ) { voucherNo = it }
                     
                     InventoryField(
                         label = if (voucherType == "Sale") "Ref No." else "Supplier Inv No.",
@@ -413,99 +432,16 @@ fun VoucherEntryScreen(
                             return@Button
                         }
                         
-                        scope.launch {
-                            try {
-                                isSaving = true
-                                errorMessage = null
-                                
-                                withContext(NonCancellable) {
-                                    // Safe date conversion: DD-MM-YYYY -> YYYY-MM-DD
-                                    val dbDate = try {
-                                        val parts = date.split("-")
-                                        if (parts.size == 3) "${parts[2]}-${parts[1]}-${parts[0]}" else date
-                                    } catch (e: Exception) { date }
-
-                                    // 1. Create Voucher
-                                    val voucher = Voucher(
-                                        company_id = company.id!!,
-                                        voucher_type = voucherType,
-                                        reference_no = refNo.ifEmpty { null },
-                                        party_ledger_id = selectedPartyId,
-                                        date = dbDate,
-                                        narration = narration,
-                                        total_amount = grandTotal
-                                    )
-                                    val savedVoucher = supabase.from("vouchers").insert(voucher) {
-                                        select()
-                                    }.decodeSingle<Voucher>()
-                                    
-                                    val voucherId = savedVoucher.id!!
-
-                                    // 2. Save Stock Items & Update Quantities
-                                    items.forEach { row ->
-                                        if (row.stockItemId.isNotEmpty()) {
-                                            val qtyVal = row.qty.toDoubleOrNull() ?: 0.0
-                                            supabase.from("voucher_stock_items").insert(VoucherStockItem(
-                                                voucher_id = voucherId,
-                                                stock_item_id = row.stockItemId,
-                                                quantity = qtyVal,
-                                                rate = row.rate.toDoubleOrNull() ?: 0.0,
-                                                amount = row.amount.toDoubleOrNull() ?: 0.0
-                                            ))
-                                            
-                                            // Update actual stock
-                                            val stockItem = stockItems.find { it.id == row.stockItemId }
-                                            if (stockItem != null) {
-                                                val adjustment = if (voucherType == "Purchase") qtyVal else -qtyVal
-                                                val newQty = stockItem.current_quantity + adjustment
-                                                supabase.from("stock_items").update(buildJsonObject {
-                                                    put("current_quantity", newQty)
-                                                }) { filter { eq("id", stockItem.id!!) } }
-                                            }
-                                        }
-                                    }
-
-                                    // 3. Save Accounting Entries & Update Balances
-                                    // Party Entry
-                                    val partyEntryType = if (voucherType == "Sale") "Debit" else "Credit"
-                                    supabase.from("voucher_entries").insert(VoucherEntry(
-                                        voucher_id = voucherId,
-                                        ledger_id = selectedPartyId!!,
-                                        amount = grandTotal,
-                                        entry_type = partyEntryType
-                                    ))
-                                    updateLedgerBalance(selectedPartyId!!, grandTotal, partyEntryType)
-                                    
-                                    // Sales/Purchase Entry
-                                    val ledgerEntryType = if (voucherType == "Sale") "Credit" else "Debit"
-                                    supabase.from("voucher_entries").insert(VoucherEntry(
-                                        voucher_id = voucherId,
-                                        ledger_id = selectedLedgerId!!,
-                                        amount = itemSubTotal,
-                                        entry_type = ledgerEntryType
-                                    ))
-                                    updateLedgerBalance(selectedLedgerId!!, itemSubTotal, ledgerEntryType)
-
-                                    // Tax Ledger Entries
-                                    taxEntries.forEach { tax ->
-                                        if (tax.ledgerId.isNotEmpty()) {
-                                            supabase.from("voucher_entries").insert(VoucherEntry(
-                                                voucher_id = voucherId,
-                                                ledger_id = tax.ledgerId,
-                                                amount = tax.amount,
-                                                entry_type = ledgerEntryType
-                                            ))
-                                            updateLedgerBalance(tax.ledgerId, tax.amount, ledgerEntryType)
-                                        }
-                                    }
-                                }
-                                onBack()
-                            } catch (e: Exception) {
-                                println("Save error details: ${e.message}")
-                                errorMessage = "Failed to save: ${e.message?.take(100) ?: "Unknown error"}"
-                            } finally {
-                                isSaving = false
-                            }
+                        val party = ledgers.find { it.id == selectedPartyId }
+                        if (party?.bill_by_bill == true) {
+                            showBillWiseDialog = true
+                        } else {
+                            performSave(
+                                scope, company, voucherType, voucherNo, refNo, selectedPartyId, 
+                                selectedLedgerId, date, narration, grandTotal, itemSubTotal, 
+                                items, taxEntries, stockItems, ledgers, partyReferences,
+                                { isSaving = it }, { errorMessage = it }, onBack
+                            )
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -517,7 +453,27 @@ fun VoucherEntryScreen(
             }
         }
     }
-}
+
+    if (showBillWiseDialog) {
+        val party = ledgers.find { it.id == selectedPartyId }
+        BillWiseDetailsDialog(
+            partyName = party?.ledger_name ?: "Party",
+            totalAmount = grandTotal,
+            initialReferences = partyReferences,
+            onDismiss = { showBillWiseDialog = false },
+            onConfirm = { refs ->
+                partyReferences.clear()
+                partyReferences.addAll(refs)
+                showBillWiseDialog = false
+                performSave(
+                    scope, company, voucherType, voucherNo, refNo, selectedPartyId, 
+                    selectedLedgerId, date, narration, grandTotal, itemSubTotal, 
+                    items, taxEntries, stockItems, ledgers, partyReferences,
+                    { isSaving = it }, { errorMessage = it }, onBack
+                )
+            }
+        )
+    }
 
     if (showAddLedger) {
         CompactAddLedgerDialog(company, groups, onDismiss = { showAddLedger = false }) {
@@ -531,6 +487,7 @@ fun VoucherEntryScreen(
             fetchData()
             showAddItem = false
         }
+    }
     }
 }
 

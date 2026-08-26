@@ -53,3 +53,13 @@ data class VoucherEntryWithVoucher(
     val entry_type: String,
     val vouchers: Voucher
 )
+
+@Serializable
+data class VoucherReference(
+    val id: String? = null,
+    val voucher_id: String? = null,
+    val reference_type: String, // Advance, Against Reference, New Reference
+    val reference_no: String,
+    val amount: Double,
+    val created_at: String? = null
+)

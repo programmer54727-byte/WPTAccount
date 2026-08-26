@@ -18,6 +18,14 @@ create table if not exists public.companies (
   control_user_access_enabled text,
   base_currency_symbol text,
   formal_name text,
+  gst_applicability text default 'Applicable',
+  hsn_sac_details text default 'Specify Details Here',
+  hsn_sac_number text,
+  hsn_description text,
+  gst_rate_details text default 'Specify Details Here',
+  taxability_type text default 'Taxable',
+  gst_rate decimal default 0,
+  type_of_supply text default 'Goods',
   owner_id uuid not null references auth.users(id) on delete cascade,
   created_at timestamp with time zone default now() not null
 );
@@ -391,3 +399,41 @@ using (exists (select 1 from public.companies where id = stock_items.company_id 
 create policy "Users can delete stock_items of their own companies"
 on public.stock_items for delete
 using (exists (select 1 from public.companies where id = stock_items.company_id and owner_id = auth.uid()));
+
+-- 25. Create the voucher_references table (Bill-wise details)
+create table if not exists public.voucher_references (
+  id uuid primary key default gen_random_uuid(),
+  voucher_id uuid not null references public.vouchers(id) on delete cascade,
+  reference_type text not null, -- Advance, Against Reference, New Reference
+  reference_no text not null,
+  amount decimal not null,
+  created_at timestamp with time zone default now() not null
+);
+
+-- 26. Enable RLS for voucher_references
+alter table public.voucher_references enable row level security;
+
+-- 27. Create Security Policies for voucher_references
+create policy "Users can see references of their vouchers"
+on public.voucher_references for select
+using (exists (
+  select 1 from public.vouchers
+  join public.companies on vouchers.company_id = companies.id
+  where vouchers.id = voucher_references.voucher_id and companies.owner_id = auth.uid()
+));
+
+create policy "Users can insert references for their vouchers"
+on public.voucher_references for insert
+with check (exists (
+  select 1 from public.vouchers
+  join public.companies on vouchers.company_id = companies.id
+  where vouchers.id = voucher_references.voucher_id and companies.owner_id = auth.uid()
+));
+
+create policy "Users can delete references of their vouchers"
+on public.voucher_references for delete
+using (exists (
+  select 1 from public.vouchers
+  join public.companies on vouchers.company_id = companies.id
+  where vouchers.id = voucher_references.voucher_id and companies.owner_id = auth.uid()
+));

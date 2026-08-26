@@ -123,6 +123,10 @@ fun InventoryManagement(
     onVoucherListClick: () -> Unit,
     onSaleClick: () -> Unit,
     onPurchaseClick: () -> Unit,
+    onPaymentClick: () -> Unit = {},
+    onReceiptClick: () -> Unit = {},
+    onContraClick: () -> Unit = {},
+    onJournalClick: () -> Unit = {},
     onBack: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(0) }
@@ -138,11 +142,11 @@ fun InventoryManagement(
                 ScreenType.Exit -> onBack()
                 ScreenType.Sale -> onSaleClick()
                 ScreenType.Purchase -> onPurchaseClick()
-                ScreenType.Payment -> { /* TODO */ }
-                ScreenType.Receipt -> { /* TODO */ }
+                ScreenType.Payment -> onPaymentClick()
+                ScreenType.Receipt -> onReceiptClick()
                 ScreenType.Ledger -> onLedgerClick()
-                ScreenType.Contra -> { /* TODO */ }
-                ScreenType.Journal -> { /* TODO */ }
+                ScreenType.Contra -> onContraClick()
+                ScreenType.Journal -> onJournalClick()
                 ScreenType.CreditNote -> { /* TODO */ }
                 ScreenType.DebitNote -> { /* TODO */ }
                 ScreenType.BalanceSheet -> { /* TODO */ }

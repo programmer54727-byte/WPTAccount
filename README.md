@@ -13,6 +13,7 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
 - **Voucher Management (Sale & Purchase):**
     - **Tally-Style Searchable Selectors:** Type names to filter parties, ledgers, or items instantly with full keyboard support (Arrows + Enter).
     - **On-the-fly Creation (Alt+C):** Create missing ledgers or stock items directly from the voucher entry screen using keyboard shortcuts.
+    - **Bill-wise Details:** Track outstanding payments and receipts with reference-based reconciliation for parties.
     - **Flexible Tax Ledgers:** Replaced auto-GST with manual tax ledger selection from "Duties & Taxes", supporting custom rates (e.g., CGST 2.5%, SGST 2.5%) with automatic amount calculation.
     - **Atomic Saving Logic:** Integrated transaction handling that saves the voucher, stock movements, and ledger entries while updating inventory hand-levels in one robust step.
 - **Ledger Management:**
