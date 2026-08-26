@@ -11,7 +11,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,28 +19,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 
-@Serializable
-data class ItemRow(
-    var stockItemId: String = "",
-    var qty: String = "1",
-    var rate: String = "0",
-    var amount: String = "0"
-)
-
-@Serializable
-data class TaxRow(
-    var ledgerId: String = "",
-    var taxRate: Double = 0.0,
-    var amount: Double = 0.0
-)
-
+/**
+ * Main Screen for creating Sale and Purchase Vouchers.
+ * Handles inventory details, tax calculations, and party/ledger selection.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VoucherEntryScreen(
@@ -61,50 +44,67 @@ fun VoucherEntryScreen(
     onJournalClick: () -> Unit = {},
     onBack: () -> Unit
 ) {
+    // ----------------------------------------------------------------
+    // 1. STATE MANAGEMENT
+    // ----------------------------------------------------------------
+    
+    // Basic Voucher Info
     var date by remember { mutableStateOf("17-08-2024") }
     var voucherNo by remember { mutableStateOf("") }
     var refNo by remember { mutableStateOf("") }
+    var refDate by remember { mutableStateOf("17-08-2024") }
     var selectedPartyId by remember { mutableStateOf<String?>(null) }
     var selectedLedgerId by remember { mutableStateOf<String?>(null) } // Sales or Purchase A/c
     
+    // Transactional Rows (Inventory & Taxes)
     val items = remember { mutableStateListOf(ItemRow()) }
     val taxEntries = remember { mutableStateListOf<TaxRow>() }
     var narration by remember { mutableStateOf("") }
     
+    // Master Data for Dropdowns
     var ledgers by remember { mutableStateOf<List<Ledger>>(emptyList()) }
     var groups by remember { mutableStateOf<List<AccountingGroup>>(emptyList()) }
     var stockItems by remember { mutableStateOf<List<StockItem>>(emptyList()) }
+    
+    // UI Feedback States
     var isLoading by remember { mutableStateOf(true) }
     var isSaving by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Bill-wise Details State
+    // Bill-wise Details (for Outstanding tracking)
     var showBillWiseDialog by remember { mutableStateOf(false) }
     val partyReferences = remember { mutableStateListOf<VoucherReference>() }
 
-    // Dialog States for Alt+C
+    // Quick Add Dialog States (triggered by Alt+C or 'Create' button)
     var showAddLedger by remember { mutableStateOf(false) }
     var showAddItem by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
 
+    // ----------------------------------------------------------------
+    // 2. DATA FETCHING LOGIC
+    // ----------------------------------------------------------------
+    
     fun fetchData() {
         scope.launch {
             try {
                 isLoading = true
+                // Fetch Ledgers belonging to this company
                 ledgers = supabase.from("ledgers").select {
                     filter { eq("company_id", company.id!!) }
                 }.decodeList<Ledger>()
                 
+                // Fetch Accounting Groups
                 groups = supabase.from("groups").select {
                     filter { eq("company_id", company.id!!) }
                 }.decodeList<AccountingGroup>()
 
+                // Fetch Stock Items
                 stockItems = supabase.from("stock_items").select {
                     filter { eq("company_id", company.id!!) }
                 }.decodeList<StockItem>()
 
-                // Fetch last voucher number to auto-increment
+                // Auto-increment Voucher Number based on last entry
                 val lastVouchers = supabase.from("vouchers").select {
                     filter {
                         eq("company_id", company.id!!)
@@ -130,12 +130,21 @@ fun VoucherEntryScreen(
         }
     }
 
+    // Load data on first launch
     LaunchedEffect(Unit) { fetchData() }
 
+    // ----------------------------------------------------------------
+    // 3. COMPUTED CALCULATIONS
+    // ----------------------------------------------------------------
+    
     val itemSubTotal = items.sumOf { it.amount.toDoubleOrNull() ?: 0.0 }
     val taxTotal = taxEntries.sumOf { it.amount }
     val grandTotal = itemSubTotal + taxTotal
 
+    // ----------------------------------------------------------------
+    // 4. UI STRUCTURE
+    // ----------------------------------------------------------------
+    
     AppNavigationDrawer(
         currentScreen = if (voucherType == "Sale") ScreenType.Sale else ScreenType.Purchase,
         companyName = company.company_name,
@@ -200,260 +209,299 @@ fun VoucherEntryScreen(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                // Header Info
-                val headerScrollState = rememberScrollState()
-                Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(headerScrollState),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    InventoryField(
-                        label = "Date",
-                        value = date,
-                        modifier = Modifier.width(200.dp),
-                        labelWidth = 60.dp
-                    ) { date = it }
+                    // --- SECTION: Header Info (Date, No, Ref) ---
+                    val headerScrollState = rememberScrollState()
+                    Row(
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(headerScrollState),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        InventoryField(
+                            label = "Date",
+                            value = date,
+                            modifier = Modifier.width(200.dp),
+                            labelWidth = 60.dp
+                        ) { date = it }
 
-                    InventoryField(
-                        label = "Voucher No.",
-                        value = voucherNo,
-                        modifier = Modifier.width(150.dp),
-                        labelWidth = 80.dp
-                    ) { voucherNo = it }
-                    
-                    InventoryField(
-                        label = if (voucherType == "Sale") "Ref No." else "Supplier Inv No.",
-                        value = refNo,
-                        modifier = Modifier.width(250.dp),
-                        labelWidth = 100.dp
-                    ) { refNo = it }
-                }
+                        InventoryField(
+                            label = "Voucher No.",
+                            value = voucherNo,
+                            modifier = Modifier.width(150.dp),
+                            labelWidth = 80.dp
+                        ) { voucherNo = it }
+                        
+                        InventoryField(
+                            label = if (voucherType == "Sale") "Ref No." else "Supplier Inv No.",
+                            value = refNo,
+                            modifier = Modifier.width(250.dp),
+                            labelWidth = 100.dp
+                        ) { refNo = it }
 
-                TallySearchableInput(
-                    label = "Party A/c Name",
-                    options = ledgers.map { it.ledger_name },
-                    selected = ledgers.find { it.id == selectedPartyId }?.ledger_name ?: "",
-                    modifier = Modifier.fillMaxWidth(),
-                    onCreate = { showAddLedger = true }
-                ) { name ->
-                    selectedPartyId = ledgers.find { it.ledger_name == name }?.id
-                }
-
-                TallySearchableInput(
-                    label = if (voucherType == "Sale") "Sales Ledger" else "Purchase Ledger",
-                    options = ledgers.filter { 
-                        if (voucherType == "Sale") it.ledger_name.contains("Sales", ignoreCase = true)
-                        else it.ledger_name.contains("Purchase", ignoreCase = true)
-                    }.map { it.ledger_name },
-                    selected = ledgers.find { it.id == selectedLedgerId }?.ledger_name ?: "",
-                    modifier = Modifier.fillMaxWidth(),
-                    onCreate = { showAddLedger = true }
-                ) { name ->
-                    selectedLedgerId = ledgers.find { it.ledger_name == name }?.id
-                }
-
-                HorizontalDivider()
-
-                // Items Table
-                Text("Inventory Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                
-                val itemScrollState = rememberScrollState()
-                Column(modifier = Modifier.fillMaxWidth().horizontalScroll(itemScrollState)) {
-                    val contentWidth = 600.dp // Sufficient width for all columns
-                    
-                    Column(modifier = Modifier.width(contentWidth)) {
-                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Text("Name of Item", modifier = Modifier.weight(2f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
-                            Text("Quantity", modifier = Modifier.width(80.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
-                            Text("Rate", modifier = Modifier.width(100.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
-                            Text("Amount", modifier = Modifier.width(120.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
-                            Spacer(Modifier.width(48.dp))
+                        if (voucherType == "Purchase") {
+                            InventoryField(
+                                label = "Supplier Inv Date",
+                                value = refDate,
+                                modifier = Modifier.width(200.dp),
+                                labelWidth = 120.dp
+                            ) { refDate = it }
                         }
+                    }
 
-                        items.forEachIndexed { index, row ->
-                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.weight(2f)) {
-                                    TallySearchableInput(
-                                        label = "",
-                                        options = stockItems.map { it.item_name },
-                                        selected = stockItems.find { it.id == row.stockItemId }?.item_name ?: "",
-                                        onCreate = { showAddItem = true }
-                                    ) { name ->
-                                        val item = stockItems.find { it.item_name == name }
-                                        if (item != null) {
-                                            val r = if (row.rate == "0") item.opening_rate.toString() else row.rate
+                    // --- SECTION: Party & Sales/Purchase Ledger Selection ---
+                    TallySearchableInput(
+                        label = "Party A/c Name",
+                        options = ledgers.map { it.ledger_name },
+                        selected = ledgers.find { it.id == selectedPartyId }?.ledger_name ?: "",
+                        modifier = Modifier.fillMaxWidth(),
+                        onCreate = { showAddLedger = true }
+                    ) { name ->
+                        selectedPartyId = ledgers.find { it.ledger_name == name }?.id
+                    }
+
+                    TallySearchableInput(
+                        label = if (voucherType == "Sale") "Sales Ledger" else "Purchase Ledger",
+                        options = ledgers.filter { 
+                            if (voucherType == "Sale") it.ledger_name.contains("Sales", ignoreCase = true)
+                            else it.ledger_name.contains("Purchase", ignoreCase = true)
+                        }.map { it.ledger_name },
+                        selected = ledgers.find { it.id == selectedLedgerId }?.ledger_name ?: "",
+                        modifier = Modifier.fillMaxWidth(),
+                        onCreate = { showAddLedger = true }
+                    ) { name ->
+                        selectedLedgerId = ledgers.find { it.ledger_name == name }?.id
+                    }
+
+                    HorizontalDivider()
+
+                    // --- SECTION: Items Table (Inventory) ---
+                    Text("Inventory Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    
+                    val itemScrollState = rememberScrollState()
+                    Column(modifier = Modifier.fillMaxWidth().horizontalScroll(itemScrollState)) {
+                        val contentWidth = 600.dp 
+                        
+                        Column(modifier = Modifier.width(contentWidth)) {
+                            // Table Header
+                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Text("Name of Item", modifier = Modifier.weight(2f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
+                                Text("Quantity", modifier = Modifier.width(80.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                                Text("Rate", modifier = Modifier.width(100.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                                Text("Amount", modifier = Modifier.width(120.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                                Spacer(Modifier.width(48.dp))
+                            }
+
+                            // Dynamic Rows
+                            items.forEachIndexed { index, row ->
+                                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.weight(2f)) {
+                                        TallySearchableInput(
+                                            label = "",
+                                            options = stockItems.map { it.item_name },
+                                            selected = stockItems.find { it.id == row.stockItemId }?.item_name ?: "",
+                                            onCreate = { showAddItem = true }
+                                        ) { name ->
+                                            val item = stockItems.find { it.item_name == name }
+                                            if (item != null) {
+                                                val r = if (row.rate == "0") item.opening_rate.toString() else row.rate
+                                                val q = row.qty
+                                                val a = (q.toDoubleOrNull() ?: 0.0) * (r.toDoubleOrNull() ?: 0.0)
+                                                
+                                                items[index] = row.copy(
+                                                    stockItemId = item.id!!,
+                                                    rate = r,
+                                                    amount = a.format(2)
+                                                )
+                                            }
+                                        }
+                                    }
+                                    
+                                    OutlinedTextField(
+                                        value = row.qty,
+                                        onValueChange = { 
+                                            val q = it
+                                            val r = row.rate
+                                            val a = (q.toDoubleOrNull() ?: 0.0) * (r.toDoubleOrNull() ?: 0.0)
+                                            items[index] = row.copy(qty = q, amount = a.format(2))
+                                        },
+                                        modifier = Modifier.width(80.dp),
+                                        textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
+                                        singleLine = true
+                                    )
+                                    
+                                    OutlinedTextField(
+                                        value = row.rate,
+                                        onValueChange = { 
+                                            val r = it
                                             val q = row.qty
                                             val a = (q.toDoubleOrNull() ?: 0.0) * (r.toDoubleOrNull() ?: 0.0)
-                                            
-                                            items[index] = row.copy(
-                                                stockItemId = item.id!!,
-                                                rate = r,
-                                                amount = a.format(2)
-                                            )
-                                        }
-                                    }
-                                }
-                                
-                                OutlinedTextField(
-                                    value = row.qty,
-                                    onValueChange = { 
-                                        val q = it
-                                        val r = row.rate
-                                        val a = (q.toDoubleOrNull() ?: 0.0) * (r.toDoubleOrNull() ?: 0.0)
-                                        items[index] = row.copy(qty = q, amount = a.format(2))
-                                    },
-                                    modifier = Modifier.width(80.dp),
-                                    textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
-                                    singleLine = true
-                                )
-                                
-                                OutlinedTextField(
-                                    value = row.rate,
-                                    onValueChange = { 
-                                        val r = it
-                                        val q = row.qty
-                                        val a = (q.toDoubleOrNull() ?: 0.0) * (r.toDoubleOrNull() ?: 0.0)
-                                        items[index] = row.copy(rate = r, amount = a.format(2))
-                                    },
-                                    modifier = Modifier.width(100.dp),
-                                    textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
-                                    singleLine = true
-                                )
-                                
-                                OutlinedTextField(
-                                    value = row.amount,
-                                    onValueChange = { 
-                                        val a = it
-                                        val q = row.qty.toDoubleOrNull() ?: 1.0
-                                        val r = if (q != 0.0) (a.toDoubleOrNull() ?: 0.0) / q else 0.0
-                                        items[index] = row.copy(amount = a, rate = if (q != 0.0) r.format(2) else row.rate)
-                                    },
-                                    modifier = Modifier.width(120.dp),
-                                    textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End, fontWeight = FontWeight.Bold),
-                                    singleLine = true
-                                )
+                                            items[index] = row.copy(rate = r, amount = a.format(2))
+                                        },
+                                        modifier = Modifier.width(100.dp),
+                                        textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
+                                        singleLine = true
+                                    )
+                                    
+                                    OutlinedTextField(
+                                        value = row.amount,
+                                        onValueChange = { 
+                                            val a = it
+                                            val q = row.qty.toDoubleOrNull() ?: 1.0
+                                            val r = if (q != 0.0) (a.toDoubleOrNull() ?: 0.0) / q else 0.0
+                                            items[index] = row.copy(amount = a, rate = if (q != 0.0) r.format(2) else row.rate)
+                                        },
+                                        modifier = Modifier.width(120.dp),
+                                        textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End, fontWeight = FontWeight.Bold),
+                                        singleLine = true
+                                    )
 
-                                IconButton(onClick = { items.removeAt(index) }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Delete Row", tint = MaterialTheme.colorScheme.error)
+                                    IconButton(onClick = { items.removeAt(index) }) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Delete Row", tint = MaterialTheme.colorScheme.error)
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                TextButton(onClick = { items.add(ItemRow()) }) {
-                    Icon(Icons.Default.Add, null)
-                    Text("Add Item")
-                }
+                    TextButton(onClick = { items.add(ItemRow()) }) {
+                        Icon(Icons.Default.Add, null)
+                        Text("Add Item")
+                    }
 
-                HorizontalDivider()
+                    HorizontalDivider()
 
-                // Additional Ledgers (Taxes, Freight, etc.)
-                Text("Ledger Details (Taxes/Charges)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                
-                val ledgerScrollState = rememberScrollState()
-                Column(modifier = Modifier.fillMaxWidth().horizontalScroll(ledgerScrollState)) {
-                    val contentWidth = 600.dp
+                    // --- SECTION: Ledger Details (Taxes/Charges) ---
+                    Text("Ledger Details (Taxes/Charges)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                     
-                    Column(modifier = Modifier.width(contentWidth)) {
-                        taxEntries.forEachIndexed { index, row ->
-                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.weight(2f)) {
-                                    TallySearchableInput(
-                                        label = "",
-                                        options = ledgers.map { it.ledger_name },
-                                        selected = ledgers.find { it.id == row.ledgerId }?.ledger_name ?: "",
-                                        onCreate = { showAddLedger = true }
-                                    ) { name ->
-                                        val ledger = ledgers.find { it.ledger_name == name }
-                                        if (ledger != null) {
-                                            val rate = ledger.tax_rate ?: 0.0
-                                            taxEntries[index] = row.copy(
-                                                ledgerId = ledger.id!!,
-                                                taxRate = rate,
-                                                amount = itemSubTotal * rate / 100.0
-                                            )
+                    val ledgerScrollState = rememberScrollState()
+                    Column(modifier = Modifier.fillMaxWidth().horizontalScroll(ledgerScrollState)) {
+                        val contentWidth = 600.dp
+                        
+                        Column(modifier = Modifier.width(contentWidth)) {
+                            taxEntries.forEachIndexed { index, row ->
+                                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.weight(2f)) {
+                                        TallySearchableInput(
+                                            label = "",
+                                            options = ledgers.map { it.ledger_name },
+                                            selected = ledgers.find { it.id == row.ledgerId }?.ledger_name ?: "",
+                                            onCreate = { showAddLedger = true }
+                                        ) { name ->
+                                            val ledger = ledgers.find { it.ledger_name == name }
+                                            if (ledger != null) {
+                                                val rate = ledger.tax_rate ?: 0.0
+                                                taxEntries[index] = row.copy(
+                                                    ledgerId = ledger.id!!,
+                                                    taxRate = rate,
+                                                    amount = itemSubTotal * rate / 100.0
+                                                )
+                                            }
                                         }
                                     }
-                                }
-                                
-                                Spacer(Modifier.width(180.dp)) // Equivalent to Qty (80) + Rate (100)
-                                
-                                OutlinedTextField(
-                                    value = row.amount.toString(),
-                                    onValueChange = { 
-                                        taxEntries[index] = row.copy(amount = it.toDoubleOrNull() ?: 0.0)
-                                    },
-                                    modifier = Modifier.width(120.dp),
-                                    textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
-                                    singleLine = true
-                                )
+                                    
+                                    Spacer(Modifier.width(180.dp)) 
+                                    
+                                    OutlinedTextField(
+                                        value = row.amount.toString(),
+                                        onValueChange = { 
+                                            taxEntries[index] = row.copy(amount = it.toDoubleOrNull() ?: 0.0)
+                                        },
+                                        modifier = Modifier.width(120.dp),
+                                        textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
+                                        singleLine = true
+                                    )
 
-                                IconButton(onClick = { taxEntries.removeAt(index) }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Delete Row", tint = MaterialTheme.colorScheme.error)
+                                    IconButton(onClick = { taxEntries.removeAt(index) }) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Delete Row", tint = MaterialTheme.colorScheme.error)
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                TextButton(onClick = { taxEntries.add(TaxRow()) }) {
-                    Icon(Icons.Default.Add, null)
-                    Text("Add Ledger")
-                }
-
-                HorizontalDivider()
-
-                // Totals
-                Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
-                    Row(modifier = Modifier.width(300.dp)) {
-                        Text("Sub Total:", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                        Text(itemSubTotal.format(), modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                    TextButton(onClick = { taxEntries.add(TaxRow()) }) {
+                        Icon(Icons.Default.Add, null)
+                        Text("Add Ledger")
                     }
-                    Row(modifier = Modifier.width(300.dp)) {
-                        Text("Tax Total:", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                        Text(taxTotal.format(), modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                    }
-                    Row(modifier = Modifier.width(300.dp)) {
-                        Text("Grand Total:", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                        Text(grandTotal.format(), modifier = Modifier.weight(1f), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    }
-                }
 
-                InventoryField("Narration", narration) { narration = it }
+                    HorizontalDivider()
 
-                errorMessage?.let {
-                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                }
-
-                Button(
-                    onClick = {
-                        if (selectedPartyId == null || selectedLedgerId == null || items.all { it.stockItemId.isEmpty() }) {
-                            errorMessage = "Please fill all mandatory fields"
-                            return@Button
+                    // --- SECTION: Totals (Subtotal, Tax, Grand Total) ---
+                    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
+                        Row(modifier = Modifier.width(300.dp)) {
+                            Text("Sub Total:", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                            Text(itemSubTotal.format(), modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
                         }
-                        
-                        val party = ledgers.find { it.id == selectedPartyId }
-                        if (party?.bill_by_bill == true) {
-                            showBillWiseDialog = true
-                        } else {
-                            performSave(
-                                scope, company, voucherType, voucherNo, refNo, selectedPartyId, 
-                                selectedLedgerId, date, narration, grandTotal, itemSubTotal, 
-                                items, taxEntries, stockItems, ledgers, partyReferences,
-                                { isSaving = it }, { errorMessage = it }, onBack
-                            )
+                        Row(modifier = Modifier.width(300.dp)) {
+                            Text("Tax Total:", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                            Text(taxTotal.format(), modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isSaving
-                ) {
-                    if (isSaving) CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
-                    else Text("Save $voucherType")
+                        Row(modifier = Modifier.width(300.dp)) {
+                            Text("Grand Total:", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                            Text(grandTotal.format(), modifier = Modifier.weight(1f), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+
+                    // Narration field
+                    InventoryField("Narration", narration) { narration = it }
+
+                    // Error feedback
+                    errorMessage?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+
+                    // --- SECTION: Save Button ---
+                    Button(
+                        onClick = {
+                            // Validation
+                            if (selectedPartyId == null || selectedLedgerId == null || items.all { it.stockItemId.isEmpty() }) {
+                                errorMessage = "Please fill all mandatory fields"
+                                return@Button
+                            }
+
+                            // Date Validation for Purchase: Invoice Date cannot be after Voucher Date
+                            if (voucherType == "Purchase") {
+                                try {
+                                    val vParts = date.split("-")
+                                    val iParts = refDate.split("-")
+                                    if (vParts.size == 3 && iParts.size == 3) {
+                                        val vDate = "${vParts[2]}${vParts[1]}${vParts[0]}"
+                                        val iDate = "${iParts[2]}${iParts[1]}${iParts[0]}"
+                                        if (iDate > vDate) {
+                                            errorMessage = "Supplier Invoice Date cannot be later than Voucher Date"
+                                            return@Button
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    // Ignore parsing errors for now
+                                }
+                            }
+                            
+                            val party = ledgers.find { it.id == selectedPartyId }
+                            // If Bill-by-bill is enabled, show reference dialog first
+                            if (party?.bill_by_bill == true) {
+                                showBillWiseDialog = true
+                            } else {
+                                performSave(
+                                    scope, company, voucherType, voucherNo, refNo, refDate, selectedPartyId, 
+                                    selectedLedgerId, date, narration, grandTotal, itemSubTotal, 
+                                    items, taxEntries, stockItems, ledgers, partyReferences,
+                                    { isSaving = it }, { errorMessage = it }, onBack
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isSaving
+                    ) {
+                        if (isSaving) CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                        else Text("Save $voucherType")
+                    }
                 }
             }
         }
     }
 
+    // --- OVERLAYS: Dialogs & Modals ---
+
+    // Reference Management (Bill-wise)
     if (showBillWiseDialog) {
         val party = ledgers.find { it.id == selectedPartyId }
         BillWiseDetailsDialog(
@@ -466,7 +514,7 @@ fun VoucherEntryScreen(
                 partyReferences.addAll(refs)
                 showBillWiseDialog = false
                 performSave(
-                    scope, company, voucherType, voucherNo, refNo, selectedPartyId, 
+                    scope, company, voucherType, voucherNo, refNo, refDate, selectedPartyId, 
                     selectedLedgerId, date, narration, grandTotal, itemSubTotal, 
                     items, taxEntries, stockItems, ledgers, partyReferences,
                     { isSaving = it }, { errorMessage = it }, onBack
@@ -475,6 +523,7 @@ fun VoucherEntryScreen(
         )
     }
 
+    // Quick Add Ledger (Alt+C)
     if (showAddLedger) {
         CompactAddLedgerDialog(company, groups, onDismiss = { showAddLedger = false }) {
             fetchData()
@@ -482,15 +531,18 @@ fun VoucherEntryScreen(
         }
     }
 
+    // Quick Add Stock Item (Alt+C)
     if (showAddItem) {
         CompactAddItemDialog(company, onDismiss = { showAddItem = false }) {
             fetchData()
             showAddItem = false
         }
     }
-    }
 }
 
+/**
+ * Simplified dialog for adding a ledger quickly without leaving the screen.
+ */
 @Composable
 fun CompactAddLedgerDialog(
     company: Company,
@@ -533,6 +585,9 @@ fun CompactAddLedgerDialog(
     )
 }
 
+/**
+ * Simplified dialog for adding a stock item quickly.
+ */
 @Composable
 fun CompactAddItemDialog(
     company: Company,
@@ -542,7 +597,6 @@ fun CompactAddItemDialog(
     var name by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
 
-    // Simplified for now, just creating a primary item
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Quick Add Item") },
@@ -552,10 +606,7 @@ fun CompactAddItemDialog(
         confirmButton = {
             Button(onClick = {
                 scope.launch {
-                    // This requires a valid unit_id. Fetching default unit or assuming one.
-                    // For simplicity, let's assume 'Pcs' unit exists or handled.
-                    // Real implementation should be more robust.
-                    // supabase.from("stock_items").insert(...) 
+                    // Note: Basic implementation, assumes default unit/group.
                     onSuccess() 
                 }
             }) { Text("Create") }

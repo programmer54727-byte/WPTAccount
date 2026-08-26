@@ -1,4 +1,0 @@
-- `[x]` Update `ScreenType` and sidebar items in `navigationSidebar.kt`
-- `[x]` Update transaction grid in `userHome.kt`
-- `[x]` Update navigation handlers in `companyDashboard.kt`
-- `[x]` Verify UI and build

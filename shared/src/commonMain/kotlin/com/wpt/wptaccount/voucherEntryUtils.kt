@@ -13,6 +13,7 @@ internal fun performSave(
     voucherType: String,
     voucherNo: String,
     refNo: String,
+    refDate: String,
     selectedPartyId: String?,
     selectedLedgerId: String?,
     date: String,
@@ -35,12 +36,17 @@ internal fun performSave(
 
             withContext(NonCancellable) {
                 // Safe date conversion: DD-MM-YYYY -> YYYY-MM-DD
-                val dbDate = try {
-                    val parts = date.split("-")
-                    if (parts.size == 3) "${parts[2]}-${parts[1]}-${parts[0]}" else date
-                } catch (e: Exception) {
-                    date
+                fun toDbDate(d: String): String {
+                    return try {
+                        val parts = d.split("-")
+                        if (parts.size == 3) "${parts[2]}-${parts[1]}-${parts[0]}" else d
+                    } catch (e: Exception) {
+                        d
+                    }
                 }
+
+                val dbDate = toDbDate(date)
+                val dbRefDate = toDbDate(refDate)
 
                 // 1. Create Voucher
                 val voucher = Voucher(
@@ -48,6 +54,7 @@ internal fun performSave(
                     voucher_type = voucherType,
                     voucher_number = voucherNo.ifEmpty { null },
                     reference_no = refNo.ifEmpty { null },
+                    reference_date = dbRefDate,
                     party_ledger_id = selectedPartyId,
                     date = dbDate,
                     narration = narration,

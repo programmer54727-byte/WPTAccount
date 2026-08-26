@@ -63,3 +63,20 @@ data class VoucherReference(
     val amount: Double,
     val created_at: String? = null
 )
+
+// --- UI Helper Models for Voucher Entry ---
+
+@Serializable
+data class ItemRow(
+    var stockItemId: String = "",
+    var qty: String = "1",
+    var rate: String = "0",
+    var amount: String = "0"
+)
+
+@Serializable
+data class TaxRow(
+    var ledgerId: String = "",
+    var taxRate: Double = 0.0,
+    var amount: Double = 0.0
+)
