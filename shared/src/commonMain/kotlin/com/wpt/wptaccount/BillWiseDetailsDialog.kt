@@ -20,6 +20,7 @@ fun BillWiseDetailsDialog(
     partyName: String,
     totalAmount: Double,
     initialReferences: List<VoucherReference> = emptyList(),
+    defaultReferenceNo: String = "",
     onDismiss: () -> Unit,
     onConfirm: (List<VoucherReference>) -> Unit
 ) {
@@ -28,7 +29,7 @@ fun BillWiseDetailsDialog(
     // Auto-add first row if empty
     LaunchedEffect(Unit) {
         if (references.isEmpty()) {
-            references.add(VoucherReference(reference_type = "New Reference", reference_no = "", amount = totalAmount))
+            references.add(VoucherReference(reference_type = "New Reference", reference_no = defaultReferenceNo, amount = totalAmount))
         }
     }
 

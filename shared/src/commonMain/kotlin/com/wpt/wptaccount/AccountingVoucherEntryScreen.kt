@@ -55,7 +55,8 @@ fun AccountingVoucherEntryScreen(
 ) {
     var date by remember { mutableStateOf("17-08-2024") }
     var voucherNo by remember { mutableStateOf("") }
-    var refNo by remember { mutableStateOf("") }
+    var referenceNo by remember { mutableStateOf("") }
+    var referenceDate by remember { mutableStateOf("17-08-2024") }
     
     val entries = remember { mutableStateListOf(AccountingRow()) }
     var narration by remember { mutableStateOf("") }
@@ -170,6 +171,8 @@ fun AccountingVoucherEntryScreen(
                     ) {
                         InventoryField("Date", date, Modifier.width(200.dp), labelWidth = 60.dp) { date = it }
                         InventoryField("Voucher No.", voucherNo, Modifier.width(150.dp), labelWidth = 80.dp) { voucherNo = it }
+                        InventoryField("Ref. No.", referenceNo, Modifier.width(200.dp), labelWidth = 80.dp) { referenceNo = it }
+                        InventoryField("Ref. Date", referenceDate, Modifier.width(200.dp), labelWidth = 80.dp) { referenceDate = it }
                     }
 
                     HorizontalDivider()
@@ -254,6 +257,20 @@ fun AccountingVoucherEntryScreen(
                                 errorMessage = "Voucher not balanced or ledger missing"
                                 return@Button
                             }
+
+                            // Date Validation
+                            try {
+                                val vParts = date.split("-")
+                                val iParts = referenceDate.split("-")
+                                if (vParts.size == 3 && iParts.size == 3) {
+                                    val vDateInt = "${vParts[2]}${vParts[1]}${vParts[0]}".toInt()
+                                    val iDateInt = "${iParts[2]}${iParts[1]}${iParts[0]}".toInt()
+                                    if (iDateInt > vDateInt) {
+                                        errorMessage = "Reference Date cannot be later than Voucher Date"
+                                        return@Button
+                                    }
+                                }
+                            } catch (e: Exception) {}
                             
                             // Check for Party ledgers to show Bill-wise details
                             val partyIndex = if (voucherType == "Payment") {
@@ -266,7 +283,7 @@ fun AccountingVoucherEntryScreen(
                                 activeRefIndex = partyIndex
                             } else {
                                 // Save immediately if no party logic needed
-                                saveVoucher(scope, company, voucherType, voucherNo, date, narration, totalDebit, entries, { isSaving = it }, { errorMessage = it }, onBack)
+                                saveVoucher(scope, company, voucherType, voucherNo, referenceNo, referenceDate, date, narration, totalDebit, entries, { isSaving = it }, { errorMessage = it }, onBack)
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -287,12 +304,13 @@ fun AccountingVoucherEntryScreen(
             partyName = ledger?.ledger_name ?: "Party",
             totalAmount = row.amount.toDoubleOrNull() ?: 0.0,
             initialReferences = row.references,
+            defaultReferenceNo = if (referenceNo.isNotEmpty()) referenceNo else voucherNo,
             onDismiss = { activeRefIndex = null },
             onConfirm = { refs ->
                 entries[index] = row.copy(references = refs)
                 activeRefIndex = null
                 // Trigger save after references confirmed
-                saveVoucher(scope, company, voucherType, voucherNo, date, narration, totalDebit, entries, { isSaving = it }, { errorMessage = it }, onBack)
+                saveVoucher(scope, company, voucherType, voucherNo, referenceNo, referenceDate, date, narration, totalDebit, entries, { isSaving = it }, { errorMessage = it }, onBack)
             }
         )
     }
@@ -307,6 +325,8 @@ private fun saveVoucher(
     company: Company,
     voucherType: String,
     voucherNo: String,
+    referenceNo: String,
+    referenceDate: String,
     date: String,
     narration: String,
     grandTotal: Double,
@@ -321,15 +341,23 @@ private fun saveVoucher(
             setError(null)
             
             withContext(NonCancellable) {
-                val dbDate = try {
-                    val parts = date.split("-")
-                    if (parts.size == 3) "${parts[2]}-${parts[1]}-${parts[0]}" else date
-                } catch (e: Exception) { date }
+                // Safe date conversion: DD-MM-YYYY -> YYYY-MM-DD
+                fun toDbDate(d: String): String {
+                    return try {
+                        val parts = d.split("-")
+                        if (parts.size == 3) "${parts[2]}-${parts[1]}-${parts[0]}" else d
+                    } catch (e: Exception) { d }
+                }
+
+                val dbDate = toDbDate(date)
+                val dbRefDate = toDbDate(referenceDate)
 
                 val voucher = Voucher(
                     company_id = company.id!!,
                     voucher_type = voucherType,
                     voucher_number = voucherNo.ifEmpty { null },
+                    reference_no = referenceNo.ifEmpty { null },
+                    reference_date = dbRefDate,
                     date = dbDate,
                     narration = narration,
                     total_amount = grandTotal

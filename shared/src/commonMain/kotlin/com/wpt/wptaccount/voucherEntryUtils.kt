@@ -12,8 +12,8 @@ internal fun performSave(
     company: Company,
     voucherType: String,
     voucherNo: String,
-    refNo: String,
-    refDate: String,
+    referenceNo: String,
+    referenceDate: String,
     selectedPartyId: String?,
     selectedLedgerId: String?,
     date: String,
@@ -46,14 +46,14 @@ internal fun performSave(
                 }
 
                 val dbDate = toDbDate(date)
-                val dbRefDate = toDbDate(refDate)
+                val dbRefDate = toDbDate(referenceDate)
 
                 // 1. Create Voucher
                 val voucher = Voucher(
                     company_id = company.id!!,
                     voucher_type = voucherType,
                     voucher_number = voucherNo.ifEmpty { null },
-                    reference_no = refNo.ifEmpty { null },
+                    reference_no = referenceNo.ifEmpty { null },
                     reference_date = dbRefDate,
                     party_ledger_id = selectedPartyId,
                     date = dbDate,
