@@ -51,8 +51,8 @@ fun VoucherEntryScreen(
     // Basic Voucher Info
     var date by remember { mutableStateOf("17-08-2024") }
     var voucherNo by remember { mutableStateOf("") }
-    var referenceNo by remember { mutableStateOf("") }
-    var referenceDate by remember { mutableStateOf("17-08-2024") }
+    var invoiceNo by remember { mutableStateOf("") }
+    var invoiceDate by remember { mutableStateOf("17-08-2024") }
     var selectedPartyId by remember { mutableStateOf<String?>(null) }
     var selectedLedgerId by remember { mutableStateOf<String?>(null) } // Sales or Purchase A/c
     
@@ -231,18 +231,18 @@ fun VoucherEntryScreen(
                         
                         if (voucherType != "Sale") {
                             InventoryField(
-                                label = "Ref. No.",
-                                value = referenceNo,
+                                label = "Invoice No.",
+                                value = invoiceNo,
                                 modifier = Modifier.width(250.dp),
                                 labelWidth = 100.dp
-                            ) { referenceNo = it }
+                            ) { invoiceNo = it }
 
                             InventoryField(
-                                label = "Ref. Date",
-                                value = referenceDate,
+                                label = "Invoice Date",
+                                value = invoiceDate,
                                 modifier = Modifier.width(200.dp),
                                 labelWidth = 120.dp
-                            ) { referenceDate = it }
+                            ) { invoiceDate = it }
                         }
                     }
 
@@ -457,16 +457,16 @@ fun VoucherEntryScreen(
                                 return@Button
                             }
 
-                            // Date Validation for Reference Date: Cannot be after Voucher Date
+                            // Date Validation for Invoice Date: Cannot be after Voucher Date
                             if (voucherType != "Sale") {
                                 try {
                                     val vParts = date.split("-")
-                                    val iParts = referenceDate.split("-")
+                                    val iParts = invoiceDate.split("-")
                                     if (vParts.size == 3 && iParts.size == 3) {
                                         val vDateInt = "${vParts[2]}${vParts[1]}${vParts[0]}".toInt()
                                         val iDateInt = "${iParts[2]}${iParts[1]}${iParts[0]}".toInt()
                                         if (iDateInt > vDateInt) {
-                                            errorMessage = "Reference Date cannot be later than Voucher Date"
+                                            errorMessage = "Invoice Date cannot be later than Voucher Date"
                                             return@Button
                                         }
                                     }
@@ -482,8 +482,8 @@ fun VoucherEntryScreen(
                             } else {
                                 performSave(
                                     scope, company, voucherType, voucherNo, 
-                                    if (voucherType == "Sale") voucherNo else referenceNo, 
-                                    if (voucherType == "Sale") date else referenceDate, 
+                                    if (voucherType == "Sale") voucherNo else invoiceNo, 
+                                    if (voucherType == "Sale") date else invoiceDate, 
                                     selectedPartyId, 
                                     selectedLedgerId, date, narration, grandTotal, itemSubTotal, 
                                     items, taxEntries, stockItems, ledgers, partyReferences,
@@ -508,10 +508,11 @@ fun VoucherEntryScreen(
     if (showBillWiseDialog) {
         val party = ledgers.find { it.id == selectedPartyId }
         BillWiseDetailsDialog(
+            ledgerId = selectedPartyId ?: "",
             partyName = party?.ledger_name ?: "Party",
             totalAmount = grandTotal,
             initialReferences = partyReferences,
-            defaultReferenceNo = if (voucherType == "Sale") voucherNo else if (referenceNo.isNotEmpty()) referenceNo else voucherNo,
+            defaultReferenceNo = if (voucherType == "Sale") voucherNo else if (invoiceNo.isNotEmpty()) invoiceNo else voucherNo,
             onDismiss = { showBillWiseDialog = false },
             onConfirm = { refs ->
                 partyReferences.clear()
@@ -519,8 +520,8 @@ fun VoucherEntryScreen(
                 showBillWiseDialog = false
                 performSave(
                     scope, company, voucherType, voucherNo, 
-                    if (voucherType == "Sale") voucherNo else referenceNo, 
-                    if (voucherType == "Sale") date else referenceDate, 
+                    if (voucherType == "Sale") voucherNo else invoiceNo, 
+                    if (voucherType == "Sale") date else invoiceDate, 
                     selectedPartyId, 
                     selectedLedgerId, date, narration, grandTotal, itemSubTotal, 
                     items, taxEntries, stockItems, ledgers, partyReferences,

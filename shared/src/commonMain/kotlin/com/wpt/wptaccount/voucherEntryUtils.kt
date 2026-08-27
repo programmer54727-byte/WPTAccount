@@ -12,8 +12,8 @@ internal fun performSave(
     company: Company,
     voucherType: String,
     voucherNo: String,
-    referenceNo: String,
-    referenceDate: String,
+    invoiceNo: String,
+    invoiceDate: String,
     selectedPartyId: String?,
     selectedLedgerId: String?,
     date: String,
@@ -46,15 +46,15 @@ internal fun performSave(
                 }
 
                 val dbDate = toDbDate(date)
-                val dbRefDate = toDbDate(referenceDate)
+                val dbInvoiceDate = toDbDate(invoiceDate)
 
                 // 1. Create Voucher
                 val voucher = Voucher(
                     company_id = company.id!!,
                     voucher_type = voucherType,
                     voucher_number = voucherNo.ifEmpty { null },
-                    reference_no = referenceNo.ifEmpty { null },
-                    reference_date = dbRefDate,
+                    invoice_no = invoiceNo.ifEmpty { null },
+                    invoice_date = dbInvoiceDate,
                     party_ledger_id = selectedPartyId,
                     date = dbDate,
                     narration = narration,
@@ -134,7 +134,10 @@ internal fun performSave(
 
                 // 4. Save References
                 partyReferences.forEach { ref ->
-                    supabase.from("voucher_references").insert(ref.copy(voucher_id = voucherId))
+                    supabase.from("voucher_references").insert(ref.copy(
+                        voucher_id = voucherId,
+                        ledger_id = selectedPartyId // Use the primary party ledger
+                    ))
                 }
             }
             onSuccess()

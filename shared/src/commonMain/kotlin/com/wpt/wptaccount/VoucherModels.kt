@@ -8,8 +8,8 @@ data class Voucher(
     val company_id: String = "",
     val voucher_type: String = "", // Sale, Purchase, Payment, etc.
     val voucher_number: String? = null,
-    val reference_no: String? = null,
-    val reference_date: String? = null,
+    val invoice_no: String? = null,
+    val invoice_date: String? = null,
     val party_ledger_id: String? = null,
     val date: String = "",
     val narration: String? = null,
@@ -58,7 +58,8 @@ data class VoucherEntryWithVoucher(
 data class VoucherReference(
     val id: String? = null,
     val voucher_id: String? = null,
-    val reference_type: String, // Advance, Against Reference, New Reference
+    val ledger_id: String? = null,
+    val reference_type: String, // Advance, Against Reference, New Reference, On Account
     val reference_no: String,
     val amount: Double,
     val created_at: String? = null

@@ -55,8 +55,6 @@ fun AccountingVoucherEntryScreen(
 ) {
     var date by remember { mutableStateOf("17-08-2024") }
     var voucherNo by remember { mutableStateOf("") }
-    var referenceNo by remember { mutableStateOf("") }
-    var referenceDate by remember { mutableStateOf("17-08-2024") }
     
     val entries = remember { mutableStateListOf(AccountingRow()) }
     var narration by remember { mutableStateOf("") }
@@ -171,8 +169,6 @@ fun AccountingVoucherEntryScreen(
                     ) {
                         InventoryField("Date", date, Modifier.width(200.dp), labelWidth = 60.dp) { date = it }
                         InventoryField("Voucher No.", voucherNo, Modifier.width(150.dp), labelWidth = 80.dp) { voucherNo = it }
-                        InventoryField("Ref. No.", referenceNo, Modifier.width(200.dp), labelWidth = 80.dp) { referenceNo = it }
-                        InventoryField("Ref. Date", referenceDate, Modifier.width(200.dp), labelWidth = 80.dp) { referenceDate = it }
                     }
 
                     HorizontalDivider()
@@ -257,33 +253,20 @@ fun AccountingVoucherEntryScreen(
                                 errorMessage = "Voucher not balanced or ledger missing"
                                 return@Button
                             }
-
-                            // Date Validation
-                            try {
-                                val vParts = date.split("-")
-                                val iParts = referenceDate.split("-")
-                                if (vParts.size == 3 && iParts.size == 3) {
-                                    val vDateInt = "${vParts[2]}${vParts[1]}${vParts[0]}".toInt()
-                                    val iDateInt = "${iParts[2]}${iParts[1]}${iParts[0]}".toInt()
-                                    if (iDateInt > vDateInt) {
-                                        errorMessage = "Reference Date cannot be later than Voucher Date"
-                                        return@Button
-                                    }
-                                }
-                            } catch (e: Exception) {}
                             
-                            // Check for Party ledgers to show Bill-wise details
-                            val partyIndex = if (voucherType == "Payment") {
-                                entries.indexOfFirst { it.entryType == "Debit" }
-                            } else if (voucherType == "Receipt") {
-                                entries.indexOfFirst { it.entryType == "Credit" }
-                            } else -1
+                            // Sequential Bill-wise Dialog Logic
+                            // Find all indices where ledger has bill_by_bill enabled
+                            val billByBillIndices = entries.indices.filter { idx ->
+                                val ledger = ledgers.find { it.id == entries[idx].ledgerId }
+                                ledger?.bill_by_bill == true
+                            }
 
-                            if (partyIndex != -1) {
-                                activeRefIndex = partyIndex
+                            if (billByBillIndices.isNotEmpty()) {
+                                // Start showing dialogs from the first applicable index
+                                activeRefIndex = billByBillIndices.first()
                             } else {
-                                // Save immediately if no party logic needed
-                                saveVoucher(scope, company, voucherType, voucherNo, referenceNo, referenceDate, date, narration, totalDebit, entries, { isSaving = it }, { errorMessage = it }, onBack)
+                                // Save immediately if no bill-by-bill logic needed
+                                saveVoucher(scope, company, voucherType, voucherNo, date, narration, totalDebit, entries, { isSaving = it }, { errorMessage = it }, onBack)
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -300,17 +283,32 @@ fun AccountingVoucherEntryScreen(
     activeRefIndex?.let { index ->
         val row = entries[index]
         val ledger = ledgers.find { it.id == row.ledgerId }
+        
         BillWiseDetailsDialog(
+            ledgerId = row.ledgerId,
             partyName = ledger?.ledger_name ?: "Party",
             totalAmount = row.amount.toDoubleOrNull() ?: 0.0,
             initialReferences = row.references,
-            defaultReferenceNo = if (referenceNo.isNotEmpty()) referenceNo else voucherNo,
+            defaultReferenceNo = voucherNo,
             onDismiss = { activeRefIndex = null },
             onConfirm = { refs ->
                 entries[index] = row.copy(references = refs)
-                activeRefIndex = null
-                // Trigger save after references confirmed
-                saveVoucher(scope, company, voucherType, voucherNo, referenceNo, referenceDate, date, narration, totalDebit, entries, { isSaving = it }, { errorMessage = it }, onBack)
+                
+                // Logic to move to next dialog or save
+                val billByBillIndices = entries.indices.filter { idx ->
+                    val l = ledgers.find { it.id == entries[idx].ledgerId }
+                    l?.bill_by_bill == true
+                }
+                
+                val currentOrderIdx = billByBillIndices.indexOf(index)
+                if (currentOrderIdx < billByBillIndices.size - 1) {
+                    // Move to next applicable ledger
+                    activeRefIndex = billByBillIndices[currentOrderIdx + 1]
+                } else {
+                    // All collected, save
+                    activeRefIndex = null
+                    saveVoucher(scope, company, voucherType, voucherNo, date, narration, totalDebit, entries, { isSaving = it }, { errorMessage = it }, onBack)
+                }
             }
         )
     }
@@ -325,8 +323,6 @@ private fun saveVoucher(
     company: Company,
     voucherType: String,
     voucherNo: String,
-    referenceNo: String,
-    referenceDate: String,
     date: String,
     narration: String,
     grandTotal: Double,
@@ -350,14 +346,11 @@ private fun saveVoucher(
                 }
 
                 val dbDate = toDbDate(date)
-                val dbRefDate = toDbDate(referenceDate)
 
                 val voucher = Voucher(
                     company_id = company.id!!,
                     voucher_type = voucherType,
                     voucher_number = voucherNo.ifEmpty { null },
-                    reference_no = referenceNo.ifEmpty { null },
-                    reference_date = dbRefDate,
                     date = dbDate,
                     narration = narration,
                     total_amount = grandTotal

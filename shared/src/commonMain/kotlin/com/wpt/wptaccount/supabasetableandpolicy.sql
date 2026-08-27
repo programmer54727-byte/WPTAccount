@@ -157,8 +157,8 @@ create table if not exists public.vouchers (
   company_id uuid not null references public.companies(id) on delete cascade,
   voucher_type text not null, -- Sale, Purchase, Payment, Receipt, Contra, Journal, CreditNote, DebitNote
   voucher_number text,
-  reference_no text, -- Supplier Invoice No / Ref No
-  reference_date date,
+  invoice_no text, -- Supplier Invoice No / Ref No
+  invoice_date date,
   party_ledger_id uuid references public.ledgers(id) on delete set null,
   date date default current_date not null,
   narration text,

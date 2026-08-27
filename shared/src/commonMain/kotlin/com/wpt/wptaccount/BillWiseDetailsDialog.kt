@@ -13,10 +13,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import io.github.jan.supabase.postgrest.from
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BillWiseDetailsDialog(
+    ledgerId: String,
     partyName: String,
     totalAmount: Double,
     initialReferences: List<VoucherReference> = emptyList(),
@@ -25,11 +27,31 @@ fun BillWiseDetailsDialog(
     onConfirm: (List<VoucherReference>) -> Unit
 ) {
     val references = remember { mutableStateListOf(*initialReferences.toTypedArray()) }
+    var pendingReferences by remember { mutableStateOf<List<VoucherReference>>(emptyList()) }
     
+    // Fetch existing "New Reference" items for this ledger
+    LaunchedEffect(ledgerId) {
+        try {
+            pendingReferences = supabase.from("voucher_references").select {
+                filter {
+                    eq("ledger_id", ledgerId)
+                    eq("reference_type", "New Reference")
+                }
+            }.decodeList<VoucherReference>()
+        } catch (e: Exception) {
+            println("Error fetching pending refs: ${e.message}")
+        }
+    }
+
     // Auto-add first row if empty
     LaunchedEffect(Unit) {
         if (references.isEmpty()) {
-            references.add(VoucherReference(reference_type = "New Reference", reference_no = defaultReferenceNo, amount = totalAmount))
+            references.add(VoucherReference(
+                ledger_id = ledgerId,
+                reference_type = "New Reference", 
+                reference_no = defaultReferenceNo, 
+                amount = totalAmount
+            ))
         }
     }
 
@@ -54,20 +76,35 @@ fun BillWiseDetailsDialog(
                             Box(modifier = Modifier.weight(1.5f)) {
                                 InventoryDropdown(
                                     label = "",
-                                    options = listOf("Advance", "Against Reference", "New Reference"),
+                                    options = listOf("Advance", "Against Reference", "New Reference", "On Account"),
                                     selected = ref.reference_type
                                 ) { type ->
-                                    references[index] = ref.copy(reference_type = type)
+                                    val newNo = if (type == "On Account") "On Account" else ref.reference_no
+                                    references[index] = ref.copy(reference_type = type, reference_no = newNo)
                                 }
                             }
 
-                            OutlinedTextField(
-                                value = ref.reference_no,
-                                onValueChange = { references[index] = ref.copy(reference_no = it) },
-                                modifier = Modifier.weight(1.5f).padding(horizontal = 4.dp),
-                                textStyle = MaterialTheme.typography.bodySmall,
-                                singleLine = true
-                            )
+                            Box(modifier = Modifier.weight(1.5f).padding(horizontal = 4.dp)) {
+                                if (ref.reference_type == "Against Reference") {
+                                    InventoryDropdown(
+                                        label = "",
+                                        options = pendingReferences.map { it.reference_no }.distinct(),
+                                        selected = ref.reference_no
+                                    ) { name ->
+                                        val existing = pendingReferences.find { it.reference_no == name }
+                                        references[index] = ref.copy(reference_no = name, amount = existing?.amount ?: ref.amount)
+                                    }
+                                } else {
+                                    OutlinedTextField(
+                                        value = ref.reference_no,
+                                        onValueChange = { references[index] = ref.copy(reference_no = it) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        textStyle = MaterialTheme.typography.bodySmall,
+                                        singleLine = true,
+                                        enabled = ref.reference_type != "On Account"
+                                    )
+                                }
+                            }
 
                             OutlinedTextField(
                                 value = if (ref.amount == 0.0) "" else ref.amount.format(2),
@@ -75,7 +112,7 @@ fun BillWiseDetailsDialog(
                                     val amt = it.toDoubleOrNull() ?: 0.0
                                     references[index] = ref.copy(amount = amt)
                                 },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.width(100.dp),
                                 textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
                                 singleLine = true
                             )
@@ -88,7 +125,7 @@ fun BillWiseDetailsDialog(
                 }
 
                 TextButton(onClick = { 
-                    references.add(VoucherReference(reference_type = "Against Reference", reference_no = "", amount = remaining))
+                    references.add(VoucherReference(ledger_id = ledgerId, reference_type = "Against Reference", reference_no = "", amount = remaining))
                 }) {
                     Icon(Icons.Default.Add, null)
                     Text("Add Row")

@@ -10,11 +10,14 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - Automatically creates **34 standard Tally groups** for every company.
     - Automatically initializes default ledgers (**Cash** and **Profit & Loss A/c**).
     - **Smart Check:** Automatically initializes groups/ledgers for older companies when opened.
-- **Voucher Management (Sale & Purchase):**
+- **Voucher Management (Sale, Purchase & Accounting):**
     - **Tally-Style Searchable Selectors:** Type names to filter parties, ledgers, or items instantly with full keyboard support (Arrows + Enter).
     - **On-the-fly Creation (Alt+C):** Create missing ledgers or stock items directly from the voucher entry screen using keyboard shortcuts.
-    - **Bill-wise Details:** Track outstanding payments and receipts with reference-based reconciliation for parties.
-    - **Supplier Invoice Tracking:** Dedicated fields for Supplier Invoice Number and Date in Purchase vouchers, with automatic reference mapping for Sales.
+    - **Advanced Bill-wise Details:** 
+        - **Against Reference Lookup:** Real-time database lookup to select from existing "New Reference" entries when adjusting outstandings.
+        - **"On Account" Support:** Flexible reconciliation for non-reference based payments.
+        - **Sequential Processing:** Supports multiple bill-by-bill ledgers in a single voucher entry (Sequential Dialogs).
+    - **Terminological Alignment:** Context-aware headers using **Invoice No.** and **Invoice Date** for Inventory/Purchase, and unified **Reference No** for outstandings.
     - **Smart Date Validation:** Built-in logic to ensure Invoice/Reference dates are not later than the Voucher Date, maintaining audit consistency.
     - **Flexible Tax Ledgers:** Replaced auto-GST with manual tax ledger selection from "Duties & Taxes", supporting custom rates (e.g., CGST 2.5%, SGST 2.5%) with automatic amount calculation.
     - **Atomic Saving Logic:** Integrated transaction handling that saves the voucher, stock movements, and ledger entries while updating inventory hand-levels in one robust step.
