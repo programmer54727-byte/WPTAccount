@@ -35,6 +35,8 @@ data class VoucherStockItem(
     val quantity: Double,
     val rate: Double,
     val amount: Double,
+    val hsn_code: String? = null,
+    val gst_rate: Double = 0.0,
     val created_at: String? = null
 )
 
@@ -70,6 +72,8 @@ data class VoucherReference(
 @Serializable
 data class ItemRow(
     var stockItemId: String = "",
+    var hsnCode: String = "",
+    var gstRate: Double = 0.0,
     var qty: String = "1",
     var rate: String = "0",
     var amount: String = "0"

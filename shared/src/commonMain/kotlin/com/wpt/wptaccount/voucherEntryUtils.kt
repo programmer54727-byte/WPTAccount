@@ -76,7 +76,9 @@ internal fun performSave(
                                 stock_item_id = row.stockItemId,
                                 quantity = qtyVal,
                                 rate = row.rate.toDoubleOrNull() ?: 0.0,
-                                amount = row.amount.toDoubleOrNull() ?: 0.0
+                                amount = row.amount.toDoubleOrNull() ?: 0.0,
+                                hsn_code = row.hsnCode.ifEmpty { null },
+                                gst_rate = row.gstRate
                             )
                         )
 

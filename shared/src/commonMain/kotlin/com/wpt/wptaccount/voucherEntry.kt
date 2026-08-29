@@ -13,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -42,7 +41,7 @@ fun VoucherEntryScreen(
     onReceiptClick: () -> Unit = {},
     onContraClick: () -> Unit = {},
     onJournalClick: () -> Unit = {},
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     // ----------------------------------------------------------------
     // 1. STATE MANAGEMENT
@@ -67,7 +66,7 @@ fun VoucherEntryScreen(
     var stockItems by remember { mutableStateOf<List<StockItem>>(emptyList()) }
     
     // UI Feedback States
-    var isLoading by remember { mutableStateOf(true) }
+    var isLoading by remember { mutableStateOf(value = true) }
     var isSaving by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -114,12 +113,12 @@ fun VoucherEntryScreen(
                     limit(1)
                 }.decodeList<Voucher>()
 
-                if (lastVouchers.isNotEmpty()) {
+                voucherNo = if (lastVouchers.isNotEmpty()) {
                     val lastNo = lastVouchers[0].voucher_number
                     val nextNo = (lastNo?.toIntOrNull() ?: 0) + 1
-                    voucherNo = nextNo.toString()
+                    nextNo.toString()
                 } else {
-                    voucherNo = "1"
+                    "1"
                 }
             } catch (e: Exception) {
                 println("Fetch error: ${e.message}")
@@ -259,10 +258,10 @@ fun VoucherEntryScreen(
 
                     TallySearchableInput(
                         label = if (voucherType == "Sale") "Sales Ledger" else "Purchase Ledger",
-                        options = ledgers.filter { 
+                        options = ledgers.asSequence().filter { 
                             if (voucherType == "Sale") it.ledger_name.contains("Sales", ignoreCase = true)
                             else it.ledger_name.contains("Purchase", ignoreCase = true)
-                        }.map { it.ledger_name },
+                        }.map { it.ledger_name }.toList(),
                         selected = ledgers.find { it.id == selectedLedgerId }?.ledger_name ?: "",
                         modifier = Modifier.fillMaxWidth(),
                         onCreate = { showAddLedger = true }
@@ -277,12 +276,14 @@ fun VoucherEntryScreen(
                     
                     val itemScrollState = rememberScrollState()
                     Column(modifier = Modifier.fillMaxWidth().horizontalScroll(itemScrollState)) {
-                        val contentWidth = 600.dp 
+                        val contentWidth = 850.dp 
                         
                         Column(modifier = Modifier.width(contentWidth)) {
                             // Table Header
                             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Text("Name of Item", modifier = Modifier.weight(2f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
+                                Text("Name of Item", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
+                                Text("HSN Code", modifier = Modifier.width(100.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                                Text("GST Rate (%)", modifier = Modifier.width(80.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
                                 Text("Quantity", modifier = Modifier.width(80.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
                                 Text("Rate", modifier = Modifier.width(100.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
                                 Text("Amount", modifier = Modifier.width(120.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
@@ -292,7 +293,7 @@ fun VoucherEntryScreen(
                             // Dynamic Rows
                             items.forEachIndexed { index, row ->
                                 Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Box(modifier = Modifier.weight(2f)) {
+                                    Box(modifier = Modifier.weight(1f)) {
                                         TallySearchableInput(
                                             label = "",
                                             options = stockItems.map { it.item_name },
@@ -302,51 +303,63 @@ fun VoucherEntryScreen(
                                             val item = stockItems.find { it.item_name == name }
                                             if (item != null) {
                                                 val r = if (row.rate == "0") item.opening_rate.toString() else row.rate
-                                                val q = row.qty
-                                                val a = (q.toDoubleOrNull() ?: 0.0) * (r.toDoubleOrNull() ?: 0.0)
+                                                val h = item.hsn_sac_number ?: ""
+                                                val gr = item.gst_rate
+                                                val a = (row.qty.toDoubleOrNull() ?: 0.0) * (r.toDoubleOrNull() ?: 0.0)
                                                 
                                                 items[index] = row.copy(
                                                     stockItemId = item.id!!,
+                                                    hsnCode = h,
+                                                    gstRate = gr,
                                                     rate = r,
                                                     amount = a.format(2)
                                                 )
                                             }
                                         }
                                     }
-                                    
+                                    OutlinedTextField(
+                                        value = row.hsnCode,
+                                        onValueChange = {},
+                                        modifier = Modifier.width(100.dp),
+                                        textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
+                                        singleLine = true,
+                                        readOnly = true
+                                    )
+                                    OutlinedTextField(
+                                        value = row.gstRate.toString(),
+                                        onValueChange = {},
+                                        modifier = Modifier.width(80.dp),
+                                        textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
+                                        singleLine = true,
+                                        suffix = { Text("%", style = MaterialTheme.typography.bodySmall) },
+                                        readOnly = true
+                                    )
                                     OutlinedTextField(
                                         value = row.qty,
-                                        onValueChange = { 
-                                            val q = it
-                                            val r = row.rate
-                                            val a = (q.toDoubleOrNull() ?: 0.0) * (r.toDoubleOrNull() ?: 0.0)
-                                            items[index] = row.copy(qty = q, amount = a.format(2))
+                                        onValueChange = {
+                                            val a = (it.toDoubleOrNull() ?: 0.0) * (row.rate.toDoubleOrNull() ?: 0.0)
+                                            items[index] = row.copy(qty = it, amount = a.format(2))
                                         },
                                         modifier = Modifier.width(80.dp),
                                         textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
                                         singleLine = true
                                     )
-                                    
                                     OutlinedTextField(
                                         value = row.rate,
                                         onValueChange = { 
-                                            val r = it
-                                            val q = row.qty
-                                            val a = (q.toDoubleOrNull() ?: 0.0) * (r.toDoubleOrNull() ?: 0.0)
-                                            items[index] = row.copy(rate = r, amount = a.format(2))
+                                            val a = (row.qty.toDoubleOrNull() ?: 0.0) * (it.toDoubleOrNull() ?: 0.0)
+                                            items[index] = row.copy(rate = it, amount = a.format(2))
                                         },
                                         modifier = Modifier.width(100.dp),
                                         textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
                                         singleLine = true
                                     )
-                                    
                                     OutlinedTextField(
                                         value = row.amount,
                                         onValueChange = { 
-                                            val a = it
                                             val q = row.qty.toDoubleOrNull() ?: 1.0
-                                            val r = if (q != 0.0) (a.toDoubleOrNull() ?: 0.0) / q else 0.0
-                                            items[index] = row.copy(amount = a, rate = if (q != 0.0) r.format(2) else row.rate)
+                                            val r = if (q != 0.0) (it.toDoubleOrNull() ?: 0.0) / q else 0.0
+                                            items[index] = row.copy(amount = it, rate = if (q != 0.0) r.format(2) else row.rate)
                                         },
                                         modifier = Modifier.width(120.dp),
                                         textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End, fontWeight = FontWeight.Bold),
@@ -373,12 +386,21 @@ fun VoucherEntryScreen(
                     
                     val ledgerScrollState = rememberScrollState()
                     Column(modifier = Modifier.fillMaxWidth().horizontalScroll(ledgerScrollState)) {
-                        val contentWidth = 600.dp
+                        val contentWidth = 700.dp
                         
                         Column(modifier = Modifier.width(contentWidth)) {
+                            // Table Header
+                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Text("Ledger Name", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
+                                Text("Rate (%)", modifier = Modifier.width(100.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                                Spacer(Modifier.width(80.dp))
+                                Text("Amount", modifier = Modifier.width(120.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                                Spacer(Modifier.width(48.dp))
+                            }
+
                             taxEntries.forEachIndexed { index, row ->
                                 Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Box(modifier = Modifier.weight(2f)) {
+                                    Box(modifier = Modifier.weight(1f)) {
                                         TallySearchableInput(
                                             label = "",
                                             options = ledgers.map { it.ledger_name },
@@ -391,13 +413,25 @@ fun VoucherEntryScreen(
                                                 taxEntries[index] = row.copy(
                                                     ledgerId = ledger.id!!,
                                                     taxRate = rate,
-                                                    amount = itemSubTotal * rate / 100.0
+                                                    amount = (itemSubTotal * rate) / 100.0
                                                 )
                                             }
                                         }
                                     }
                                     
-                                    Spacer(Modifier.width(180.dp)) 
+                                    OutlinedTextField(
+                                        value = row.taxRate.toString(),
+                                        onValueChange = { 
+                                            val newRate = it.toDoubleOrNull() ?: 0.0
+                                            taxEntries[index] = row.copy(taxRate = newRate, amount = (itemSubTotal * newRate) / 100.0)
+                                        },
+                                        modifier = Modifier.width(100.dp),
+                                        textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
+                                        singleLine = true,
+                                        suffix = { Text("%", style = MaterialTheme.typography.bodySmall) }
+                                    )
+
+                                    Spacer(Modifier.width(80.dp)) 
                                     
                                     OutlinedTextField(
                                         value = row.amount.toString(),
@@ -470,7 +504,7 @@ fun VoucherEntryScreen(
                                             return@Button
                                         }
                                     }
-                                } catch (e: Exception) {
+                                } catch (_: Exception) {
                                     // Ignore parsing errors
                                 }
                             }
@@ -512,23 +546,22 @@ fun VoucherEntryScreen(
             partyName = party?.ledger_name ?: "Party",
             totalAmount = grandTotal,
             initialReferences = partyReferences,
-            defaultReferenceNo = if (voucherType == "Sale") voucherNo else if (invoiceNo.isNotEmpty()) invoiceNo else voucherNo,
-            onDismiss = { showBillWiseDialog = false },
-            onConfirm = { refs ->
-                partyReferences.clear()
-                partyReferences.addAll(refs)
-                showBillWiseDialog = false
-                performSave(
-                    scope, company, voucherType, voucherNo, 
-                    if (voucherType == "Sale") voucherNo else invoiceNo, 
-                    if (voucherType == "Sale") date else invoiceDate, 
-                    selectedPartyId, 
-                    selectedLedgerId, date, narration, grandTotal, itemSubTotal, 
-                    items, taxEntries, stockItems, ledgers, partyReferences,
-                    { isSaving = it }, { errorMessage = it }, onBack
-                )
-            }
-        )
+            defaultReferenceNo = if (voucherType == "Sale") voucherNo else invoiceNo.ifEmpty { voucherNo },
+            onDismiss = { showBillWiseDialog = false }
+        ) { refs ->
+            partyReferences.clear()
+            partyReferences.addAll(refs)
+            showBillWiseDialog = false
+            performSave(
+                scope, company, voucherType, voucherNo, 
+                if (voucherType == "Sale") voucherNo else invoiceNo, 
+                if (voucherType == "Sale") date else invoiceDate, 
+                selectedPartyId, 
+                selectedLedgerId, date, narration, grandTotal, itemSubTotal, 
+                items, taxEntries, stockItems, ledgers, partyReferences,
+                { isSaving = it }, { errorMessage = it }, onBack
+            )
+        }
     }
 
     // Quick Add Ledger (Alt+C)
@@ -541,7 +574,7 @@ fun VoucherEntryScreen(
 
     // Quick Add Stock Item (Alt+C)
     if (showAddItem) {
-        CompactAddItemDialog(company, onDismiss = { showAddItem = false }) {
+        CompactAddItemDialog(onDismiss = { showAddItem = false }) {
             fetchData()
             showAddItem = false
         }
@@ -598,7 +631,6 @@ fun CompactAddLedgerDialog(
  */
 @Composable
 fun CompactAddItemDialog(
-    company: Company,
     onDismiss: () -> Unit,
     onSuccess: () -> Unit
 ) {

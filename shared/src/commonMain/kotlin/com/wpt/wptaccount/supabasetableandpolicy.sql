@@ -232,6 +232,8 @@ create table if not exists public.voucher_stock_items (
   quantity decimal not null,
   rate decimal not null,
   amount decimal not null,
+  hsn_code text,
+  gst_rate decimal default 0,
   created_at timestamp with time zone default now() not null
 );
 

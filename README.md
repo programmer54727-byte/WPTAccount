@@ -52,6 +52,7 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
 - **Persistence:** Multiplatform Settings
 - **Networking:** Ktor
 - **Config:** BuildKonfig
+- **Logging:** SLF4J with Logback (Desktop)
 
 ## ⚙️ Setup Instructions
 
