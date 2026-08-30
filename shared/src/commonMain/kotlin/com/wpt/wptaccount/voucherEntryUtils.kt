@@ -35,18 +35,8 @@ internal fun performSave(
             setError(null)
 
             withContext(NonCancellable) {
-                // Safe date conversion: DD-MM-YYYY -> YYYY-MM-DD
-                fun toDbDate(d: String): String {
-                    return try {
-                        val parts = d.split("-")
-                        if (parts.size == 3) "${parts[2]}-${parts[1]}-${parts[0]}" else d
-                    } catch (e: Exception) {
-                        d
-                    }
-                }
-
-                val dbDate = toDbDate(date)
-                val dbInvoiceDate = toDbDate(invoiceDate)
+                val dbDate = date.toDbDate()
+                val dbInvoiceDate = invoiceDate.toDbDate()
 
                 // 1. Create Voucher
                 val voucher = Voucher(

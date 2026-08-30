@@ -59,6 +59,48 @@ fun Double.formatWithSign(): String {
     return if (this >= 0) "$formatted Dr" else "$formatted Cr"
 }
 
+/**
+ * Standardizes date formatting across the application.
+ * Internal (DB) Format: YYYY-MM-DD
+ * Display (UI) Format: DD/MM/YYYY
+ */
+
+fun String.toDisplayDate(): String {
+    return try {
+        val parts = this.split("-")
+        if (parts.size == 3) "${parts[2]}/${parts[1]}/${parts[0]}" else this
+    } catch (e: Exception) { this }
+}
+
+fun String.toDbDate(): String {
+    return try {
+        // Handle both / and - as separators for user input
+        val parts = if (this.contains("/")) this.split("/") else this.split("-")
+        if (parts.size == 3) {
+            val d = parts[0].padStart(2, '0')
+            val m = parts[1].padStart(2, '0')
+            val y = parts[2]
+            "$y-$m-$d"
+        } else this
+    } catch (e: Exception) { this }
+}
+
+fun String.toMonthYearLabel(): String {
+    return try {
+        val parts = if (this.contains("/")) this.split("/") else this.split("-")
+        // Assumes index 1 is month, index 2 is year in DD/MM/YYYY or index 0 is year, 1 is month in YYYY-MM-DD
+        val month = if (this.contains("/")) parts[1] else parts[1]
+        val year = if (this.contains("/")) parts[2] else parts[0]
+        val monthName = when (month.toIntOrNull()) {
+            1 -> "Jan"; 2 -> "Feb"; 3 -> "Mar"; 4 -> "Apr"
+            5 -> "May"; 6 -> "Jun"; 7 -> "Jul"; 8 -> "Aug"
+            9 -> "Sep"; 10 -> "Oct"; 11 -> "Nov"; 12 -> "Dec"
+            else -> month
+        }
+        "$monthName $year"
+    } catch (e: Exception) { this }
+}
+
 fun Company.getDefaultPeriod(): AccountPeriod {
     val start = financial_year_beginning ?: "2024-04-01"
     val parts = start.split("-")

@@ -22,17 +22,19 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **Flexible Tax Ledgers:** Replaced auto-GST with manual tax ledger selection from "Duties & Taxes", supporting custom rates (e.g., CGST 2.5%, SGST 2.5%) with automatic amount calculation.
     - **Atomic Saving Logic:** Integrated transaction handling that saves the voucher, stock movements, and ledger entries while updating inventory hand-levels in one robust step.
 - **Ledger Management:**
-    - **Groups & Ledgers:** Full management of accounting groups and individual ledgers with aggregated totals.
-    - **Smart Adaptive Form:** Intelligent ledger creation dialog that dynamically shows/hides sections based on the chosen accounting group (Bank, Loans, Revenue, Assets, etc.).
+    - **Groups & Ledgers:** Full lifecycle management (Add, View, Edit, Delete) of accounting groups and individual ledgers with aggregated totals.
+    - **Smart Adaptive Form:** Intelligent ledger creation/editing dialog that dynamically shows/hides sections based on the chosen accounting group (Bank, Loans, Revenue, Assets, etc.).
     - **Automated Entry:** Intelligent auto-filling of mailing names from ledger names with optional manual override.
 - **Inventory Management:**
-    - **Units & Groups:** Full lifecycle management with aggregated summaries (Total Qty, Avg Rate, Total Value).
+    - **Units & Groups:** Full lifecycle management (Add, View, Edit, Delete) with aggregated summaries (Total Qty, Avg Rate, Total Value).
     - **Tally-Style Stock Summary:** Professional table layout displaying Particulars, HSN, and GST (formatted as %).
 - **Dynamic Reporting Engine:**
     - **Live Monthly Summaries:** Real-time calculation of Inwards, Outwards, and rolling Closing Balances fetched directly from voucher data.
     - **Accounting Precision:** Rolling balance logic for ledgers that correctly handles Debit (Dr) vs. Credit (Cr) types.
     - **Period Awareness:** Selectable accounting periods (e.g., Financial Year) that automatically calculate "Effective Opening Balances" by summing all historical transactions prior to the period start date.
 - **Professional Workflows:**
+    - **Standardized Date Format:** Unified `DD/MM/YYYY` format throughout the application for displays and inputs, with seamless background conversion to database standards.
+    - **Global Period Context:** Selectable accounting periods available directly on the Company Home page and reports to maintain a consistent view of financial data.
     - **Keyboard Navigation:** Full support for **Arrow keys** to select items and **Enter** to drill down project-wide.
     - **Intentional Interaction:** Implemented a "Tap to Select, Double-tap to Open" model to prevent accidental navigation on mobile and desktop.
     - **Period Selection:** Integrated date-range selection in reports to switch between financial years or custom periods instantly.

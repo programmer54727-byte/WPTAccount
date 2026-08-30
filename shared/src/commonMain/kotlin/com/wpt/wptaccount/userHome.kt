@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Payments
@@ -47,6 +48,8 @@ fun UserHome(
     onBack: () -> Unit
 ) {
     var isInitializing by remember { mutableStateOf(false) }
+    var selectedPeriod by remember { mutableStateOf(company.getDefaultPeriod()) }
+    var showPeriodDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(company.id) {
         val companyId = company.id ?: return@LaunchedEffect
@@ -127,11 +130,12 @@ fun UserHome(
                         title = { 
                             Box(modifier = Modifier.fillMaxWidth()) {
                                 Column(modifier = Modifier.align(Alignment.CenterStart)) {
-                                    Text(company.company_name)
+                                    Text(company.company_name, style = MaterialTheme.typography.titleMedium)
                                     Text(
-                                        text = "Home",
+                                        text = "Period: ${selectedPeriod.startDate.toDisplayDate()} to ${selectedPeriod.endDate.toDisplayDate()}",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.clickable { showPeriodDialog = true }
                                     )
                                 }
                                 
@@ -151,6 +155,11 @@ fun UserHome(
                                 IconButton(onClick = onToggleDrawer) {
                                     Icon(Icons.Default.Menu, contentDescription = "Menu")
                                 }
+                            }
+                        },
+                        actions = {
+                            IconButton(onClick = { showPeriodDialog = true }) {
+                                Icon(Icons.Default.Event, contentDescription = "Change Period")
                             }
                         }
                     )
@@ -198,6 +207,39 @@ fun UserHome(
                 }
             }
         }
+    }
+
+    if (showPeriodDialog) {
+        var start by remember { mutableStateOf(selectedPeriod.startDate.toDisplayDate()) }
+        var end by remember { mutableStateOf(selectedPeriod.endDate.toDisplayDate()) }
+
+        AlertDialog(
+            onDismissRequest = { showPeriodDialog = false },
+            title = { Text("Change Period") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = start,
+                        onValueChange = { start = it },
+                        label = { Text("Start Date (DD/MM/YYYY)") }
+                    )
+                    OutlinedTextField(
+                        value = end,
+                        onValueChange = { end = it },
+                        label = { Text("End Date (DD/MM/YYYY)") }
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    selectedPeriod = AccountPeriod(start.toDbDate(), end.toDbDate())
+                    showPeriodDialog = false
+                }) { Text("Change") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPeriodDialog = false }) { Text("Cancel") }
+            }
+        )
     }
 }
 

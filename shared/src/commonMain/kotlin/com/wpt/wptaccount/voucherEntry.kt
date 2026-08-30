@@ -48,10 +48,10 @@ fun VoucherEntryScreen(
     // ----------------------------------------------------------------
     
     // Basic Voucher Info
-    var date by remember { mutableStateOf("17-08-2024") }
+    var date by remember { mutableStateOf("17/08/2024") }
     var voucherNo by remember { mutableStateOf("") }
     var invoiceNo by remember { mutableStateOf("") }
-    var invoiceDate by remember { mutableStateOf("17-08-2024") }
+    var invoiceDate by remember { mutableStateOf("17/08/2024") }
     var selectedPartyId by remember { mutableStateOf<String?>(null) }
     var selectedLedgerId by remember { mutableStateOf<String?>(null) } // Sales or Purchase A/c
     
@@ -494,15 +494,11 @@ fun VoucherEntryScreen(
                             // Date Validation for Invoice Date: Cannot be after Voucher Date
                             if (voucherType != "Sale") {
                                 try {
-                                    val vParts = date.split("-")
-                                    val iParts = invoiceDate.split("-")
-                                    if (vParts.size == 3 && iParts.size == 3) {
-                                        val vDateInt = "${vParts[2]}${vParts[1]}${vParts[0]}".toInt()
-                                        val iDateInt = "${iParts[2]}${iParts[1]}${iParts[0]}".toInt()
-                                        if (iDateInt > vDateInt) {
-                                            errorMessage = "Invoice Date cannot be later than Voucher Date"
-                                            return@Button
-                                        }
+                                    val vDate = date.toDbDate()
+                                    val iDate = invoiceDate.toDbDate()
+                                    if (iDate > vDate) {
+                                        errorMessage = "Invoice Date cannot be later than Voucher Date"
+                                        return@Button
                                     }
                                 } catch (_: Exception) {
                                     // Ignore parsing errors

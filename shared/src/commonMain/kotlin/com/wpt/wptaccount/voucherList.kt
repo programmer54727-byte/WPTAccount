@@ -159,7 +159,7 @@ fun VoucherListScreen(
                                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(voucher.date, modifier = Modifier.width(100.dp), style = MaterialTheme.typography.bodySmall)
+                                    Text(voucher.date.toDisplayDate(), modifier = Modifier.width(100.dp), style = MaterialTheme.typography.bodySmall)
                                     Text(voucher.voucher_type, modifier = Modifier.width(120.dp), style = MaterialTheme.typography.bodySmall)
                                     Text(voucher.voucher_number ?: "-", modifier = Modifier.width(100.dp), style = MaterialTheme.typography.bodySmall)
                                     Text(partyName, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)

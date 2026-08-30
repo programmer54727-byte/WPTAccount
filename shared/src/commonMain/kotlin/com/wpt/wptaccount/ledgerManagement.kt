@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
@@ -102,7 +103,7 @@ fun LedgerManagement(
                         Column {
                             Text("Ledger: ${company.company_name}", style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "Period: ${selectedPeriod.startDate} to ${selectedPeriod.endDate}",
+                                "Period: ${selectedPeriod.startDate.toDisplayDate()} to ${selectedPeriod.endDate.toDisplayDate()}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.clickable { showPeriodDialog = true }
@@ -156,8 +157,8 @@ fun LedgerManagement(
     }
 
     if (showPeriodDialog) {
-        var start by remember { mutableStateOf(selectedPeriod.startDate) }
-        var end by remember { mutableStateOf(selectedPeriod.endDate) }
+        var start by remember { mutableStateOf(selectedPeriod.startDate.toDisplayDate()) }
+        var end by remember { mutableStateOf(selectedPeriod.endDate.toDisplayDate()) }
 
         AlertDialog(
             onDismissRequest = { showPeriodDialog = false },
@@ -167,18 +168,18 @@ fun LedgerManagement(
                     OutlinedTextField(
                         value = start,
                         onValueChange = { start = it },
-                        label = { Text("Start Date (YYYY-MM-DD)") }
+                        label = { Text("Start Date (DD/MM/YYYY)") }
                     )
                     OutlinedTextField(
                         value = end,
                         onValueChange = { end = it },
-                        label = { Text("End Date (YYYY-MM-DD)") }
+                        label = { Text("End Date (DD/MM/YYYY)") }
                     )
                 }
             },
             confirmButton = {
                 Button(onClick = {
-                    selectedPeriod = AccountPeriod(start, end)
+                    selectedPeriod = AccountPeriod(start.toDbDate(), end.toDbDate())
                     showPeriodDialog = false
                 }) { Text("Change") }
             },
@@ -195,7 +196,14 @@ fun LedgerGroupsTab(company: Company, period: AccountPeriod) {
     var ledgers by remember { mutableStateOf<List<Ledger>>(emptyList()) }
     var selectedGroupForLedgers by remember { mutableStateOf<AccountingGroup?>(null) }
     var groupToDelete by remember { mutableStateOf<AccountingGroup?>(null) }
+    var groupToEdit by remember { mutableStateOf<AccountingGroup?>(null) }
+    var showDialog by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
+    
+    // Form States
+    var name by remember { mutableStateOf("") }
+    var selectedParentId by remember { mutableStateOf<String?>(null) }
+    var nature by remember { mutableStateOf<String?>(null) }
     
     // Selection and Navigation
     var selectedIndex by remember { mutableStateOf(0) }
@@ -290,62 +298,86 @@ fun LedgerGroupsTab(company: Company, period: AccountPeriod) {
             val balanceWidth = if (isMobile) 100.dp else 150.dp
             val scrollState = rememberScrollState()
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                    .horizontalScroll(scrollState)
-            ) {
+            Box(modifier = Modifier.fillMaxSize()) {
                 val constraints = this@BoxWithConstraints
-                val contentWidth = if (isMobile) 800.dp else constraints.maxWidth
-                
-                Column(modifier = Modifier.width(contentWidth)) {
-                    // Table Header
-                    Row(modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp), verticalAlignment = Alignment.Bottom) {
-                        Text("Group Name", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                        Text("Nature", modifier = Modifier.width(80.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                        Text("Current Balance", modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                    }
-                    HorizontalDivider(thickness = 1.dp, color = Color.Black)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .horizontalScroll(scrollState)
+                ) {
+                    val contentWidth = if (isMobile) 800.dp else constraints.maxWidth
+                    
+                    Column(modifier = Modifier.width(contentWidth)) {
+                        // Table Header
+                        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp), verticalAlignment = Alignment.Bottom) {
+                            Text("Group Name", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Nature", modifier = Modifier.width(80.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Current Balance", modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.width(80.dp))
+                        }
+                        HorizontalDivider(thickness = 1.dp, color = Color.Black)
 
-                    LazyColumn(modifier = Modifier.weight(1f)) {
-                        itemsIndexed(groups) { index, group ->
-                            val groupLedgers = ledgers.filter { it.group_id == group.id }
-                            val totalBalance = groupLedgers.sumOf { ledger -> 
-                                balances[ledger.id]?.closing ?: ledger.current_balance 
-                            }
+                        LazyColumn(modifier = Modifier.weight(1f)) {
+                            itemsIndexed(groups) { index, group ->
+                                val groupLedgers = ledgers.filter { it.group_id == group.id }
+                                val totalBalance = groupLedgers.sumOf { ledger -> 
+                                    balances[ledger.id]?.closing ?: ledger.current_balance 
+                                }
 
-                            Surface(
-                                color = if (index == selectedIndex) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                                contentColor = if (index == selectedIndex) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 1.dp)
-                                    .clickable { 
-                                        if (selectedIndex == index) {
-                                            selectedGroupForLedgers = group
-                                        } else {
-                                            selectedIndex = index
+                                Surface(
+                                    color = if (index == selectedIndex) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                    contentColor = if (index == selectedIndex) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 1.dp)
+                                        .clickable { 
+                                            if (selectedIndex == index) {
+                                                selectedGroupForLedgers = group
+                                            } else {
+                                                selectedIndex = index
+                                            }
                                         }
-                                    }
-                            ) {
-                                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Text(group.group_name, modifier = Modifier.weight(1f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
-                                    Text(group.nature ?: "", modifier = Modifier.width(80.dp), style = MaterialTheme.typography.bodySmall)
-                                    Text(
-                                        totalBalance.formatWithSign(), 
-                                        modifier = Modifier.width(balanceWidth), 
-                                        textAlign = TextAlign.End, 
-                                        fontWeight = FontWeight.Bold, 
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                    IconButton(onClick = { groupToDelete = group }, modifier = Modifier.size(40.dp)) {
-                                        Icon(Icons.Default.Delete, contentDescription = "Delete Group", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                                ) {
+                                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Text(group.group_name, modifier = Modifier.weight(1f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
+                                        Text(group.nature ?: "", modifier = Modifier.width(80.dp), style = MaterialTheme.typography.bodySmall)
+                                        Text(
+                                            totalBalance.formatWithSign(), 
+                                            modifier = Modifier.width(balanceWidth), 
+                                            textAlign = TextAlign.End, 
+                                            fontWeight = FontWeight.Bold, 
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                        
+                                        IconButton(
+                                            onClick = { 
+                                                groupToEdit = group
+                                                name = group.group_name
+                                                selectedParentId = group.parent_group_id
+                                                nature = group.nature
+                                                showDialog = true 
+                                            }, 
+                                            modifier = Modifier.size(40.dp)
+                                        ) {
+                                            Icon(Icons.Default.Edit, contentDescription = "Edit Group", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                        }
+
+                                        IconButton(onClick = { groupToDelete = group }, modifier = Modifier.size(40.dp)) {
+                                            Icon(Icons.Default.Delete, contentDescription = "Delete Group", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+                }
+                
+                FloatingActionButton(
+                    onClick = { showDialog = true },
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
+                ) {
+                    Icon(Icons.Default.Add, "Add Group")
                 }
             }
         }
@@ -404,6 +436,70 @@ fun LedgerGroupsTab(company: Company, period: AccountPeriod) {
             }
         )
     }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { 
+                showDialog = false
+                groupToEdit = null
+                name = ""; selectedParentId = null; nature = null
+            },
+            modifier = Modifier.fillMaxWidth(0.95f),
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+            title = { Text(if (groupToEdit != null) "Edit Accounting Group" else "Add Accounting Group") },
+            text = {
+                val scrollState = rememberScrollState()
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(scrollState),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    InventoryField("Name", name) { name = it }
+                    
+                    InventoryDropdown("Under", groups.filter { it.id != groupToEdit?.id }.map { it.group_name }.plus("Primary"), 
+                        groups.find { it.id == selectedParentId }?.group_name ?: "Primary") {
+                        selectedParentId = groups.find { g -> g.group_name == it }?.id
+                    }
+
+                    InventoryDropdown("Nature", listOf("Asset", "Liability", "Income", "Expense"), nature ?: "") {
+                        nature = it
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    scope.launch {
+                        val group = AccountingGroup(
+                            id = groupToEdit?.id,
+                            company_id = company.id!!,
+                            group_name = name,
+                            parent_group_id = selectedParentId,
+                            nature = nature
+                        )
+                        if (groupToEdit != null) {
+                            supabase.from("groups").update(group) {
+                                filter { eq("id", groupToEdit!!.id!!) }
+                            }
+                        } else {
+                            supabase.from("groups").insert(group)
+                        }
+                        showDialog = false
+                        groupToEdit = null
+                        name = ""; selectedParentId = null; nature = null
+                        fetchData()
+                    }
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { 
+                    showDialog = false
+                    groupToEdit = null
+                    name = ""; selectedParentId = null; nature = null
+                }) { Text("Cancel") }
+            }
+        )
+    }
 }
 
 @Composable
@@ -412,6 +508,7 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
     var groups by remember { mutableStateOf<List<AccountingGroup>>(emptyList()) }
     var showDialog by remember { mutableStateOf(false) }
     var ledgerToDelete by remember { mutableStateOf<Ledger?>(null) }
+    var ledgerToEdit by remember { mutableStateOf<Ledger?>(null) }
     
     // Selection and View Mode
     var selectedIndex by remember { mutableStateOf(0) }
@@ -613,6 +710,46 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
                                         Text(ledgerBalance.opening.formatWithSign(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
                                         Text(ledgerBalance.closing.formatWithSign(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                         
+                                        IconButton(
+                                            onClick = { 
+                                                ledgerToEdit = ledger
+                                                name = ledger.ledger_name
+                                                alias = ledger.alias ?: ""
+                                                selectedGroupId = ledger.group_id
+                                                openingBalance = ledger.opening_balance.toString()
+                                                openingBalanceType = ledger.opening_balance_type
+                                                mailingName = ledger.mailing_name ?: ""
+                                                address = ledger.address ?: ""
+                                                state = ledger.state ?: ""
+                                                country = ledger.country ?: ""
+                                                pincode = ledger.pincode ?: ""
+                                                panItNumber = ledger.pan_it_number ?: ""
+                                                gstRegistrationType = ledger.gst_registration_type ?: "Unregistered"
+                                                gstinUin = ledger.gstin_uin ?: ""
+                                                bankAccNo = ledger.bank_acc_no ?: ""
+                                                bankIfsc = ledger.bank_ifsc ?: ""
+                                                bankName = ledger.bank_name ?: ""
+                                                bankBranch = ledger.bank_branch ?: ""
+                                                bankSwift = ledger.bank_swift ?: ""
+                                                billByBill = ledger.bill_by_bill
+                                                creditPeriod = ledger.credit_period?.toString() ?: ""
+                                                creditLimit = ledger.credit_limit?.toString() ?: ""
+                                                dutyTaxType = ledger.duty_tax_type ?: "GST"
+                                                gstTaxSubType = ledger.gst_tax_sub_type ?: "Integrated Tax"
+                                                taxRate = ledger.tax_rate?.toString() ?: "0"
+                                                inventoryAffected = ledger.inventory_affected
+                                                costCentresApplicable = ledger.cost_centres_applicable
+                                                gstApplicableType = ledger.gst_applicable_type ?: "Applicable"
+                                                supplyType = ledger.supply_type ?: "Services"
+                                                hsnSacCode = ledger.hsn_sac_code ?: ""
+                                                hsnSacDesc = ledger.hsn_sac_desc ?: ""
+                                                showDialog = true 
+                                            }, 
+                                            modifier = Modifier.size(40.dp)
+                                        ) {
+                                            Icon(Icons.Default.Edit, contentDescription = "Edit Ledger", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                        }
+
                                         IconButton(onClick = { ledgerToDelete = ledger }, modifier = Modifier.size(40.dp)) {
                                             Icon(Icons.Default.Delete, contentDescription = "Delete Ledger", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
                                         }
@@ -683,10 +820,21 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
 
     if (showDialog) {
         AlertDialog(
-            onDismissRequest = { showDialog = false },
+            onDismissRequest = { 
+                showDialog = false
+                ledgerToEdit = null
+                isMailingNameSynced = true
+                name = ""; alias = ""; mailingName = ""; address = ""; state = ""; country = ""; pincode = ""
+                panItNumber = ""; gstinUin = ""; openingBalance = "0"; openingBalanceType = "Dr"
+                bankAccNo = ""; bankIfsc = ""; bankName = ""; bankBranch = ""; bankSwift = ""
+                billByBill = false; creditPeriod = ""; creditLimit = ""
+                taxRate = "0"
+                inventoryAffected = false; costCentresApplicable = false
+                gstApplicableType = "Applicable"; hsnSacCode = ""; hsnSacDesc = ""
+            },
             modifier = Modifier.widthIn(max = 800.dp).fillMaxWidth(0.95f),
             properties = DialogProperties(usePlatformDefaultWidth = false),
-            title = { Text("Ledger Creation") },
+            title = { Text(if (ledgerToEdit != null) "Edit Ledger" else "Ledger Creation") },
             text = {
                 val scrollState = rememberScrollState()
                 val selectedGroup = groups.find { it.id == selectedGroupId }
@@ -877,7 +1025,8 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
                             saveError = null
                             isSaving = true
                             try {
-                                val newLedger = Ledger(
+                                val ledger = Ledger(
+                                    id = ledgerToEdit?.id,
                                     company_id = company.id!!,
                                     ledger_name = name,
                                     alias = alias.ifEmpty { null },
@@ -920,8 +1069,15 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
                                     opening_balance_type = openingBalanceType,
                                     current_balance = if (openingBalanceType == "Cr") -(openingBalance.toDoubleOrNull() ?: 0.0) else (openingBalance.toDoubleOrNull() ?: 0.0)
                                 )
-                                supabase.from("ledgers").insert(newLedger)
+                                if (ledgerToEdit != null) {
+                                    supabase.from("ledgers").update(ledger) {
+                                        filter { eq("id", ledgerToEdit!!.id!!) }
+                                    }
+                                } else {
+                                    supabase.from("ledgers").insert(ledger)
+                                }
                                 showDialog = false
+                                ledgerToEdit = null
                                 // Reset fields
                                 name = ""; alias = ""; mailingName = ""; address = ""; state = ""; country = ""; pincode = ""
                                 isMailingNameSynced = true
@@ -952,7 +1108,15 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
             dismissButton = {
                 TextButton(onClick = { 
                     showDialog = false 
+                    ledgerToEdit = null
                     isMailingNameSynced = true
+                    name = ""; alias = ""; mailingName = ""; address = ""; state = ""; country = ""; pincode = ""
+                    panItNumber = ""; gstinUin = ""; openingBalance = "0"; openingBalanceType = "Dr"
+                    bankAccNo = ""; bankIfsc = ""; bankName = ""; bankBranch = ""; bankSwift = ""
+                    billByBill = false; creditPeriod = ""; creditLimit = ""
+                    taxRate = "0"
+                    inventoryAffected = false; costCentresApplicable = false
+                    gstApplicableType = "Applicable"; hsnSacCode = ""; hsnSacDesc = ""
                 }) { Text("Cancel") }
             }
         )
@@ -1166,16 +1330,20 @@ fun LedgerMonthlySummary(
                             opening -= entry.amount
                         }
                     } else if (entry.vouchers.date <= period.endDate) {
-                        val dateParts = entry.vouchers.date.split("-")
-                        if (dateParts.size == 3) {
-                            val month = dateParts[1].toInt()
-                            val monthData = dataMap[month]
-                            if (monthData != null) {
-                                if (entry.entry_type == "Debit") {
-                                    monthData.debit += entry.amount
-                                } else {
-                                    monthData.credit += entry.amount
-                                }
+                        val monthLabel = entry.vouchers.date.toMonthYearLabel()
+                        val monthName = monthLabel.split(" ")[0]
+                        val monthInt = when (monthName) {
+                            "Jan" -> 1; "Feb" -> 2; "Mar" -> 3; "Apr" -> 4
+                            "May" -> 5; "Jun" -> 6; "Jul" -> 7; "Aug" -> 8
+                            "Sep" -> 9; "Oct" -> 10; "Nov" -> 11; "Dec" -> 12
+                            else -> 0
+                        }
+                        val monthData = dataMap[monthInt]
+                        if (monthData != null) {
+                            if (entry.entry_type == "Debit") {
+                                monthData.debit += entry.amount
+                            } else {
+                                monthData.credit += entry.amount
                             }
                         }
                     }
@@ -1211,7 +1379,7 @@ fun LedgerMonthlySummary(
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
                         Text(ledger.ledger_name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         Text("Monthly Summary", style = MaterialTheme.typography.bodySmall)
-                        Text("For ${period.startDate} to ${period.endDate}", style = MaterialTheme.typography.bodySmall)
+                        Text("For ${period.startDate.toDisplayDate()} to ${period.endDate.toDisplayDate()}", style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }

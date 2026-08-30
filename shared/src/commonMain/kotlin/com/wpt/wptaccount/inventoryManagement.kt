@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -219,6 +220,7 @@ fun UnitsTab(company: Company) {
     
     var showDialog by remember { mutableStateOf(false) }
     var unitToDelete by remember { mutableStateOf<UnitOfMeasure?>(null) }
+    var unitToEdit by remember { mutableStateOf<UnitOfMeasure?>(null) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     var symbol by remember { mutableStateOf("") }
     var formalName by remember { mutableStateOf("") }
@@ -335,6 +337,18 @@ fun UnitsTab(company: Company) {
                                         Text(avgRate.format(), modifier = Modifier.width(rateWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
                                         Text(totalValue.format(), modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                         
+                                        IconButton(
+                                            onClick = { 
+                                                unitToEdit = unit
+                                                symbol = unit.unit_symbol
+                                                formalName = unit.formal_name ?: ""
+                                                showDialog = true 
+                                            }, 
+                                            modifier = Modifier.size(40.dp)
+                                        ) {
+                                            Icon(Icons.Default.Edit, contentDescription = "Edit Unit", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                        }
+
                                         IconButton(onClick = { unitToDelete = unit }, modifier = Modifier.size(40.dp)) {
                                             Icon(Icons.Default.Delete, contentDescription = "Delete Unit", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
                                         }
@@ -405,10 +419,14 @@ fun UnitsTab(company: Company) {
 
     if (showDialog) {
         AlertDialog(
-            onDismissRequest = { showDialog = false },
+            onDismissRequest = { 
+                showDialog = false
+                unitToEdit = null
+                symbol = ""; formalName = ""
+            },
             modifier = Modifier.fillMaxWidth(0.95f),
             properties = DialogProperties(usePlatformDefaultWidth = false),
-            title = { Text("Add Unit of Measure") },
+            title = { Text(if (unitToEdit != null) "Edit Unit of Measure" else "Add Unit of Measure") },
             text = {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -431,12 +449,32 @@ fun UnitsTab(company: Company) {
             confirmButton = {
                 Button(onClick = {
                     scope.launch {
-                        supabase.from("units").insert(UnitOfMeasure(company_id = company.id!!, unit_symbol = symbol, formal_name = formalName))
+                        val unit = UnitOfMeasure(
+                            id = unitToEdit?.id,
+                            company_id = company.id!!, 
+                            unit_symbol = symbol, 
+                            formal_name = formalName
+                        )
+                        if (unitToEdit != null) {
+                            supabase.from("units").update(unit) {
+                                filter { eq("id", unitToEdit!!.id!!) }
+                            }
+                        } else {
+                            supabase.from("units").insert(unit)
+                        }
                         showDialog = false
+                        unitToEdit = null
                         symbol = ""; formalName = ""
                         fetchData()
                     }
                 }) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { 
+                    showDialog = false
+                    unitToEdit = null
+                    symbol = ""; formalName = ""
+                }) { Text("Cancel") }
             }
         )
     }
@@ -455,6 +493,7 @@ fun StockGroupsTab(company: Company) {
     
     var showDialog by remember { mutableStateOf(false) }
     var groupToDelete by remember { mutableStateOf<StockGroup?>(null) }
+    var groupToEdit by remember { mutableStateOf<StockGroup?>(null) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     
     // Form States
@@ -587,6 +626,18 @@ fun StockGroupsTab(company: Company) {
                                         
                                         Text(totalValue.format(), modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                         
+                                        IconButton(
+                                            onClick = { 
+                                                groupToEdit = group
+                                                name = group.group_name
+                                                selectedParentId = group.parent_group_id
+                                                showDialog = true 
+                                            }, 
+                                            modifier = Modifier.size(40.dp)
+                                        ) {
+                                            Icon(Icons.Default.Edit, contentDescription = "Edit Group", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                        }
+                                        
                                         IconButton(onClick = { groupToDelete = group }, modifier = Modifier.size(40.dp)) {
                                             Icon(Icons.Default.Delete, contentDescription = "Delete Group", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
                                         }
@@ -663,10 +714,14 @@ fun StockGroupsTab(company: Company) {
 
     if (showDialog) {
         AlertDialog(
-            onDismissRequest = { showDialog = false },
+            onDismissRequest = { 
+                showDialog = false
+                groupToEdit = null
+                name = ""; selectedParentId = null
+            },
             modifier = Modifier.fillMaxWidth(0.95f),
             properties = DialogProperties(usePlatformDefaultWidth = false),
-            title = { Text("Stock Group Creation") },
+            title = { Text(if (groupToEdit != null) "Edit Stock Group" else "Stock Group Creation") },
             text = {
                 val scrollState = rememberScrollState()
                 Column(
@@ -677,7 +732,7 @@ fun StockGroupsTab(company: Company) {
                 ) {
                     InventoryField("Name", name) { name = it }
                     
-                    InventoryDropdown("Under", groups.map { it.group_name }.plus("Primary"), 
+                    InventoryDropdown("Under", groups.filter { it.id != groupToEdit?.id }.map { it.group_name }.plus("Primary"), 
                         groups.find { it.id == selectedParentId }?.group_name ?: "Primary") {
                         selectedParentId = groups.find { g -> g.group_name == it }?.id
                     }
@@ -686,20 +741,32 @@ fun StockGroupsTab(company: Company) {
             confirmButton = {
                 Button(onClick = {
                     scope.launch {
-                        val newGroup = StockGroup(
+                        val updatedGroup = StockGroup(
+                            id = groupToEdit?.id,
                             company_id = company.id!!,
                             group_name = name,
                             parent_group_id = selectedParentId
                         )
-                        supabase.from("stock_groups").insert(newGroup)
+                        if (groupToEdit != null) {
+                            supabase.from("stock_groups").update(updatedGroup) {
+                                filter { eq("id", groupToEdit!!.id!!) }
+                            }
+                        } else {
+                            supabase.from("stock_groups").insert(updatedGroup)
+                        }
                         showDialog = false
+                        groupToEdit = null
                         name = ""
                         fetchData()
                     }
                 }) { Text("Save") }
             },
             dismissButton = {
-                TextButton(onClick = { showDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { 
+                    showDialog = false
+                    groupToEdit = null
+                    name = ""; selectedParentId = null
+                }) { Text("Cancel") }
             }
         )
     }
@@ -713,6 +780,7 @@ fun StockItemsTab(company: Company) {
     
     var showDialog by remember { mutableStateOf(false) }
     var itemToDelete by remember { mutableStateOf<StockItem?>(null) }
+    var itemToEdit by remember { mutableStateOf<StockItem?>(null) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     
     // Selection and View Mode
@@ -925,6 +993,33 @@ fun StockItemsTab(company: Company) {
                                             fontWeight = FontWeight.Bold
                                         )
                                         
+                                        IconButton(
+                                            onClick = { 
+                                                itemToEdit = item
+                                                name = item.item_name
+                                                alias = item.alias ?: ""
+                                                selectedUnitId = item.unit_id
+                                                selectedGroupId = item.group_id
+                                                gstApplicability = item.gst_applicability
+                                                hsnNumber = item.hsn_sac_number ?: ""
+                                                hsnDescription = item.hsn_description ?: ""
+                                                taxabilityType = item.taxability_type
+                                                gstRate = item.gst_rate.toString()
+                                                typeOfSupply = item.type_of_supply
+                                                qty = item.opening_quantity.toString()
+                                                rate = item.opening_rate.toString()
+                                                showDialog = true 
+                                            }, 
+                                            modifier = Modifier.size(40.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Edit, 
+                                                contentDescription = "Edit Item", 
+                                                tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+
                                         IconButton(onClick = { itemToDelete = item }, modifier = Modifier.size(40.dp)) {
                                             Icon(
                                                 Icons.Default.Delete, 
@@ -1000,10 +1095,14 @@ fun StockItemsTab(company: Company) {
 
     if (showDialog) {
         AlertDialog(
-            onDismissRequest = { showDialog = false },
+            onDismissRequest = { 
+                showDialog = false
+                itemToEdit = null
+                name = ""; alias = ""; qty = "0"; rate = "0"
+            },
             modifier = Modifier.widthIn(max = 800.dp).fillMaxWidth(0.95f),
             properties = DialogProperties(usePlatformDefaultWidth = false),
-            title = { Text("Stock Item Creation") },
+            title = { Text(if (itemToEdit != null) "Edit Stock Item" else "Stock Item Creation") },
             text = {
                 val scrollState = rememberScrollState()
                 Column(
@@ -1088,6 +1187,7 @@ fun StockItemsTab(company: Company) {
                             isSaving = true
                             try {
                                 val item = StockItem(
+                                    id = itemToEdit?.id,
                                     company_id = company.id!!,
                                     item_name = name,
                                     alias = alias,
@@ -1103,10 +1203,24 @@ fun StockItemsTab(company: Company) {
                                     type_of_supply = typeOfSupply,
                                     opening_quantity = qty.toDoubleOrNull() ?: 0.0,
                                     opening_rate = rate.toDoubleOrNull() ?: 0.0,
-                                    current_quantity = qty.toDoubleOrNull() ?: 0.0
+                                    current_quantity = if (itemToEdit != null) {
+                                        // Simple logic: adjust current qty by difference in opening balance
+                                        val oldOpening = itemToEdit!!.opening_quantity
+                                        val newOpening = qty.toDoubleOrNull() ?: 0.0
+                                        itemToEdit!!.current_quantity + (newOpening - oldOpening)
+                                    } else {
+                                        qty.toDoubleOrNull() ?: 0.0
+                                    }
                                 )
-                                supabase.from("stock_items").insert(item)
+                                if (itemToEdit != null) {
+                                    supabase.from("stock_items").update(item) {
+                                        filter { eq("id", itemToEdit!!.id!!) }
+                                    }
+                                } else {
+                                    supabase.from("stock_items").insert(item)
+                                }
                                 showDialog = false
+                                itemToEdit = null
                                 // Reset fields
                                 name = ""; alias = ""; qty = "0"; rate = "0"
                                 fetchData()
@@ -1128,7 +1242,11 @@ fun StockItemsTab(company: Company) {
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { 
+                    showDialog = false
+                    itemToEdit = null
+                    name = ""; alias = ""; qty = "0"; rate = "0"
+                }) { Text("Cancel") }
             }
         )
     }
@@ -1219,7 +1337,9 @@ fun StockItemMonthlySummary(
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
                         Text(item.item_name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         Text("Monthly Summary", style = MaterialTheme.typography.bodySmall)
-                        Text("For 1-Apr-2024 to 31-Mar-2025", style = MaterialTheme.typography.bodySmall)
+                        // Note: Period dates for stock aren't currently passed in, 
+                        // but we can use default period if needed or just show month range.
+                        Text("Financial Year 2024-25", style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }

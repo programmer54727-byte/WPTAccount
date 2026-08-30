@@ -42,8 +42,8 @@ fun CreateCompanyForm(
     var website by remember { mutableStateOf("") }
     
     // Financial Details
-    var finYearBeginning by remember { mutableStateOf("2024-04-01") }
-    var booksBeginning by remember { mutableStateOf("2024-04-01") }
+    var finYearBeginning by remember { mutableStateOf("01/04/2024") }
+    var booksBeginning by remember { mutableStateOf("01/04/2024") }
     var baseCurrencySymbol by remember { mutableStateOf("₹") }
     var formalName by remember { mutableStateOf("INR") }
     
@@ -90,8 +90,8 @@ fun CreateCompanyForm(
                         fax = fax,
                         email = email,
                         website = website,
-                        financial_year_beginning = finYearBeginning,
-                        books_beginning = booksBeginning,
+                        financial_year_beginning = finYearBeginning.toDbDate(),
+                        books_beginning = booksBeginning.toDbDate(),
                         tally_vault_password_enabled = tallyVaultEnabled,
                         control_user_access_enabled = controlAccessEnabled,
                         base_currency_symbol = baseCurrencySymbol,

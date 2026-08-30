@@ -53,7 +53,7 @@ fun AccountingVoucherEntryScreen(
     onJournalClick: () -> Unit = {},
     onBack: () -> Unit
 ) {
-    var date by remember { mutableStateOf("17-08-2024") }
+    var date by remember { mutableStateOf("17/08/2024") }
     var voucherNo by remember { mutableStateOf("") }
     
     val entries = remember { mutableStateListOf(AccountingRow()) }
@@ -337,15 +337,7 @@ private fun saveVoucher(
             setError(null)
             
             withContext(NonCancellable) {
-                // Safe date conversion: DD-MM-YYYY -> YYYY-MM-DD
-                fun toDbDate(d: String): String {
-                    return try {
-                        val parts = d.split("-")
-                        if (parts.size == 3) "${parts[2]}-${parts[1]}-${parts[0]}" else d
-                    } catch (e: Exception) { d }
-                }
-
-                val dbDate = toDbDate(date)
+                val dbDate = date.toDbDate()
 
                 val voucher = Voucher(
                     company_id = company.id!!,

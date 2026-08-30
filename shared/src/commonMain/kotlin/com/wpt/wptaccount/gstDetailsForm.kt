@@ -75,7 +75,7 @@ fun GstDetailsScreen(
                 gstUsername = result.gst_username ?: ""
                 modeOfFiling = result.filing_mode ?: "Not Applicable"
                 ewayBillApplicable = result.eway_bill_applicable
-                ewayBillDate = result.eway_bill_date ?: ""
+                ewayBillDate = result.eway_bill_date?.toDisplayDate() ?: ""
                 ewayBillIntrastate = result.eway_bill_intrastate
                 einvoiceApplicable = result.einvoice_applicable
                 registrationName = result.registration_name ?: ""
@@ -153,7 +153,7 @@ fun GstDetailsScreen(
                                             gst_username = gstUsername,
                                             filing_mode = modeOfFiling,
                                             eway_bill_applicable = ewayBillApplicable,
-                                            eway_bill_date = ewayBillDate.ifEmpty { null },
+                                            eway_bill_date = ewayBillDate.toDbDate().ifEmpty { null },
                                             eway_bill_intrastate = ewayBillIntrastate,
                                             einvoice_applicable = einvoiceApplicable,
                                             registration_name = registrationName
