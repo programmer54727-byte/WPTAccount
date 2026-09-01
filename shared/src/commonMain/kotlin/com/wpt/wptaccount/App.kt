@@ -21,10 +21,26 @@ val CompanySaver = Saver<Company?, String>(
     restore = { value -> if (value.isNotEmpty()) Json.decodeFromString<Company>(value) else null }
 )
 
+val VoucherSaver = Saver<Voucher?, String>(
+    save = { voucher -> if (voucher != null) Json.encodeToString(voucher) else "" },
+    restore = { value -> if (value.isNotEmpty()) Json.decodeFromString<Voucher>(value) else null }
+)
+
+val PeriodSaver = Saver<AccountPeriod?, String>(
+    save = { period -> if (period != null) Json.encodeToString(period) else "" },
+    restore = { value -> if (value.isNotEmpty()) Json.decodeFromString<AccountPeriod>(value) else null }
+)
+
 @Composable
 fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
     var currentScreen by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedCompany by rememberSaveable(stateSaver = CompanySaver) { mutableStateOf<Company?>(null) }
+    
+    // New states for voucher drill-down
+    var currentVoucherType by rememberSaveable { mutableStateOf("") }
+    var currentMonthInt by rememberSaveable { mutableStateOf(0) }
+    var editingVoucher by rememberSaveable(stateSaver = VoucherSaver) { mutableStateOf<Voucher?>(null) }
+    var selectedPeriod by rememberSaveable(stateSaver = PeriodSaver) { mutableStateOf<AccountPeriod?>(null) }
 
     val sessionStatus by supabase.auth.sessionStatus.collectAsState()
 
@@ -52,7 +68,12 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
         CompositionLocalProvider(LocalScreenOrientation provides onOrientationRequest) {
             BackHandler(enabled = currentScreen != null && currentScreen != "landing" && currentScreen != "company_list") {
                 when (currentScreen) {
-                    "inventory_management", "gst_details", "company_dashboard", "ledger_management", "voucher_sale", "voucher_purchase", "voucher_payment", "voucher_receipt", "voucher_contra", "voucher_journal", "voucher_list" -> currentScreen = "company_home"
+                    "inventory_management", "gst_details", "company_dashboard", "ledger_management", "voucher_list", "voucher_summary" -> currentScreen = "company_home"
+                    "voucher_month_list" -> currentScreen = "voucher_summary"
+                    "voucher_sale", "voucher_purchase", "voucher_payment", "voucher_receipt", "voucher_contra", "voucher_journal" -> {
+                        currentScreen = "voucher_month_list"
+                        editingVoucher = null
+                    }
                     "company_home", "create_company" -> currentScreen = "company_list"
                     "login", "signup" -> currentScreen = "landing"
                 }
@@ -86,6 +107,7 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                 onCreateCompanyClick = { currentScreen = "create_company" },
                                 onCompanyClick = { 
                                     selectedCompany = it
+                                    selectedPeriod = it.getDefaultPeriod()
                                     currentScreen = "company_home"
                                 },
                                 onLogout = { currentScreen = "landing" }
@@ -106,13 +128,33 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                     onGstDetailsClick = { currentScreen = "gst_details" },
                                     onLedgerClick = { currentScreen = "ledger_management" },
                                     onVoucherListClick = { currentScreen = "voucher_list" },
-                                    onSaleClick = { currentScreen = "voucher_sale" },
-                                    onPurchaseClick = { currentScreen = "voucher_purchase" },
-                                    onPaymentClick = { currentScreen = "voucher_payment" },
-                                    onReceiptClick = { currentScreen = "voucher_receipt" },
-                                    onContraClick = { currentScreen = "voucher_contra" },
-                                    onJournalClick = { currentScreen = "voucher_journal" },
-                                    onBack = { currentScreen = "company_list" }
+                                    onSaleClick = { 
+                                        currentVoucherType = "Sale"
+                                        currentScreen = "voucher_summary" 
+                                    },
+                                    onPurchaseClick = { 
+                                        currentVoucherType = "Purchase"
+                                        currentScreen = "voucher_summary" 
+                                    },
+                                    onPaymentClick = { 
+                                        currentVoucherType = "Payment"
+                                        currentScreen = "voucher_summary" 
+                                    },
+                                    onReceiptClick = { 
+                                        currentVoucherType = "Receipt"
+                                        currentScreen = "voucher_summary" 
+                                    },
+                                    onContraClick = { 
+                                        currentVoucherType = "Contra"
+                                        currentScreen = "voucher_summary" 
+                                    },
+                                    onJournalClick = { 
+                                        currentVoucherType = "Journal"
+                                        currentScreen = "voucher_summary" 
+                                    },
+                                    onBack = { currentScreen = "company_list" },
+                                    currentPeriod = selectedPeriod!!,
+                                    onPeriodChange = { selectedPeriod = it }
                                 )
                             } ?: run {
                                 currentScreen = "company_list"
@@ -189,7 +231,9 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                     onReceiptClick = { currentScreen = "voucher_receipt" },
                                     onContraClick = { currentScreen = "voucher_contra" },
                                     onJournalClick = { currentScreen = "voucher_journal" },
-                                    onBack = { currentScreen = "company_home" }
+                                    onBack = { currentScreen = "company_home" },
+                                    currentPeriod = selectedPeriod!!,
+                                    onPeriodChange = { selectedPeriod = it }
                                 )
                             } ?: run {
                                 currentScreen = "company_list"
@@ -212,7 +256,11 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                     onReceiptClick = { currentScreen = "voucher_receipt" },
                                     onContraClick = { currentScreen = "voucher_contra" },
                                     onJournalClick = { currentScreen = "voucher_journal" },
-                                    onBack = { currentScreen = "company_home" }
+                                    onBack = { 
+                                        currentScreen = "voucher_month_list" 
+                                        editingVoucher = null
+                                    },
+                                    initialVoucher = editingVoucher
                                 )
                             } ?: run {
                                 currentScreen = "company_list"
@@ -235,7 +283,11 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                     onReceiptClick = { currentScreen = "voucher_receipt" },
                                     onContraClick = { currentScreen = "voucher_contra" },
                                     onJournalClick = { currentScreen = "voucher_journal" },
-                                    onBack = { currentScreen = "company_home" }
+                                    onBack = { 
+                                        currentScreen = "voucher_month_list" 
+                                        editingVoucher = null
+                                    },
+                                    initialVoucher = editingVoucher
                                 )
                             } ?: run {
                                 currentScreen = "company_list"
@@ -258,7 +310,11 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                     onReceiptClick = { currentScreen = "voucher_receipt" },
                                     onContraClick = { currentScreen = "voucher_contra" },
                                     onJournalClick = { currentScreen = "voucher_journal" },
-                                    onBack = { currentScreen = "company_home" }
+                                    onBack = { 
+                                        currentScreen = "voucher_month_list" 
+                                        editingVoucher = null
+                                    },
+                                    initialVoucher = editingVoucher
                                 )
                             } ?: run { currentScreen = "company_list" }
                         }
@@ -279,7 +335,11 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                     onReceiptClick = { currentScreen = "voucher_receipt" },
                                     onContraClick = { currentScreen = "voucher_contra" },
                                     onJournalClick = { currentScreen = "voucher_journal" },
-                                    onBack = { currentScreen = "company_home" }
+                                    onBack = { 
+                                        currentScreen = "voucher_month_list" 
+                                        editingVoucher = null
+                                    },
+                                    initialVoucher = editingVoucher
                                 )
                             } ?: run { currentScreen = "company_list" }
                         }
@@ -300,7 +360,11 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                     onReceiptClick = { currentScreen = "voucher_receipt" },
                                     onContraClick = { currentScreen = "voucher_contra" },
                                     onJournalClick = { currentScreen = "voucher_journal" },
-                                    onBack = { currentScreen = "company_home" }
+                                    onBack = { 
+                                        currentScreen = "voucher_month_list" 
+                                        editingVoucher = null
+                                    },
+                                    initialVoucher = editingVoucher
                                 )
                             } ?: run { currentScreen = "company_list" }
                         }
@@ -321,7 +385,11 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                     onReceiptClick = { currentScreen = "voucher_receipt" },
                                     onContraClick = { currentScreen = "voucher_contra" },
                                     onJournalClick = { currentScreen = "voucher_journal" },
-                                    onBack = { currentScreen = "company_home" }
+                                    onBack = { 
+                                        currentScreen = "voucher_month_list" 
+                                        editingVoucher = null
+                                    },
+                                    initialVoucher = editingVoucher
                                 )
                             } ?: run { currentScreen = "company_list" }
                         }
@@ -345,6 +413,55 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                             } ?: run {
                                 currentScreen = "company_list"
                             }
+                        }
+                        "voucher_summary" -> {
+                            selectedCompany?.let { company ->
+                                VoucherMonthlySummary(
+                                    company = company,
+                                    voucherType = currentVoucherType,
+                                    period = selectedPeriod!!,
+                                    onMonthClick = { month ->
+                                        currentMonthInt = month
+                                        currentScreen = "voucher_month_list"
+                                    },
+                                    onBack = { currentScreen = "company_home" }
+                                )
+                            } ?: run { currentScreen = "company_list" }
+                        }
+                        "voucher_month_list" -> {
+                            selectedCompany?.let { company ->
+                                VoucherTypeMonthList(
+                                    company = company,
+                                    voucherType = currentVoucherType,
+                                    monthInt = currentMonthInt,
+                                    period = selectedPeriod!!,
+                                    onVoucherClick = { voucher ->
+                                        editingVoucher = voucher
+                                        currentScreen = when (currentVoucherType) {
+                                            "Sale" -> "voucher_sale"
+                                            "Purchase" -> "voucher_purchase"
+                                            "Payment" -> "voucher_payment"
+                                            "Receipt" -> "voucher_receipt"
+                                            "Contra" -> "voucher_contra"
+                                            "Journal" -> "voucher_journal"
+                                            else -> "company_home"
+                                        }
+                                    },
+                                    onAddClick = {
+                                        editingVoucher = null
+                                        currentScreen = when (currentVoucherType) {
+                                            "Sale" -> "voucher_sale"
+                                            "Purchase" -> "voucher_purchase"
+                                            "Payment" -> "voucher_payment"
+                                            "Receipt" -> "voucher_receipt"
+                                            "Contra" -> "voucher_contra"
+                                            "Journal" -> "voucher_journal"
+                                            else -> "company_home"
+                                        }
+                                    },
+                                    onBack = { currentScreen = "voucher_summary" }
+                                )
+                            } ?: run { currentScreen = "company_list" }
                         }
                     }
                 }

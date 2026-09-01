@@ -51,13 +51,14 @@ fun AccountingVoucherEntryScreen(
     onReceiptClick: () -> Unit = {},
     onContraClick: () -> Unit = {},
     onJournalClick: () -> Unit = {},
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    initialVoucher: Voucher? = null
 ) {
-    var date by remember { mutableStateOf("17/08/2024") }
-    var voucherNo by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf(initialVoucher?.date?.toDisplayDate() ?: "17/08/2024") }
+    var voucherNo by remember { mutableStateOf(initialVoucher?.voucher_number ?: "") }
     
-    val entries = remember { mutableStateListOf(AccountingRow()) }
-    var narration by remember { mutableStateOf("") }
+    val entries = remember { mutableStateListOf<AccountingRow>() }
+    var narration by remember { mutableStateOf(initialVoucher?.narration ?: "") }
     
     var ledgers by remember { mutableStateOf<List<Ledger>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -78,22 +79,46 @@ fun AccountingVoucherEntryScreen(
                     filter { eq("company_id", company.id!!) }
                 }.decodeList<Ledger>()
 
-                // Fetch last voucher number to auto-increment
-                val lastVouchers = supabase.from("vouchers").select {
-                    filter {
-                        eq("company_id", company.id!!)
-                        eq("voucher_type", voucherType)
-                    }
-                    order("created_at", order = Order.DESCENDING)
-                    limit(1)
-                }.decodeList<Voucher>()
+                if (initialVoucher != null) {
+                    val vId = initialVoucher.id!!
+                    val vEntries = supabase.from("voucher_entries").select {
+                        filter { eq("voucher_id", vId) }
+                    }.decodeList<VoucherEntry>()
+                    
+                    val vRefs = supabase.from("voucher_references").select {
+                        filter { eq("voucher_id", vId) }
+                    }.decodeList<VoucherReference>()
 
-                if (lastVouchers.isNotEmpty()) {
-                    val lastNo = lastVouchers[0].voucher_number
-                    val nextNo = (lastNo?.toIntOrNull() ?: 0) + 1
-                    voucherNo = nextNo.toString()
+                    entries.clear()
+                    vEntries.forEach { ve ->
+                        entries.add(AccountingRow(
+                            ledgerId = ve.ledger_id,
+                            amount = ve.amount.format(),
+                            entryType = ve.entry_type,
+                            references = vRefs.filter { it.ledger_id == ve.ledger_id }
+                        ))
+                    }
+                    if (entries.isEmpty()) entries.add(AccountingRow())
+
                 } else {
-                    voucherNo = "1"
+                    // Fetch last voucher number to auto-increment
+                    val lastVouchers = supabase.from("vouchers").select {
+                        filter {
+                            eq("company_id", company.id!!)
+                            eq("voucher_type", voucherType)
+                        }
+                        order("created_at", order = Order.DESCENDING)
+                        limit(1)
+                    }.decodeList<Voucher>()
+
+                    if (lastVouchers.isNotEmpty()) {
+                        val lastNo = lastVouchers[0].voucher_number
+                        val nextNo = (lastNo?.toIntOrNull() ?: 0) + 1
+                        voucherNo = nextNo.toString()
+                    } else {
+                        voucherNo = "1"
+                    }
+                    entries.add(AccountingRow())
                 }
             } catch (e: Exception) {
                 errorMessage = "Failed to load data"
@@ -266,7 +291,7 @@ fun AccountingVoucherEntryScreen(
                                 activeRefIndex = billByBillIndices.first()
                             } else {
                                 // Save immediately if no bill-by-bill logic needed
-                                saveVoucher(scope, company, voucherType, voucherNo, date, narration, totalDebit, entries, { isSaving = it }, { errorMessage = it }, onBack)
+                                saveVoucher(scope, company, voucherType, voucherNo, date, narration, totalDebit, entries, { isSaving = it }, { errorMessage = it }, onBack, initialVoucher?.id)
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -307,7 +332,7 @@ fun AccountingVoucherEntryScreen(
                 } else {
                     // All collected, save
                     activeRefIndex = null
-                    saveVoucher(scope, company, voucherType, voucherNo, date, narration, totalDebit, entries, { isSaving = it }, { errorMessage = it }, onBack)
+                    saveVoucher(scope, company, voucherType, voucherNo, date, narration, totalDebit, entries, { isSaving = it }, { errorMessage = it }, onBack, initialVoucher?.id)
                 }
             }
         )
@@ -329,7 +354,8 @@ private fun saveVoucher(
     entries: List<AccountingRow>,
     setSaving: (Boolean) -> Unit,
     setError: (String?) -> Unit,
-    onSuccess: () -> Unit
+    onSuccess: () -> Unit,
+    voucherIdToEdit: String? = null
 ) {
     scope.launch {
         try {
@@ -339,7 +365,12 @@ private fun saveVoucher(
             withContext(NonCancellable) {
                 val dbDate = date.toDbDate()
 
+                if (voucherIdToEdit != null) {
+                    deleteVoucherData(voucherIdToEdit, voucherType)
+                }
+
                 val voucher = Voucher(
+                    id = voucherIdToEdit,
                     company_id = company.id!!,
                     voucher_type = voucherType,
                     voucher_number = voucherNo.ifEmpty { null },
@@ -347,8 +378,16 @@ private fun saveVoucher(
                     narration = narration,
                     total_amount = grandTotal
                 )
-                val savedVoucher = supabase.from("vouchers").insert(voucher) { select() }.decodeSingle<Voucher>()
-                val voucherId = savedVoucher.id!!
+                
+                val voucherId = if (voucherIdToEdit != null) {
+                    supabase.from("vouchers").update(voucher) {
+                        filter { eq("id", voucherIdToEdit) }
+                    }
+                    voucherIdToEdit
+                } else {
+                    val savedVoucher = supabase.from("vouchers").insert(voucher) { select() }.decodeSingle<Voucher>()
+                    savedVoucher.id!!
+                }
 
                 entries.forEach { row ->
                     supabase.from("voucher_entries").insert(VoucherEntry(

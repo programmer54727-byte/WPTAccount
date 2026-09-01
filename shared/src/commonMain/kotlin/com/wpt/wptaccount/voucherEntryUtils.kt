@@ -27,7 +27,8 @@ internal fun performSave(
     partyReferences: List<VoucherReference>,
     setSaving: (Boolean) -> Unit,
     setError: (String?) -> Unit,
-    onSuccess: () -> Unit
+    onSuccess: () -> Unit,
+    voucherIdToEdit: String? = null
 ) {
     scope.launch {
         try {
@@ -38,8 +39,13 @@ internal fun performSave(
                 val dbDate = date.toDbDate()
                 val dbInvoiceDate = invoiceDate.toDbDate()
 
-                // 1. Create Voucher
+                if (voucherIdToEdit != null) {
+                    deleteVoucherData(voucherIdToEdit, voucherType)
+                }
+
+                // 1. Create/Update Voucher
                 val voucher = Voucher(
+                    id = voucherIdToEdit,
                     company_id = company.id!!,
                     voucher_type = voucherType,
                     voucher_number = voucherNo.ifEmpty { null },
@@ -50,11 +56,18 @@ internal fun performSave(
                     narration = narration,
                     total_amount = grandTotal
                 )
-                val savedVoucher = supabase.from("vouchers").insert(voucher) {
-                    select()
-                }.decodeSingle<Voucher>()
-
-                val voucherId = savedVoucher.id!!
+                
+                val voucherId = if (voucherIdToEdit != null) {
+                    supabase.from("vouchers").update(voucher) {
+                        filter { eq("id", voucherIdToEdit) }
+                    }
+                    voucherIdToEdit
+                } else {
+                    val savedVoucher = supabase.from("vouchers").insert(voucher) {
+                        select()
+                    }.decodeSingle<Voucher>()
+                    savedVoucher.id!!
+                }
 
                 // 2. Save Stock Items & Update Quantities
                 items.forEach { row ->
@@ -148,4 +161,27 @@ suspend fun updateLedgerBalanceInternal(ledgerId: String, amount: Double, entryT
     val adjustment = if (entryType == "Debit") amount else -amount
     val newBalance = ledger.current_balance + adjustment
     supabase.from("ledgers").update(buildJsonObject { put("current_balance", newBalance) }) { filter { eq("id", ledgerId) } }
+}
+
+suspend fun deleteVoucherData(voucherId: String, voucherType: String) {
+    // 1. Fetch entries to undo balance adjustments
+    val entries = supabase.from("voucher_entries").select { filter { eq("voucher_id", voucherId) } }.decodeList<VoucherEntry>()
+    entries.forEach {
+        val undoEntryType = if (it.entry_type == "Debit") "Credit" else "Debit"
+        updateLedgerBalanceInternal(it.ledger_id, it.amount, undoEntryType)
+    }
+
+    // 2. Fetch stock items to undo quantity adjustments
+    val vStockItems = supabase.from("voucher_stock_items").select { filter { eq("voucher_id", voucherId) } }.decodeList<VoucherStockItem>()
+    vStockItems.forEach { vsi ->
+        val stockItem = supabase.from("stock_items").select { filter { eq("id", vsi.stock_item_id) } }.decodeSingle<StockItem>()
+        val undoAdjustment = if (voucherType == "Purchase") -vsi.quantity else vsi.quantity
+        val newQty = stockItem.current_quantity + undoAdjustment
+        supabase.from("stock_items").update(buildJsonObject { put("current_quantity", newQty) }) { filter { eq("id", stockItem.id!!) } }
+    }
+
+    // 3. Delete related records
+    supabase.from("voucher_entries").delete { filter { eq("voucher_id", voucherId) } }
+    supabase.from("voucher_stock_items").delete { filter { eq("voucher_id", voucherId) } }
+    supabase.from("voucher_references").delete { filter { eq("voucher_id", voucherId) } }
 }

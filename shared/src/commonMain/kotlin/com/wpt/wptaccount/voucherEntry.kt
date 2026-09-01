@@ -42,23 +42,24 @@ fun VoucherEntryScreen(
     onContraClick: () -> Unit = {},
     onJournalClick: () -> Unit = {},
     onBack: () -> Unit,
+    initialVoucher: Voucher? = null
 ) {
     // ----------------------------------------------------------------
     // 1. STATE MANAGEMENT
     // ----------------------------------------------------------------
     
     // Basic Voucher Info
-    var date by remember { mutableStateOf("17/08/2024") }
-    var voucherNo by remember { mutableStateOf("") }
-    var invoiceNo by remember { mutableStateOf("") }
-    var invoiceDate by remember { mutableStateOf("17/08/2024") }
-    var selectedPartyId by remember { mutableStateOf<String?>(null) }
+    var date by remember { mutableStateOf(initialVoucher?.date?.toDisplayDate() ?: "17/08/2024") }
+    var voucherNo by remember { mutableStateOf(initialVoucher?.voucher_number ?: "") }
+    var invoiceNo by remember { mutableStateOf(initialVoucher?.invoice_no ?: "") }
+    var invoiceDate by remember { mutableStateOf(initialVoucher?.invoice_date?.toDisplayDate() ?: "17/08/2024") }
+    var selectedPartyId by remember { mutableStateOf<String?>(initialVoucher?.party_ledger_id) }
     var selectedLedgerId by remember { mutableStateOf<String?>(null) } // Sales or Purchase A/c
     
     // Transactional Rows (Inventory & Taxes)
-    val items = remember { mutableStateListOf(ItemRow()) }
+    val items = remember { mutableStateListOf<ItemRow>() }
     val taxEntries = remember { mutableStateListOf<TaxRow>() }
-    var narration by remember { mutableStateOf("") }
+    var narration by remember { mutableStateOf(initialVoucher?.narration ?: "") }
     
     // Master Data for Dropdowns
     var ledgers by remember { mutableStateOf<List<Ledger>>(emptyList()) }
@@ -103,22 +104,75 @@ fun VoucherEntryScreen(
                     filter { eq("company_id", company.id!!) }
                 }.decodeList<StockItem>()
 
-                // Auto-increment Voucher Number based on last entry
-                val lastVouchers = supabase.from("vouchers").select {
-                    filter {
-                        eq("company_id", company.id!!)
-                        eq("voucher_type", voucherType)
+                if (initialVoucher != null) {
+                    // Load existing entries
+                    val vId = initialVoucher.id!!
+                    
+                    val vItems = supabase.from("voucher_stock_items").select {
+                        filter { eq("voucher_id", vId) }
+                    }.decodeList<VoucherStockItem>()
+                    
+                    items.clear()
+                    vItems.forEach {
+                        items.add(ItemRow(
+                            stockItemId = it.stock_item_id,
+                            hsnCode = it.hsn_code ?: "",
+                            gstRate = it.gst_rate,
+                            qty = it.quantity.format(),
+                            rate = it.rate.format(),
+                            amount = it.amount.format()
+                        ))
                     }
-                    order("created_at", order = Order.DESCENDING)
-                    limit(1)
-                }.decodeList<Voucher>()
+                    if (items.isEmpty()) items.add(ItemRow())
 
-                voucherNo = if (lastVouchers.isNotEmpty()) {
-                    val lastNo = lastVouchers[0].voucher_number
-                    val nextNo = (lastNo?.toIntOrNull() ?: 0) + 1
-                    nextNo.toString()
+                    val vEntries = supabase.from("voucher_entries").select {
+                        filter { eq("voucher_id", vId) }
+                    }.decodeList<VoucherEntry>()
+                    
+                    // Separate Party, Ledger, and Taxes
+                    // This logic depends on your accounting structure.
+                    // For now, let's assume the first non-party entry is the sales/purchase ledger
+                    val partyEntry = vEntries.find { it.ledger_id == selectedPartyId }
+                    val remaining = vEntries.filter { it.ledger_id != selectedPartyId }
+                    
+                    if (remaining.isNotEmpty()) {
+                        selectedLedgerId = remaining[0].ledger_id
+                        taxEntries.clear()
+                        remaining.drop(1).forEach {
+                            val taxLedger = ledgers.find { l -> l.id == it.ledger_id }
+                            taxEntries.add(TaxRow(
+                                ledgerId = it.ledger_id,
+                                taxRate = taxLedger?.tax_rate ?: 0.0,
+                                amount = it.amount
+                            ))
+                        }
+                    }
+
+                    val vRefs = supabase.from("voucher_references").select {
+                        filter { eq("voucher_id", vId) }
+                    }.decodeList<VoucherReference>()
+                    partyReferences.clear()
+                    partyReferences.addAll(vRefs)
+
                 } else {
-                    "1"
+                    // Auto-increment Voucher Number based on last entry
+                    val lastVouchers = supabase.from("vouchers").select {
+                        filter {
+                            eq("company_id", company.id!!)
+                            eq("voucher_type", voucherType)
+                        }
+                        order("created_at", order = Order.DESCENDING)
+                        limit(1)
+                    }.decodeList<Voucher>()
+
+                    voucherNo = if (lastVouchers.isNotEmpty()) {
+                        val lastNo = lastVouchers[0].voucher_number
+                        val nextNo = (lastNo?.toIntOrNull() ?: 0) + 1
+                        nextNo.toString()
+                    } else {
+                        "1"
+                    }
+                    items.add(ItemRow())
                 }
             } catch (e: Exception) {
                 println("Fetch error: ${e.message}")
@@ -517,7 +571,8 @@ fun VoucherEntryScreen(
                                     selectedPartyId, 
                                     selectedLedgerId, date, narration, grandTotal, itemSubTotal, 
                                     items, taxEntries, stockItems, ledgers, partyReferences,
-                                    { isSaving = it }, { errorMessage = it }, onBack
+                                    { isSaving = it }, { errorMessage = it }, onBack,
+                                    initialVoucher?.id
                                 )
                             }
                         },
@@ -555,7 +610,8 @@ fun VoucherEntryScreen(
                 selectedPartyId, 
                 selectedLedgerId, date, narration, grandTotal, itemSubTotal, 
                 items, taxEntries, stockItems, ledgers, partyReferences,
-                { isSaving = it }, { errorMessage = it }, onBack
+                { isSaving = it }, { errorMessage = it }, onBack,
+                initialVoucher?.id
             )
         }
     }

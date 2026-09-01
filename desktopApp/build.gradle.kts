@@ -24,7 +24,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Exe)
             packageName = "WPT Account"
-            packageVersion = "1.0.0"
+            packageVersion = "1.0.1"
             description = "WPT Account Management System"
             copyright = "© 2026 WPT"
             vendor = "WPT"
@@ -34,6 +34,7 @@ compose.desktop {
                 shortcut = true
                 menuGroup = "WPT Account"
                 iconFile.set(project.file("src/main/resources/icon.ico"))
+                upgradeUuid = "550e8400-e29b-41d4-a716-446655440000"
             }
         }
     }

@@ -45,10 +45,11 @@ fun UserHome(
     onReceiptClick: () -> Unit = {},
     onContraClick: () -> Unit = {},
     onJournalClick: () -> Unit = {},
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    currentPeriod: AccountPeriod,
+    onPeriodChange: (AccountPeriod) -> Unit
 ) {
     var isInitializing by remember { mutableStateOf(false) }
-    var selectedPeriod by remember { mutableStateOf(company.getDefaultPeriod()) }
     var showPeriodDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(company.id) {
@@ -132,7 +133,7 @@ fun UserHome(
                                 Column(modifier = Modifier.align(Alignment.CenterStart)) {
                                     Text(company.company_name, style = MaterialTheme.typography.titleMedium)
                                     Text(
-                                        text = "Period: ${selectedPeriod.startDate.toDisplayDate()} to ${selectedPeriod.endDate.toDisplayDate()}",
+                                        text = "Period: ${currentPeriod.startDate.toDisplayDate()} to ${currentPeriod.endDate.toDisplayDate()}",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.clickable { showPeriodDialog = true }
@@ -210,8 +211,8 @@ fun UserHome(
     }
 
     if (showPeriodDialog) {
-        var start by remember { mutableStateOf(selectedPeriod.startDate.toDisplayDate()) }
-        var end by remember { mutableStateOf(selectedPeriod.endDate.toDisplayDate()) }
+        var start by remember { mutableStateOf(currentPeriod.startDate.toDisplayDate()) }
+        var end by remember { mutableStateOf(currentPeriod.endDate.toDisplayDate()) }
 
         AlertDialog(
             onDismissRequest = { showPeriodDialog = false },
@@ -232,7 +233,7 @@ fun UserHome(
             },
             confirmButton = {
                 Button(onClick = {
-                    selectedPeriod = AccountPeriod(start.toDbDate(), end.toDbDate())
+                    onPeriodChange(AccountPeriod(start.toDbDate(), end.toDbDate()))
                     showPeriodDialog = false
                 }) { Text("Change") }
             },

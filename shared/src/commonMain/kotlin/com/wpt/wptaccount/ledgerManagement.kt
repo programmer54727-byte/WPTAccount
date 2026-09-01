@@ -62,10 +62,11 @@ fun LedgerManagement(
     onReceiptClick: () -> Unit = {},
     onContraClick: () -> Unit = {},
     onJournalClick: () -> Unit = {},
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    currentPeriod: AccountPeriod,
+    onPeriodChange: (AccountPeriod) -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(0) }
-    var selectedPeriod by remember { mutableStateOf(company.getDefaultPeriod()) }
     var showPeriodDialog by remember { mutableStateOf(false) }
 
     val tabs = listOf("Groups", "Ledgers")
@@ -103,7 +104,7 @@ fun LedgerManagement(
                         Column {
                             Text("Ledger: ${company.company_name}", style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "Period: ${selectedPeriod.startDate.toDisplayDate()} to ${selectedPeriod.endDate.toDisplayDate()}",
+                                "Period: ${currentPeriod.startDate.toDisplayDate()} to ${currentPeriod.endDate.toDisplayDate()}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.clickable { showPeriodDialog = true }
@@ -149,16 +150,16 @@ fun LedgerManagement(
             }
             
                 when (selectedTab) {
-                    0 -> LedgerGroupsTab(company, selectedPeriod)
-                    1 -> LedgersTab(company, selectedPeriod)
+                    0 -> LedgerGroupsTab(company, currentPeriod)
+                    1 -> LedgersTab(company, currentPeriod)
                 }
             }
         }
     }
 
     if (showPeriodDialog) {
-        var start by remember { mutableStateOf(selectedPeriod.startDate.toDisplayDate()) }
-        var end by remember { mutableStateOf(selectedPeriod.endDate.toDisplayDate()) }
+        var start by remember { mutableStateOf(currentPeriod.startDate.toDisplayDate()) }
+        var end by remember { mutableStateOf(currentPeriod.endDate.toDisplayDate()) }
 
         AlertDialog(
             onDismissRequest = { showPeriodDialog = false },
@@ -179,7 +180,7 @@ fun LedgerManagement(
             },
             confirmButton = {
                 Button(onClick = {
-                    selectedPeriod = AccountPeriod(start.toDbDate(), end.toDbDate())
+                    onPeriodChange(AccountPeriod(start.toDbDate(), end.toDbDate()))
                     showPeriodDialog = false
                 }) { Text("Change") }
             },
