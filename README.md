@@ -29,6 +29,7 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **Units & Groups:** Full lifecycle management (Add, View, Edit, Delete) with aggregated summaries (Total Qty, Avg Rate, Total Value).
     - **Tally-Style Stock Summary:** Professional table layout displaying Particulars, HSN, and GST (formatted as %).
 - **Dynamic Reporting Engine:**
+    - **Visual Analytics:** Integrated **Company Dashboard** featuring bar charts for real-time visualization of Monthly Sales vs. Purchases.
     - **Live Monthly Summaries:** Real-time calculation of Inwards, Outwards, and rolling Closing Balances fetched directly from voucher data.
     - **Accounting Precision:** Rolling balance logic for ledgers that correctly handles Debit (Dr) vs. Credit (Cr) types.
     - **Period Awareness:** Selectable accounting periods (e.g., Financial Year) that automatically calculate "Effective Opening Balances" by summing all historical transactions prior to the period start date.
@@ -41,9 +42,14 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **System-Based Rotation:** Follows standard Android auto-rotate settings for all reports, giving users control over their viewing orientation.
     - **Robust Data Saving:** Comprehensive error handling (try-catch) on all save operations with detailed feedback to prevent app crashes.
 - **Responsive & Modern UI:**
+    - **Adaptive Header:** Restructured Home page header to prevent UI overlap on mobile devices, ensuring high legibility of period and statutory details.
+    - **Intelligent Sidebar/Drawer:** Responsive navigation that provides a permanent sidebar for Desktop users and a space-saving modal drawer for Mobile users.
     - **Subtle Integrated Theme:** Modern Material 3 container-based palette that blends perfectly with the application background for a premium feel.
     - **Horizontal Table Scrolling:** Wide financial tables feature smooth horizontal scrolling in portrait mode, ensuring all data is accessible.
     - **Centered Desktop Forms:** All entry forms are centered with a `800.dp` max-width on desktop for a polished, professional experience.
+- **Native Distribution Support:**
+    - **Windows MSI/EXE Packaging:** Pre-configured with unique `upgradeUuid` for seamless software updates and repairs.
+    - **High-DPI Branding:** Support for multi-resolution icons (.ico) to ensure professional visual appearance on all desktop resolutions.
 - **Cross-Platform:** 100% shared UI and business logic across Android, Desktop, and Web.
 - **Secure Backend:** Uses Supabase Auth and advanced Row Level Security (RLS) policies for data isolation.
 
