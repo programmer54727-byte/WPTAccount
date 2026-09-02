@@ -24,7 +24,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Exe)
             packageName = "WPT Account"
-            packageVersion = "1.0.2"
+            packageVersion = "1.0.3"
             description = "WPT Account Management System"
             copyright = "© 2026 WPT"
             vendor = "WPT"
