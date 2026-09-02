@@ -110,7 +110,7 @@ fun Login(
                 value = email,
                 onValueChange = { email = it },
                 label = { Text("Email Address") },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.widthIn(max = 490.dp),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
@@ -127,7 +127,7 @@ fun Login(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password") },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.widthIn(max = 490.dp),
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
@@ -155,7 +155,6 @@ fun Login(
             
             Button(
                 onClick = { performLogin() },
-                modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading
             ) {
                 if (isLoading) {

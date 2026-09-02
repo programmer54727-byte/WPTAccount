@@ -201,7 +201,7 @@ fun SignUp(
                     value = fullName,
                     onValueChange = { fullName = it },
                     label = { Text("Full Name") },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.widthIn(max = 490.dp),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = KeyboardActions(
@@ -215,7 +215,7 @@ fun SignUp(
                     value = email,
                     onValueChange = { email = it },
                     label = { Text("Email Address") },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.widthIn(max = 490.dp),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Email,
@@ -232,7 +232,7 @@ fun SignUp(
                     value = password,
                     onValueChange = { password = it },
                     label = { Text("Password") },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.widthIn(max = 490.dp),
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
@@ -260,7 +260,6 @@ fun SignUp(
                 
                 Button(
                     onClick = { performSignUp() },
-                    modifier = Modifier.fillMaxWidth(),
                     enabled = !isLoading
                 ) {
                     if (isLoading) {

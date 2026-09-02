@@ -128,39 +128,12 @@ fun UserHome(
             Scaffold(
                 topBar = {
                     TopAppBar(
-                        title = { 
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                Column(modifier = Modifier.align(Alignment.CenterStart)) {
-                                    Text(company.company_name, style = MaterialTheme.typography.titleMedium)
-                                    Text(
-                                        text = "Period: ${currentPeriod.startDate.toDisplayDate()} to ${currentPeriod.endDate.toDisplayDate()}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.clickable { showPeriodDialog = true }
-                                    )
-                                }
-                                
-                                // Centered GST Detail Button
-                                OutlinedButton(
-                                    onClick = onGstDetailsClick,
-                                    modifier = Modifier.align(Alignment.Center).height(32.dp),
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
-                                ) {
-                                    Text("GST Detail", style = MaterialTheme.typography.labelSmall)
-                                }
-                            }
-                        },
+                        title = { Text(company.company_name) },
                         navigationIcon = {
                             if (!isDesktop) {
                                 IconButton(onClick = onToggleDrawer) {
                                     Icon(Icons.Default.Menu, contentDescription = "Menu")
                                 }
-                            }
-                        },
-                        actions = {
-                            IconButton(onClick = { showPeriodDialog = true }) {
-                                Icon(Icons.Default.Event, contentDescription = "Change Period")
                             }
                         }
                     )
@@ -171,8 +144,31 @@ fun UserHome(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
-                        .padding(16.dp)
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
                 ) {
+                    // Period and GST Detail Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Period: ${currentPeriod.startDate.toDisplayDate()} to ${currentPeriod.endDate.toDisplayDate()}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.clickable { showPeriodDialog = true }
+                        )
+
+                        OutlinedButton(
+                            onClick = onGstDetailsClick,
+                            modifier = Modifier.height(32.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                        ) {
+                            Text("GST Detail", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+
                     Text(
                         text = "Masters & Transactions",
                         style = MaterialTheme.typography.titleLarge,
