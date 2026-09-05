@@ -41,6 +41,7 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
     var currentMonthInt by rememberSaveable { mutableStateOf(0) }
     var editingVoucher by rememberSaveable(stateSaver = VoucherSaver) { mutableStateOf<Voucher?>(null) }
     var selectedPeriod by rememberSaveable(stateSaver = PeriodSaver) { mutableStateOf<AccountPeriod?>(null) }
+    var companyToEdit by rememberSaveable(stateSaver = CompanySaver) { mutableStateOf<Company?>(null) }
 
     val sessionStatus by supabase.auth.sessionStatus.collectAsState()
 
@@ -74,7 +75,11 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                         currentScreen = "voucher_month_list"
                         editingVoucher = null
                     }
-                    "company_home", "create_company" -> currentScreen = "company_list"
+                    "company_home" -> currentScreen = "company_list"
+                    "create_company" -> {
+                        currentScreen = "company_list"
+                        companyToEdit = null
+                    }
                     "login", "signup" -> currentScreen = "landing"
                 }
             }
@@ -104,7 +109,14 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                         }
                         "company_list" -> {
                             CompanyList(
-                                onCreateCompanyClick = { currentScreen = "create_company" },
+                                onCreateCompanyClick = { 
+                                    companyToEdit = null
+                                    currentScreen = "create_company" 
+                                },
+                                onEditCompanyClick = { company ->
+                                    companyToEdit = company
+                                    currentScreen = "create_company"
+                                },
                                 onCompanyClick = { 
                                     selectedCompany = it
                                     selectedPeriod = it.getDefaultPeriod()
@@ -115,8 +127,15 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                         }
                         "create_company" -> {
                             CreateCompanyForm(
-                                onBackClick = { currentScreen = "company_list" },
-                                onSuccess = { currentScreen = "company_list" }
+                                onBackClick = { 
+                                    currentScreen = "company_list" 
+                                    companyToEdit = null
+                                },
+                                onSuccess = { 
+                                    currentScreen = "company_list" 
+                                    companyToEdit = null
+                                },
+                                initialCompany = companyToEdit
                             )
                         }
                         "company_home" -> {

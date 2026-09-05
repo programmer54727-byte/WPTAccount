@@ -6,7 +6,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.AssignmentReturn
 import androidx.compose.material.icons.automirrored.filled.KeyboardReturn
 import androidx.compose.material.icons.filled.AccountBalance
@@ -128,12 +127,41 @@ fun UserHome(
             Scaffold(
                 topBar = {
                     TopAppBar(
-                        title = { Text(company.company_name) },
+                        title = { 
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = company.company_name,
+                                    modifier = Modifier.align(Alignment.CenterStart)
+                                )
+                                
+                                Text(
+                                    text = "Period: ${currentPeriod.startDate.toDisplayDate()} to ${currentPeriod.endDate.toDisplayDate()}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .align(Alignment.Center)
+                                        .clickable { showPeriodDialog = true }
+                                )
+                            }
+                        },
                         navigationIcon = {
                             if (!isDesktop) {
                                 IconButton(onClick = onToggleDrawer) {
                                     Icon(Icons.Default.Menu, contentDescription = "Menu")
                                 }
+                            }
+                        },
+                        actions = {
+                            OutlinedButton(
+                                onClick = onGstDetailsClick,
+                                modifier = Modifier.height(32.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                            ) {
+                                Text("GST Detail", style = MaterialTheme.typography.labelSmall)
+                            }
+                            IconButton(onClick = { showPeriodDialog = true }) {
+                                Icon(Icons.Default.Event, contentDescription = "Change Period")
                             }
                         }
                     )
@@ -144,30 +172,8 @@ fun UserHome(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                        .padding(horizontal = 8.dp, vertical = 8.dp)
                 ) {
-                    // Period and GST Detail Row
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Period: ${currentPeriod.startDate.toDisplayDate()} to ${currentPeriod.endDate.toDisplayDate()}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.clickable { showPeriodDialog = true }
-                        )
-
-                        OutlinedButton(
-                            onClick = onGstDetailsClick,
-                            modifier = Modifier.height(32.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
-                        ) {
-                            Text("GST Detail", style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
 
                     Text(
                         text = "Masters & Transactions",

@@ -24,39 +24,40 @@ import kotlinx.coroutines.launch
 @Composable
 fun CreateCompanyForm(
     onBackClick: () -> Unit,
-    onSuccess: () -> Unit
+    onSuccess: () -> Unit,
+    initialCompany: Company? = null
 ) {
     // General Information
-    var companyName by remember { mutableStateOf("") }
-    var mailingName by remember { mutableStateOf("") }
-    var address by remember { mutableStateOf("") }
+    var companyName by remember { mutableStateOf(initialCompany?.company_name ?: "") }
+    var mailingName by remember { mutableStateOf(initialCompany?.mailing_name ?: "") }
+    var address by remember { mutableStateOf(initialCompany?.address ?: "") }
     
     // Contact Details
-    var state by remember { mutableStateOf("") }
-    var country by remember { mutableStateOf("") }
-    var pincode by remember { mutableStateOf("") }
-    var telephone by remember { mutableStateOf("") }
-    var mobile by remember { mutableStateOf("") }
-    var fax by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var website by remember { mutableStateOf("") }
+    var state by remember { mutableStateOf(initialCompany?.state ?: "") }
+    var country by remember { mutableStateOf(initialCompany?.country ?: "") }
+    var pincode by remember { mutableStateOf(initialCompany?.pincode ?: "") }
+    var telephone by remember { mutableStateOf(initialCompany?.telephone ?: "") }
+    var mobile by remember { mutableStateOf(initialCompany?.mobile ?: "") }
+    var fax by remember { mutableStateOf(initialCompany?.fax ?: "") }
+    var email by remember { mutableStateOf(initialCompany?.email ?: "") }
+    var website by remember { mutableStateOf(initialCompany?.website ?: "") }
     
     // Financial Details
-    var finYearBeginning by remember { mutableStateOf("01/04/2024") }
-    var booksBeginning by remember { mutableStateOf("01/04/2024") }
-    var baseCurrencySymbol by remember { mutableStateOf("₹") }
-    var formalName by remember { mutableStateOf("INR") }
+    var finYearBeginning by remember { mutableStateOf(initialCompany?.financial_year_beginning?.toDisplayDate() ?: "01/04/2024") }
+    var booksBeginning by remember { mutableStateOf(initialCompany?.books_beginning?.toDisplayDate() ?: "01/04/2024") }
+    var baseCurrencySymbol by remember { mutableStateOf(initialCompany?.base_currency_symbol ?: "₹") }
+    var formalName by remember { mutableStateOf(initialCompany?.formal_name ?: "INR") }
     
     // Security
-    var tallyVaultEnabled by remember { mutableStateOf("No") }
-    var controlAccessEnabled by remember { mutableStateOf("No") }
+    var tallyVaultEnabled by remember { mutableStateOf(initialCompany?.tally_vault_password_enabled ?: "No") }
+    var controlAccessEnabled by remember { mutableStateOf(initialCompany?.control_user_access_enabled ?: "No") }
 
     // GST/HSN Defaults
-    var gstApplicability by remember { mutableStateOf("Applicable") }
-    var hsnNumber by remember { mutableStateOf("") }
-    var hsnDescription by remember { mutableStateOf("") }
-    var gstRate by remember { mutableStateOf("0") }
-    var typeOfSupply by remember { mutableStateOf("Goods") }
+    var gstApplicability by remember { mutableStateOf(initialCompany?.gst_applicability ?: "Applicable") }
+    var hsnNumber by remember { mutableStateOf(initialCompany?.hsn_sac_number ?: "") }
+    var hsnDescription by remember { mutableStateOf(initialCompany?.hsn_description ?: "") }
+    var gstRate by remember { mutableStateOf(initialCompany?.gst_rate?.toString() ?: "0") }
+    var typeOfSupply by remember { mutableStateOf(initialCompany?.type_of_supply ?: "Goods") }
 
     var isSaving by remember { mutableStateOf(false) }
     var saveError by remember { mutableStateOf<String?>(null) }
@@ -65,7 +66,7 @@ fun CreateCompanyForm(
     val scrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
 
-    fun performCreateCompany() {
+    fun performSaveCompany() {
         if (companyName.isBlank()) {
             saveError = "Company Name is required"
             return
@@ -74,11 +75,12 @@ fun CreateCompanyForm(
         scope.launch {
             isSaving = true
             saveError = null
-            println("Starting company creation for: $companyName")
+            println("Starting company save for: $companyName")
             try {
                 val user = supabase.auth.currentUserOrNull()
                 if (user != null) {
                     val company = Company(
+                        id = initialCompany?.id,
                         company_name = companyName,
                         mailing_name = mailingName,
                         address = address,
@@ -101,26 +103,33 @@ fun CreateCompanyForm(
                         hsn_description = hsnDescription,
                         gst_rate = gstRate.toDoubleOrNull() ?: 0.0,
                         type_of_supply = typeOfSupply,
-                        owner_id = user.id
+                        owner_id = initialCompany?.owner_id ?: user.id
                     )
                     
-                    println("Inserting company into Supabase...")
-                    val insertedCompany = supabase.from("companies").insert(company) {
-                        select()
-                    }.decodeSingle<Company>()
+                    if (initialCompany != null) {
+                        println("Updating company in Supabase...")
+                        supabase.from("companies").update(company) {
+                            filter { eq("id", initialCompany.id!!) }
+                        }
+                    } else {
+                        println("Inserting company into Supabase...")
+                        val insertedCompany = supabase.from("companies").insert(company) {
+                            select()
+                        }.decodeSingle<Company>()
+                        
+                        val companyId = insertedCompany.id!!
+                        initializeCompanySetup(companyId)
+                    }
                     
-                    val companyId = insertedCompany.id!!
-                    initializeCompanySetup(companyId)
-                    
-                    println("Initial setup complete!")
+                    println("Save complete!")
                     onSuccess()
                 } else {
                     saveError = "User not logged in"
                     println("Error: User not logged in")
                 }
             } catch (e: Exception) {
-                println("Create company error: ${e.message}")
-                saveError = "Failed to create company. Please try again."
+                println("Save company error: ${e.message}")
+                saveError = "Failed to save company. Please try again."
                 e.printStackTrace()
             } finally {
                 isSaving = false
@@ -131,7 +140,7 @@ fun CreateCompanyForm(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Create New Company") },
+                title = { Text(if (initialCompany != null) "Edit Company" else "Create New Company") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -302,7 +311,7 @@ fun CreateCompanyForm(
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = { 
                             focusManager.clearFocus()
-                            performCreateCompany()
+                            performSaveCompany()
                         })
                     )
                 }
@@ -348,14 +357,14 @@ fun CreateCompanyForm(
                 }
 
                 Button(
-                    onClick = { performCreateCompany() },
+                    onClick = { performSaveCompany() },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
                     enabled = !isSaving
                 ) {
                     if (isSaving) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                     } else {
-                        Text("Create Company")
+                        Text(if (initialCompany != null) "Save Changes" else "Create Company")
                     }
                 }
             }

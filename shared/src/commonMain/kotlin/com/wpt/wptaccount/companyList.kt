@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import wptaccount.shared.generated.resources.Res
 import wptaccount.shared.generated.resources.applogo
@@ -21,12 +24,16 @@ import wptaccount.shared.generated.resources.applogo
 @Composable
 fun CompanyList(
     onCreateCompanyClick: () -> Unit,
+    onEditCompanyClick: (Company) -> Unit,
     onCompanyClick: (Company) -> Unit,
     onLogout: () -> Unit
 ) {
     var companies by remember { mutableStateOf<List<Company>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    
+    var companyToDelete by remember { mutableStateOf<Company?>(null) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         try {
@@ -133,6 +140,16 @@ fun CompanyList(
                                             Text("$state, $country")
                                         }
                                     }
+                                },
+                                trailingContent = {
+                                    Row {
+                                        IconButton(onClick = { onEditCompanyClick(company) }) {
+                                            Icon(Icons.Default.Edit, contentDescription = "Edit Company", tint = MaterialTheme.colorScheme.primary)
+                                        }
+                                        IconButton(onClick = { companyToDelete = company }) {
+                                            Icon(Icons.Default.Delete, contentDescription = "Delete Company", tint = MaterialTheme.colorScheme.error)
+                                        }
+                                    }
                                 }
                             )
                         }
@@ -140,5 +157,39 @@ fun CompanyList(
                 }
             }
         }
+    }
+
+    if (companyToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { companyToDelete = null },
+            title = { Text("Delete Company") },
+            text = { Text("Are you sure you want to delete '${companyToDelete!!.company_name}'? All data associated with this company will be permanently removed.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            try {
+                                supabase.from("companies").delete {
+                                    filter { eq("id", companyToDelete!!.id!!) }
+                                }
+                                companies = companies.filter { it.id != companyToDelete!!.id }
+                            } catch (e: Exception) {
+                                println("Delete company error: ${e.message}")
+                            } finally {
+                                companyToDelete = null
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { companyToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }

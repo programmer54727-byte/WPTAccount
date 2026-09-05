@@ -5,7 +5,7 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
 ## 🚀 Features
 - **User Authentication:** Secure email-based signup and login with sanitized error messages to prevent sensitive data leaks.
 - **Session Persistence:** Stay logged in across app restarts using `multiplatform-settings`.
-- **Company Management:** Create and manage multiple companies with professional, centered form layouts.
+- **Company Management:** Full lifecycle management (Create, View, Edit, Delete) of companies with professional, centered form layouts.
 - **Automated Accounting Setup:**
     - Automatically creates **34 standard Tally groups** for every company.
     - Automatically initializes default ledgers (**Cash** and **Profit & Loss A/c**).
@@ -42,7 +42,7 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **System-Based Rotation:** Follows standard Android auto-rotate settings for all reports, giving users control over their viewing orientation.
     - **Robust Data Saving:** Comprehensive error handling (try-catch) on all save operations with detailed feedback to prevent app crashes.
 - **Responsive & Modern UI:**
-    - **Adaptive Header:** Restructured Home page header to prevent UI overlap on mobile devices, ensuring high legibility of period and statutory details.
+    - **Adaptive Header:** Optimized Home page header with a centered period display and reorganized actions, ensuring zero UI overlap even on narrow mobile screens.
     - **Intelligent Sidebar/Drawer:** Responsive navigation that provides a permanent sidebar for Desktop users and a space-saving modal drawer for Mobile users.
     - **Subtle Integrated Theme:** Modern Material 3 container-based palette that blends perfectly with the application background for a premium feel.
     - **Horizontal Table Scrolling:** Wide financial tables feature smooth horizontal scrolling in portrait mode, ensuring all data is accessible.
