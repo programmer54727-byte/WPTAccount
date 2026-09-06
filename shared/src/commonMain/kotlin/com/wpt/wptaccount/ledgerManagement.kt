@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -66,8 +67,8 @@ fun LedgerManagement(
     currentPeriod: AccountPeriod,
     onPeriodChange: (AccountPeriod) -> Unit
 ) {
-    var selectedTab by remember { mutableStateOf(0) }
-    var showPeriodDialog by remember { mutableStateOf(false) }
+    var selectedTab by rememberSaveable { mutableStateOf(0) }
+    var showPeriodDialog by rememberSaveable { mutableStateOf(false) }
 
     val tabs = listOf("Groups", "Ledgers")
     
@@ -196,18 +197,18 @@ fun LedgerGroupsTab(company: Company, period: AccountPeriod) {
     var groups by remember { mutableStateOf<List<AccountingGroup>>(emptyList()) }
     var ledgers by remember { mutableStateOf<List<Ledger>>(emptyList()) }
     var selectedGroupForLedgers by remember { mutableStateOf<AccountingGroup?>(null) }
-    var groupToDelete by remember { mutableStateOf<AccountingGroup?>(null) }
-    var groupToEdit by remember { mutableStateOf<AccountingGroup?>(null) }
-    var showDialog by remember { mutableStateOf(false) }
-    var errorMsg by remember { mutableStateOf<String?>(null) }
+    var groupToDelete by rememberSaveable(stateSaver = GroupSaver) { mutableStateOf<AccountingGroup?>(null) }
+    var groupToEdit by rememberSaveable(stateSaver = GroupSaver) { mutableStateOf<AccountingGroup?>(null) }
+    var showDialog by rememberSaveable { mutableStateOf(false) }
+    var errorMsg by rememberSaveable { mutableStateOf<String?>(null) }
     
     // Form States
-    var name by remember { mutableStateOf("") }
-    var selectedParentId by remember { mutableStateOf<String?>(null) }
-    var nature by remember { mutableStateOf<String?>(null) }
+    var name by rememberSaveable { mutableStateOf("") }
+    var selectedParentId by rememberSaveable { mutableStateOf<String?>(null) }
+    var nature by rememberSaveable { mutableStateOf<String?>(null) }
     
     // Selection and Navigation
-    var selectedIndex by remember { mutableStateOf(0) }
+    var selectedIndex by rememberSaveable { mutableStateOf(0) }
     var balances by remember { mutableStateOf<Map<String, LedgerBalance>>(emptyMap()) }
     val focusRequester = remember { FocusRequester() }
     
@@ -508,58 +509,58 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
     var ledgers by remember { mutableStateOf<List<Ledger>>(emptyList()) }
     var groups by remember { mutableStateOf<List<AccountingGroup>>(emptyList()) }
     var showDialog by remember { mutableStateOf(false) }
-    var ledgerToDelete by remember { mutableStateOf<Ledger?>(null) }
-    var ledgerToEdit by remember { mutableStateOf<Ledger?>(null) }
+    var ledgerToDelete by rememberSaveable(stateSaver = LedgerSaver) { mutableStateOf<Ledger?>(null) }
+    var ledgerToEdit by rememberSaveable(stateSaver = LedgerSaver) { mutableStateOf<Ledger?>(null) }
     
     // Selection and View Mode
-    var selectedIndex by remember { mutableStateOf(0) }
-    var isSummaryMode by remember { mutableStateOf(false) }
+    var selectedIndex by rememberSaveable { mutableStateOf(0) }
+    var isSummaryMode by rememberSaveable { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
 
     // Form States
-    var name by remember { mutableStateOf("") }
-    var alias by remember { mutableStateOf("") }
-    var selectedGroupId by remember { mutableStateOf<String?>(null) }
-    var openingBalance by remember { mutableStateOf("0") }
-    var openingBalanceType by remember { mutableStateOf("Dr") }
+    var name by rememberSaveable { mutableStateOf("") }
+    var alias by rememberSaveable { mutableStateOf("") }
+    var selectedGroupId by rememberSaveable { mutableStateOf<String?>(null) }
+    var openingBalance by rememberSaveable { mutableStateOf("0") }
+    var openingBalanceType by rememberSaveable { mutableStateOf("Dr") }
 
     // Mailing Details
-    var mailingName by remember { mutableStateOf("") }
-    var isMailingNameSynced by remember { mutableStateOf(true) }
-    var address by remember { mutableStateOf("") }
-    var state by remember { mutableStateOf("") }
-    var country by remember { mutableStateOf("") }
-    var pincode by remember { mutableStateOf("") }
+    var mailingName by rememberSaveable { mutableStateOf("") }
+    var isMailingNameSynced by rememberSaveable { mutableStateOf(true) }
+    var address by rememberSaveable { mutableStateOf("") }
+    var state by rememberSaveable { mutableStateOf("") }
+    var country by rememberSaveable { mutableStateOf("") }
+    var pincode by rememberSaveable { mutableStateOf("") }
 
     // Tax Registration
-    var panItNumber by remember { mutableStateOf("") }
-    var gstRegistrationType by remember { mutableStateOf("Unregistered") }
-    var gstinUin by remember { mutableStateOf("") }
+    var panItNumber by rememberSaveable { mutableStateOf("") }
+    var gstRegistrationType by rememberSaveable { mutableStateOf("Unregistered") }
+    var gstinUin by rememberSaveable { mutableStateOf("") }
 
     // Bank Details
-    var bankAccNo by remember { mutableStateOf("") }
-    var bankIfsc by remember { mutableStateOf("") }
-    var bankName by remember { mutableStateOf("") }
-    var bankBranch by remember { mutableStateOf("") }
-    var bankSwift by remember { mutableStateOf("") }
+    var bankAccNo by rememberSaveable { mutableStateOf("") }
+    var bankIfsc by rememberSaveable { mutableStateOf("") }
+    var bankName by rememberSaveable { mutableStateOf("") }
+    var bankBranch by rememberSaveable { mutableStateOf("") }
+    var bankSwift by rememberSaveable { mutableStateOf("") }
 
     // Party Details
-    var billByBill by remember { mutableStateOf(false) }
-    var creditPeriod by remember { mutableStateOf("") }
-    var creditLimit by remember { mutableStateOf("") }
+    var billByBill by rememberSaveable { mutableStateOf(false) }
+    var creditPeriod by rememberSaveable { mutableStateOf("") }
+    var creditLimit by rememberSaveable { mutableStateOf("") }
 
     // Tax Details
-    var dutyTaxType by remember { mutableStateOf("GST") }
-    var gstTaxSubType by remember { mutableStateOf("Integrated Tax") }
-    var taxRate by remember { mutableStateOf("0") }
+    var dutyTaxType by rememberSaveable { mutableStateOf("GST") }
+    var gstTaxSubType by rememberSaveable { mutableStateOf("Integrated Tax") }
+    var taxRate by rememberSaveable { mutableStateOf("0") }
 
     // Revenue/Expense Details
-    var inventoryAffected by remember { mutableStateOf(false) }
-    var costCentresApplicable by remember { mutableStateOf(false) }
-    var gstApplicableType by remember { mutableStateOf("Applicable") }
-    var supplyType by remember { mutableStateOf("Services") }
-    var hsnSacCode by remember { mutableStateOf("") }
-    var hsnSacDesc by remember { mutableStateOf("") }
+    var inventoryAffected by rememberSaveable { mutableStateOf(false) }
+    var costCentresApplicable by rememberSaveable { mutableStateOf(false) }
+    var gstApplicableType by rememberSaveable { mutableStateOf("Applicable") }
+    var supplyType by rememberSaveable { mutableStateOf("Services") }
+    var hsnSacCode by rememberSaveable { mutableStateOf("") }
+    var hsnSacDesc by rememberSaveable { mutableStateOf("") }
 
     var saveError by remember { mutableStateOf<String?>(null) }
     var isSaving by remember { mutableStateOf(false) }

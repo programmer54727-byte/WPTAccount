@@ -15,6 +15,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.jan.supabase.postgrest.from
 
+import androidx.compose.runtime.saveable.rememberSaveable
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BillWiseDetailsDialog(
@@ -26,7 +28,9 @@ fun BillWiseDetailsDialog(
     onDismiss: () -> Unit,
     onConfirm: (List<VoucherReference>) -> Unit
 ) {
-    val references = remember { mutableStateListOf(*initialReferences.toTypedArray()) }
+    val references = rememberSaveable(saver = VoucherReferenceListSaver) { 
+        mutableStateListOf(*initialReferences.toTypedArray()) 
+    }
     var pendingReferences by remember { mutableStateOf<List<VoucherReference>>(emptyList()) }
     
     // Fetch existing "New Reference" items for this ledger

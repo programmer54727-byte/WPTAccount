@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
@@ -28,39 +29,39 @@ fun CreateCompanyForm(
     initialCompany: Company? = null
 ) {
     // General Information
-    var companyName by remember { mutableStateOf(initialCompany?.company_name ?: "") }
-    var mailingName by remember { mutableStateOf(initialCompany?.mailing_name ?: "") }
-    var address by remember { mutableStateOf(initialCompany?.address ?: "") }
+    var companyName by rememberSaveable { mutableStateOf(initialCompany?.company_name ?: "") }
+    var mailingName by rememberSaveable { mutableStateOf(initialCompany?.mailing_name ?: "") }
+    var address by rememberSaveable { mutableStateOf(initialCompany?.address ?: "") }
     
     // Contact Details
-    var state by remember { mutableStateOf(initialCompany?.state ?: "") }
-    var country by remember { mutableStateOf(initialCompany?.country ?: "") }
-    var pincode by remember { mutableStateOf(initialCompany?.pincode ?: "") }
-    var telephone by remember { mutableStateOf(initialCompany?.telephone ?: "") }
-    var mobile by remember { mutableStateOf(initialCompany?.mobile ?: "") }
-    var fax by remember { mutableStateOf(initialCompany?.fax ?: "") }
-    var email by remember { mutableStateOf(initialCompany?.email ?: "") }
-    var website by remember { mutableStateOf(initialCompany?.website ?: "") }
+    var state by rememberSaveable { mutableStateOf(initialCompany?.state ?: "") }
+    var country by rememberSaveable { mutableStateOf(initialCompany?.country ?: "") }
+    var pincode by rememberSaveable { mutableStateOf(initialCompany?.pincode ?: "") }
+    var telephone by rememberSaveable { mutableStateOf(initialCompany?.telephone ?: "") }
+    var mobile by rememberSaveable { mutableStateOf(initialCompany?.mobile ?: "") }
+    var fax by rememberSaveable { mutableStateOf(initialCompany?.fax ?: "") }
+    var email by rememberSaveable { mutableStateOf(initialCompany?.email ?: "") }
+    var website by rememberSaveable { mutableStateOf(initialCompany?.website ?: "") }
     
     // Financial Details
-    var finYearBeginning by remember { mutableStateOf(initialCompany?.financial_year_beginning?.toDisplayDate() ?: "01/04/2024") }
-    var booksBeginning by remember { mutableStateOf(initialCompany?.books_beginning?.toDisplayDate() ?: "01/04/2024") }
-    var baseCurrencySymbol by remember { mutableStateOf(initialCompany?.base_currency_symbol ?: "₹") }
-    var formalName by remember { mutableStateOf(initialCompany?.formal_name ?: "INR") }
+    var finYearBeginning by rememberSaveable { mutableStateOf(initialCompany?.financial_year_beginning?.toDisplayDate() ?: "01/04/2024") }
+    var booksBeginning by rememberSaveable { mutableStateOf(initialCompany?.books_beginning?.toDisplayDate() ?: "01/04/2024") }
+    var baseCurrencySymbol by rememberSaveable { mutableStateOf(initialCompany?.base_currency_symbol ?: "₹") }
+    var formalName by rememberSaveable { mutableStateOf(initialCompany?.formal_name ?: "INR") }
     
     // Security
-    var tallyVaultEnabled by remember { mutableStateOf(initialCompany?.tally_vault_password_enabled ?: "No") }
-    var controlAccessEnabled by remember { mutableStateOf(initialCompany?.control_user_access_enabled ?: "No") }
+    var tallyVaultEnabled by rememberSaveable { mutableStateOf(initialCompany?.tally_vault_password_enabled ?: "No") }
+    var controlAccessEnabled by rememberSaveable { mutableStateOf(initialCompany?.control_user_access_enabled ?: "No") }
 
     // GST/HSN Defaults
-    var gstApplicability by remember { mutableStateOf(initialCompany?.gst_applicability ?: "Applicable") }
-    var hsnNumber by remember { mutableStateOf(initialCompany?.hsn_sac_number ?: "") }
-    var hsnDescription by remember { mutableStateOf(initialCompany?.hsn_description ?: "") }
-    var gstRate by remember { mutableStateOf(initialCompany?.gst_rate?.toString() ?: "0") }
-    var typeOfSupply by remember { mutableStateOf(initialCompany?.type_of_supply ?: "Goods") }
+    var gstApplicability by rememberSaveable { mutableStateOf(initialCompany?.gst_applicability ?: "Applicable") }
+    var hsnNumber by rememberSaveable { mutableStateOf(initialCompany?.hsn_sac_number ?: "") }
+    var hsnDescription by rememberSaveable { mutableStateOf(initialCompany?.hsn_description ?: "") }
+    var gstRate by rememberSaveable { mutableStateOf(initialCompany?.gst_rate?.toString() ?: "0") }
+    var typeOfSupply by rememberSaveable { mutableStateOf(initialCompany?.type_of_supply ?: "Goods") }
 
-    var isSaving by remember { mutableStateOf(false) }
-    var saveError by remember { mutableStateOf<String?>(null) }
+    var isSaving by rememberSaveable { mutableStateOf(false) }
+    var saveError by rememberSaveable { mutableStateOf<String?>(null) }
     
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()

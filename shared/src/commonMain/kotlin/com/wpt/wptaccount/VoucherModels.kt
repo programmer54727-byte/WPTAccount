@@ -1,6 +1,11 @@
 package com.wpt.wptaccount
 
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 @Serializable
 data class Voucher(
@@ -84,4 +89,31 @@ data class TaxRow(
     var ledgerId: String = "",
     var taxRate: Double = 0.0,
     var amount: Double = 0.0
+)
+
+val ItemRowListSaver = listSaver<SnapshotStateList<ItemRow>, String>(
+    save = { list -> list.map { Json.encodeToString(it) } },
+    restore = { strings -> 
+        val list = mutableStateListOf<ItemRow>()
+        list.addAll(strings.map { Json.decodeFromString(it) })
+        list
+    }
+)
+
+val TaxRowListSaver = listSaver<SnapshotStateList<TaxRow>, String>(
+    save = { list -> list.map { Json.encodeToString(it) } },
+    restore = { strings -> 
+        val list = mutableStateListOf<TaxRow>()
+        list.addAll(strings.map { Json.decodeFromString(it) })
+        list
+    }
+)
+
+val VoucherReferenceListSaver = listSaver<SnapshotStateList<VoucherReference>, String>(
+    save = { list -> list.map { Json.encodeToString(it) } },
+    restore = { strings -> 
+        val list = mutableStateListOf<VoucherReference>()
+        list.addAll(strings.map { Json.decodeFromString(it) })
+        list
+    }
 )

@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.SyncAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import io.github.jan.supabase.postgrest.from
 import androidx.compose.ui.Modifier
@@ -48,8 +49,8 @@ fun UserHome(
     currentPeriod: AccountPeriod,
     onPeriodChange: (AccountPeriod) -> Unit
 ) {
-    var isInitializing by remember { mutableStateOf(false) }
-    var showPeriodDialog by remember { mutableStateOf(false) }
+    var isInitializing by rememberSaveable { mutableStateOf(false) }
+    var showPeriodDialog by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(company.id) {
         val companyId = company.id ?: return@LaunchedEffect

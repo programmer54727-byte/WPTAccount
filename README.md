@@ -42,6 +42,7 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **System-Based Rotation:** Follows standard Android auto-rotate settings for all reports, giving users control over their viewing orientation.
     - **Robust Data Saving:** Comprehensive error handling (try-catch) on all save operations with detailed feedback to prevent app crashes.
 - **Responsive & Modern UI:**
+    - **UI State Persistence:** All forms, navigation, and transactional entries now use `rememberSaveable` with custom `Saver` implementations, ensuring data is never lost during screen rotation (Android) or window resizing (Desktop).
     - **Adaptive Header:** Optimized Home page header with a centered period display and reorganized actions, ensuring zero UI overlap even on narrow mobile screens.
     - **Intelligent Sidebar/Drawer:** Responsive navigation that provides a permanent sidebar for Desktop users and a space-saving modal drawer for Mobile users.
     - **Subtle Integrated Theme:** Modern Material 3 container-based palette that blends perfectly with the application background for a premium feel.
@@ -52,6 +53,8 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **High-DPI Branding:** Support for multi-resolution icons (.ico) to ensure professional visual appearance on all desktop resolutions.
 - **Cross-Platform:** 100% shared UI and business logic across Android, Desktop, and Web.
 - **Secure Backend:** Uses Supabase Auth and advanced Row Level Security (RLS) policies for data isolation.
+- **Stability & Networking:**
+    - **IPv4 Preference:** Configured Gradle and JVM to prefer the IPv4 stack, resolving common `ConnectException: Connection refused: getsockopt` errors on Windows systems.
 
 ## 🛠 Tech Stack
 - **UI:** Jetpack Compose / Compose Multiplatform

@@ -13,23 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-
-val CompanySaver = Saver<Company?, String>(
-    save = { company -> if (company != null) Json.encodeToString(company) else "" },
-    restore = { value -> if (value.isNotEmpty()) Json.decodeFromString<Company>(value) else null }
-)
-
-val VoucherSaver = Saver<Voucher?, String>(
-    save = { voucher -> if (voucher != null) Json.encodeToString(voucher) else "" },
-    restore = { value -> if (value.isNotEmpty()) Json.decodeFromString<Voucher>(value) else null }
-)
-
-val PeriodSaver = Saver<AccountPeriod?, String>(
-    save = { period -> if (period != null) Json.encodeToString(period) else "" },
-    restore = { value -> if (value.isNotEmpty()) Json.decodeFromString<AccountPeriod>(value) else null }
-)
 
 @Composable
 fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {

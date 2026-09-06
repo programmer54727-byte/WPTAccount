@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -49,17 +50,17 @@ fun VoucherEntryScreen(
     // ----------------------------------------------------------------
     
     // Basic Voucher Info
-    var date by remember { mutableStateOf(initialVoucher?.date?.toDisplayDate() ?: "17/08/2024") }
-    var voucherNo by remember { mutableStateOf(initialVoucher?.voucher_number ?: "") }
-    var invoiceNo by remember { mutableStateOf(initialVoucher?.invoice_no ?: "") }
-    var invoiceDate by remember { mutableStateOf(initialVoucher?.invoice_date?.toDisplayDate() ?: "17/08/2024") }
-    var selectedPartyId by remember { mutableStateOf<String?>(initialVoucher?.party_ledger_id) }
-    var selectedLedgerId by remember { mutableStateOf<String?>(null) } // Sales or Purchase A/c
+    var date by rememberSaveable { mutableStateOf(initialVoucher?.date?.toDisplayDate() ?: "17/08/2024") }
+    var voucherNo by rememberSaveable { mutableStateOf(initialVoucher?.voucher_number ?: "") }
+    var invoiceNo by rememberSaveable { mutableStateOf(initialVoucher?.invoice_no ?: "") }
+    var invoiceDate by rememberSaveable { mutableStateOf(initialVoucher?.invoice_date?.toDisplayDate() ?: "17/08/2024") }
+    var selectedPartyId by rememberSaveable { mutableStateOf<String?>(initialVoucher?.party_ledger_id) }
+    var selectedLedgerId by rememberSaveable { mutableStateOf<String?>(null) } // Sales or Purchase A/c
     
     // Transactional Rows (Inventory & Taxes)
-    val items = remember { mutableStateListOf<ItemRow>() }
-    val taxEntries = remember { mutableStateListOf<TaxRow>() }
-    var narration by remember { mutableStateOf(initialVoucher?.narration ?: "") }
+    val items = rememberSaveable(saver = ItemRowListSaver) { mutableStateListOf<ItemRow>() }
+    val taxEntries = rememberSaveable(saver = TaxRowListSaver) { mutableStateListOf<TaxRow>() }
+    var narration by rememberSaveable { mutableStateOf(initialVoucher?.narration ?: "") }
     
     // Master Data for Dropdowns
     var ledgers by remember { mutableStateOf<List<Ledger>>(emptyList()) }
@@ -67,17 +68,17 @@ fun VoucherEntryScreen(
     var stockItems by remember { mutableStateOf<List<StockItem>>(emptyList()) }
     
     // UI Feedback States
-    var isLoading by remember { mutableStateOf(value = true) }
-    var isSaving by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isLoading by rememberSaveable { mutableStateOf(value = true) }
+    var isSaving by rememberSaveable { mutableStateOf(false) }
+    var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Bill-wise Details (for Outstanding tracking)
-    var showBillWiseDialog by remember { mutableStateOf(false) }
-    val partyReferences = remember { mutableStateListOf<VoucherReference>() }
+    var showBillWiseDialog by rememberSaveable { mutableStateOf(false) }
+    val partyReferences = rememberSaveable(saver = VoucherReferenceListSaver) { mutableStateListOf<VoucherReference>() }
 
     // Quick Add Dialog States (triggered by Alt+C or 'Create' button)
-    var showAddLedger by remember { mutableStateOf(false) }
-    var showAddItem by remember { mutableStateOf(false) }
+    var showAddLedger by rememberSaveable { mutableStateOf(false) }
+    var showAddItem by rememberSaveable { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
 

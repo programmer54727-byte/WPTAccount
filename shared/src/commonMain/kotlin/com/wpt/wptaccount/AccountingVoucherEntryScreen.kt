@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,8 +24,10 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.saveable.listSaver
 
 @Serializable
 data class AccountingRow(
@@ -32,6 +35,15 @@ data class AccountingRow(
     var amount: String = "0",
     var entryType: String = "Debit",
     var references: List<VoucherReference> = emptyList()
+)
+
+val AccountingRowListSaver = listSaver<SnapshotStateList<AccountingRow>, String>(
+    save = { list -> list.map { Json.encodeToString(it) } },
+    restore = { strings -> 
+        val list = mutableStateListOf<AccountingRow>()
+        list.addAll(strings.map { Json.decodeFromString(it) })
+        list
+    }
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,20 +66,20 @@ fun AccountingVoucherEntryScreen(
     onBack: () -> Unit,
     initialVoucher: Voucher? = null
 ) {
-    var date by remember { mutableStateOf(initialVoucher?.date?.toDisplayDate() ?: "17/08/2024") }
-    var voucherNo by remember { mutableStateOf(initialVoucher?.voucher_number ?: "") }
+    var date by rememberSaveable { mutableStateOf(initialVoucher?.date?.toDisplayDate() ?: "17/08/2024") }
+    var voucherNo by rememberSaveable { mutableStateOf(initialVoucher?.voucher_number ?: "") }
     
-    val entries = remember { mutableStateListOf<AccountingRow>() }
-    var narration by remember { mutableStateOf(initialVoucher?.narration ?: "") }
+    val entries = rememberSaveable(saver = AccountingRowListSaver) { mutableStateListOf<AccountingRow>() }
+    var narration by rememberSaveable { mutableStateOf(initialVoucher?.narration ?: "") }
     
     var ledgers by remember { mutableStateOf<List<Ledger>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var isSaving by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isLoading by rememberSaveable { mutableStateOf(true) }
+    var isSaving by rememberSaveable { mutableStateOf(false) }
+    var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Dialog States
-    var showAddLedger by remember { mutableStateOf(false) }
-    var activeRefIndex by remember { mutableStateOf<Int?>(null) }
+    var showAddLedger by rememberSaveable { mutableStateOf(false) }
+    var activeRefIndex by rememberSaveable { mutableStateOf<Int?>(null) }
 
     val scope = rememberCoroutineScope()
 

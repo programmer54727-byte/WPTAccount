@@ -1,6 +1,54 @@
 package com.wpt.wptaccount
 
+import androidx.compose.runtime.saveable.Saver
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlin.math.roundToInt
+
+val CompanySaver = Saver<Company?, String>(
+    save = { company -> if (company != null) Json.encodeToString(company) else "" },
+    restore = { value -> if (value.isNotEmpty()) Json.decodeFromString<Company>(value) else null }
+)
+
+val LedgerSaver = Saver<Ledger?, String>(
+    save = { ledger -> if (ledger != null) Json.encodeToString(ledger) else "" },
+    restore = { value -> if (value.isNotEmpty()) Json.decodeFromString<Ledger>(value) else null }
+)
+
+val StockItemSaver = Saver<StockItem?, String>(
+    save = { item -> if (item != null) Json.encodeToString(item) else "" },
+    restore = { value -> if (value.isNotEmpty()) Json.decodeFromString<StockItem>(value) else null }
+)
+
+val StockGroupSaver = Saver<StockGroup?, String>(
+    save = { group -> if (group != null) Json.encodeToString(group) else "" },
+    restore = { value -> if (value.isNotEmpty()) Json.decodeFromString<StockGroup>(value) else null }
+)
+
+val UnitOfMeasureSaver = Saver<UnitOfMeasure?, String>(
+    save = { unit -> if (unit != null) Json.encodeToString(unit) else "" },
+    restore = { value -> if (value.isNotEmpty()) Json.decodeFromString<UnitOfMeasure>(value) else null }
+)
+
+val GroupSaver = Saver<AccountingGroup?, String>(
+    save = { group -> if (group != null) Json.encodeToString(group) else "" },
+    restore = { value -> if (value.isNotEmpty()) Json.decodeFromString<AccountingGroup>(value) else null }
+)
+
+val VoucherSaver = Saver<Voucher?, String>(
+    save = { voucher -> if (voucher != null) Json.encodeToString(voucher) else "" },
+    restore = { value -> if (value.isNotEmpty()) Json.decodeFromString<Voucher>(value) else null }
+)
+
+val PeriodSaver = Saver<AccountPeriod?, String>(
+    save = { period -> if (period != null) Json.encodeToString(period) else "" },
+    restore = { value -> if (value.isNotEmpty()) Json.decodeFromString<AccountPeriod>(value) else null }
+)
+
+val GstDetailsSaver = Saver<GstDetails?, String>(
+    save = { details -> if (details != null) Json.encodeToString(details) else "" },
+    restore = { value -> if (value.isNotEmpty()) Json.decodeFromString<GstDetails>(value) else null }
+)
 
 fun Double.format(digits: Int = 2): String {
     var res = 1L

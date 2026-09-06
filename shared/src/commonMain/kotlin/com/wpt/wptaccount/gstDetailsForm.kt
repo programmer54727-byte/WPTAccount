@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -32,28 +33,28 @@ fun GstDetailsScreen(
     onJournalClick: () -> Unit = {},
     onBack: () -> Unit
 ) {
-    var gstDetails by remember { mutableStateOf<GstDetails?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
+    var gstDetails by rememberSaveable(stateSaver = GstDetailsSaver) { mutableStateOf<GstDetails?>(null) }
+    var isLoading by rememberSaveable { mutableStateOf(true) }
 
     // Form States
-    var regStatus by remember { mutableStateOf("Active") }
-    var state by remember { mutableStateOf(company.state ?: "") }
-    var regType by remember { mutableStateOf("Regular") }
-    var isOtherTerritory by remember { mutableStateOf(false) }
-    var gstin by remember { mutableStateOf("") }
-    var periodicity by remember { mutableStateOf("Monthly") }
+    var regStatus by rememberSaveable { mutableStateOf("Active") }
+    var state by rememberSaveable { mutableStateOf(company.state ?: "") }
+    var regType by rememberSaveable { mutableStateOf("Regular") }
+    var isOtherTerritory by rememberSaveable { mutableStateOf(false) }
+    var gstin by rememberSaveable { mutableStateOf("") }
+    var periodicity by rememberSaveable { mutableStateOf("Monthly") }
     
-    var gstUsername by remember { mutableStateOf("") }
-    var modeOfFiling by remember { mutableStateOf("Not Applicable") }
+    var gstUsername by rememberSaveable { mutableStateOf("") }
+    var modeOfFiling by rememberSaveable { mutableStateOf("Not Applicable") }
     
-    var ewayBillApplicable by remember { mutableStateOf(false) }
-    var ewayBillDate by remember { mutableStateOf("") }
-    var ewayBillIntrastate by remember { mutableStateOf(false) }
+    var ewayBillApplicable by rememberSaveable { mutableStateOf(false) }
+    var ewayBillDate by rememberSaveable { mutableStateOf("") }
+    var ewayBillIntrastate by rememberSaveable { mutableStateOf(false) }
     
-    var einvoiceApplicable by remember { mutableStateOf(false) }
-    var registrationName by remember { mutableStateOf("") }
-    var saveError by remember { mutableStateOf<String?>(null) }
-    var isSaving by remember { mutableStateOf(false) }
+    var einvoiceApplicable by rememberSaveable { mutableStateOf(false) }
+    var registrationName by rememberSaveable { mutableStateOf("") }
+    var saveError by rememberSaveable { mutableStateOf<String?>(null) }
+    var isSaving by rememberSaveable { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()

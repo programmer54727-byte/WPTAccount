@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -130,7 +131,7 @@ fun InventoryManagement(
     onJournalClick: () -> Unit = {},
     onBack: () -> Unit
 ) {
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by rememberSaveable { mutableStateOf(0) }
     val tabs = listOf("Units", "Groups", "Items")
 
     AppNavigationDrawer(
@@ -219,11 +220,11 @@ fun UnitsTab(company: Company) {
     val focusRequester = remember { FocusRequester() }
     
     var showDialog by remember { mutableStateOf(false) }
-    var unitToDelete by remember { mutableStateOf<UnitOfMeasure?>(null) }
-    var unitToEdit by remember { mutableStateOf<UnitOfMeasure?>(null) }
-    var errorMsg by remember { mutableStateOf<String?>(null) }
-    var symbol by remember { mutableStateOf("") }
-    var formalName by remember { mutableStateOf("") }
+    var unitToDelete by rememberSaveable(stateSaver = UnitOfMeasureSaver) { mutableStateOf<UnitOfMeasure?>(null) }
+    var unitToEdit by rememberSaveable(stateSaver = UnitOfMeasureSaver) { mutableStateOf<UnitOfMeasure?>(null) }
+    var errorMsg by rememberSaveable { mutableStateOf<String?>(null) }
+    var symbol by rememberSaveable { mutableStateOf("") }
+    var formalName by rememberSaveable { mutableStateOf("") }
     val scope = rememberCoroutineScope()
 
     fun fetchData() {
@@ -492,13 +493,13 @@ fun StockGroupsTab(company: Company) {
     val focusRequester = remember { FocusRequester() }
     
     var showDialog by remember { mutableStateOf(false) }
-    var groupToDelete by remember { mutableStateOf<StockGroup?>(null) }
-    var groupToEdit by remember { mutableStateOf<StockGroup?>(null) }
-    var errorMsg by remember { mutableStateOf<String?>(null) }
+    var groupToDelete by rememberSaveable(stateSaver = StockGroupSaver) { mutableStateOf<StockGroup?>(null) }
+    var groupToEdit by rememberSaveable(stateSaver = StockGroupSaver) { mutableStateOf<StockGroup?>(null) }
+    var errorMsg by rememberSaveable { mutableStateOf<String?>(null) }
     
     // Form States
-    var name by remember { mutableStateOf("") }
-    var selectedParentId by remember { mutableStateOf<String?>(null) }
+    var name by rememberSaveable { mutableStateOf("") }
+    var selectedParentId by rememberSaveable { mutableStateOf<String?>(null) }
     
     val scope = rememberCoroutineScope()
 
@@ -780,33 +781,33 @@ fun StockItemsTab(company: Company) {
     
     var showDialog by remember { mutableStateOf(false) }
     var itemToDelete by remember { mutableStateOf<StockItem?>(null) }
-    var itemToEdit by remember { mutableStateOf<StockItem?>(null) }
-    var errorMsg by remember { mutableStateOf<String?>(null) }
+    var itemToEdit by rememberSaveable(stateSaver = StockItemSaver) { mutableStateOf<StockItem?>(null) }
+    var errorMsg by rememberSaveable { mutableStateOf<String?>(null) }
     
     // Selection and View Mode
-    var selectedIndex by remember { mutableStateOf(0) }
-    var isSummaryMode by remember { mutableStateOf(false) }
+    var selectedIndex by rememberSaveable { mutableStateOf(0) }
+    var isSummaryMode by rememberSaveable { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
 
     // Form States
-    var name by remember { mutableStateOf("") }
-    var alias by remember { mutableStateOf("") }
-    var selectedUnitId by remember { mutableStateOf("") }
-    var selectedGroupId by remember { mutableStateOf<String?>(null) }
+    var name by rememberSaveable { mutableStateOf("") }
+    var alias by rememberSaveable { mutableStateOf("") }
+    var selectedUnitId by rememberSaveable { mutableStateOf("") }
+    var selectedGroupId by rememberSaveable { mutableStateOf<String?>(null) }
     
     // Statutory Details
-    var gstApplicability by remember { mutableStateOf("Applicable") }
-    var hsnNumber by remember { mutableStateOf("") }
-    var hsnDescription by remember { mutableStateOf("") }
-    var taxabilityType by remember { mutableStateOf("Taxable") }
-    var gstRate by remember { mutableStateOf("0") }
-    var typeOfSupply by remember { mutableStateOf("Goods") }
+    var gstApplicability by rememberSaveable { mutableStateOf("Applicable") }
+    var hsnNumber by rememberSaveable { mutableStateOf("") }
+    var hsnDescription by rememberSaveable { mutableStateOf("") }
+    var taxabilityType by rememberSaveable { mutableStateOf("Taxable") }
+    var gstRate by rememberSaveable { mutableStateOf("0") }
+    var typeOfSupply by rememberSaveable { mutableStateOf("Goods") }
     
     // Opening Balance
-    var qty by remember { mutableStateOf("0") }
-    var rate by remember { mutableStateOf("0") }
-    var saveError by remember { mutableStateOf<String?>(null) }
-    var isSaving by remember { mutableStateOf(false) }
+    var qty by rememberSaveable { mutableStateOf("0") }
+    var rate by rememberSaveable { mutableStateOf("0") }
+    var saveError by rememberSaveable { mutableStateOf<String?>(null) }
+    var isSaving by rememberSaveable { mutableStateOf(false) }
     
     val scope = rememberCoroutineScope()
 
