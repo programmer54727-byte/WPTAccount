@@ -72,7 +72,7 @@ The web application uses the modern Kotlin/Wasm target.
 
 ### Production Distribution
 ```bash
-./gradlew :webApp:wasmJsBrowserProductionExecutableDistribution
+./gradlew :webApp:wasmJsBrowserDistribution
 ```
 The production-ready files (HTML, CSS, Wasm) will be located in:
 `webApp/build/dist/wasmJs/productionExecutable/`
