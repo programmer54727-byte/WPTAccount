@@ -19,13 +19,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.rpc
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.saveable.listSaver
 
@@ -377,46 +379,50 @@ private fun saveVoucher(
             withContext(NonCancellable) {
                 val dbDate = date.toDbDate()
 
-                if (voucherIdToEdit != null) {
-                    deleteVoucherData(voucherIdToEdit, voucherType)
+                // 1. Prepare Entries JSON
+                val entriesJson = buildJsonArray {
+                    entries.forEach { row ->
+                        add(buildJsonObject {
+                            put("ledger_id", row.ledgerId)
+                            put("amount", row.amount.toDoubleOrNull() ?: 0.0)
+                            put("entry_type", row.entryType)
+                        })
+                    }
                 }
 
-                val voucher = Voucher(
-                    id = voucherIdToEdit,
-                    company_id = company.id!!,
-                    voucher_type = voucherType,
-                    voucher_number = voucherNo.ifEmpty { null },
-                    date = dbDate,
-                    narration = narration,
-                    total_amount = grandTotal
+                // 2. Prepare References JSON
+                val referencesJson = buildJsonArray {
+                    entries.forEach { row ->
+                        row.references.forEach { ref ->
+                            add(buildJsonObject {
+                                put("ledger_id", row.ledgerId)
+                                put("reference_type", ref.reference_type)
+                                put("reference_no", ref.reference_no)
+                                put("amount", ref.amount)
+                            })
+                        }
+                    }
+                }
+
+                // 3. Call Atomic RPC
+                supabase.postgrest.rpc(
+                    function = "save_voucher_v3",
+                    parameters = buildJsonObject {
+                        put("p_voucher_id", voucherIdToEdit)
+                        put("p_company_id", company.id)
+                        put("p_voucher_type", voucherType)
+                        put("p_voucher_number", voucherNo)
+                        put("p_invoice_no", null as String?)
+                        put("p_invoice_date", null as String?)
+                        put("p_party_ledger_id", null as String?) // Accounting vouchers don't strictly have one party
+                        put("p_date", dbDate)
+                        put("p_narration", narration)
+                        put("p_total_amount", grandTotal)
+                        put("p_entries", entriesJson)
+                        put("p_stock_items", buildJsonArray { }) // No stock in accounting vouchers
+                        put("p_references", referencesJson)
+                    }
                 )
-                
-                val voucherId = if (voucherIdToEdit != null) {
-                    supabase.from("vouchers").update(voucher) {
-                        filter { eq("id", voucherIdToEdit) }
-                    }
-                    voucherIdToEdit
-                } else {
-                    val savedVoucher = supabase.from("vouchers").insert(voucher) { select() }.decodeSingle<Voucher>()
-                    savedVoucher.id!!
-                }
-
-                entries.forEach { row ->
-                    supabase.from("voucher_entries").insert(VoucherEntry(
-                        voucher_id = voucherId,
-                        ledger_id = row.ledgerId,
-                        amount = row.amount.toDoubleOrNull() ?: 0.0,
-                        entry_type = row.entryType
-                    ))
-                    
-                    // Update Ledger Balance
-                    updateLedgerBalanceInternal(row.ledgerId, row.amount.toDoubleOrNull() ?: 0.0, row.entryType)
-
-                    // Save References
-                    row.references.forEach { ref ->
-                        supabase.from("voucher_references").insert(ref.copy(voucher_id = voucherId))
-                    }
-                }
             }
             onSuccess()
         } catch (e: Exception) {

@@ -20,7 +20,7 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **Terminological Alignment:** Context-aware headers using **Invoice No.** and **Invoice Date** for Inventory/Purchase, and unified **Reference No** for outstandings.
     - **Smart Date Validation:** Built-in logic to ensure Invoice/Reference dates are not later than the Voucher Date, maintaining audit consistency.
     - **Flexible Tax Ledgers:** Replaced auto-GST with manual tax ledger selection from "Duties & Taxes", supporting custom rates (e.g., CGST 2.5%, SGST 2.5%) with automatic amount calculation.
-    - **Atomic Saving Logic:** Integrated transaction handling that saves the voucher, stock movements, and ledger entries while updating inventory hand-levels in one robust step.
+    - **Atomic Saving Logic:** Advanced **Supabase RPC (PostgreSQL functions)** handle all complex updates (Stock Quantity & Ledger Balance) in a single database-side transaction. This ensures 100% data consistency, prevents race conditions, and correctly applies accounting rules based on account nature (e.g., Assets vs. Liabilities).
 - **Ledger Management:**
     - **Groups & Ledgers:** Full lifecycle management (Add, View, Edit, Delete) of accounting groups and individual ledgers with aggregated totals.
     - **Smart Adaptive Form:** Intelligent ledger creation/editing dialog that dynamically shows/hides sections based on the chosen accounting group (Bank, Loans, Revenue, Assets, etc.).
@@ -78,8 +78,9 @@ supabase.url=YOUR_SUPABASE_PROJECT_URL
 supabase.key=YOUR_SUPABASE_ANON_KEY
 ```
 
-### 3. Database Schema
-Copy and run the SQL commands from `shared/src/commonMain/kotlin/com/wpt/wptaccount/supabasetableandpolicy.sql` in your **Supabase SQL Editor** to create the tables and RLS policies.
+### 3. Database Schema & RPCs
+1. Copy and run the SQL commands from `shared/src/commonMain/kotlin/com/wpt/wptaccount/supabasetableandpolicy.sql` in your **Supabase SQL Editor** to create the tables and RLS policies.
+2. **CRITICAL:** Also run the SQL from `shared/src/commonMain/kotlin/com/wpt/wptaccount/voucher_management_rpc.sql` to enable atomic voucher operations. The application will not save vouchers without these functions.
 
 ### 4. Run the Project
 - **Android:** Select the `androidApp` configuration.
