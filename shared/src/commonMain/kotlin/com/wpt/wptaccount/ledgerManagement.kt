@@ -1,6 +1,7 @@
 package com.wpt.wptaccount
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.horizontalScroll
@@ -312,10 +313,16 @@ fun LedgerGroupsTab(company: Company, period: AccountPeriod) {
                     
                     Column(modifier = Modifier.width(contentWidth)) {
                         // Table Header
-                        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp), verticalAlignment = Alignment.Bottom) {
-                            Text("Group Name", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Text("Nature", modifier = Modifier.width(80.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Text("Current Balance", modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Group Name", modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Nature", modifier = Modifier.width(80.dp).padding(horizontal = 8.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Current Balance", modifier = Modifier.width(balanceWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                             Spacer(Modifier.width(80.dp))
                         }
                         HorizontalDivider(thickness = 1.dp, color = Color.Black)
@@ -675,13 +682,16 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
                     Column(modifier = Modifier.width(contentWidth)) {
                         // Table Header
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 1.dp),
-                            verticalAlignment = Alignment.Bottom
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Particulars", modifier = Modifier.weight(1.5f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            if (!isMobile) Text("Group", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Text("Opening", modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Text("Closing", modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Particulars", modifier = Modifier.weight(1.5f).padding(start = 12.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            if (!isMobile) Text("Group", modifier = Modifier.weight(1f).padding(horizontal = 8.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Opening", modifier = Modifier.width(balanceWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Closing", modifier = Modifier.width(balanceWidth).padding(end = 12.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                             Spacer(Modifier.width(40.dp))
                         }
                         HorizontalDivider(thickness = 1.dp, color = Color.Black)

@@ -1,5 +1,6 @@
 package com.wpt.wptaccount
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -214,6 +215,22 @@ fun AccountingVoucherEntryScreen(
 
                     // Entries Table
                     Text("Particulars", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+
+                    // Table Header
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Type", modifier = Modifier.width(80.dp).padding(start = 12.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Ledger Name", modifier = Modifier.weight(2f).padding(horizontal = 8.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Amount", modifier = Modifier.width(120.dp).padding(end = 12.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                        Spacer(Modifier.width(48.dp)) // For delete button alignment
+                    }
                     
                     entries.forEachIndexed { index, row ->
                         Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {

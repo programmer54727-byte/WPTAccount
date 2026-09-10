@@ -1,6 +1,7 @@
 package com.wpt.wptaccount
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.horizontalScroll
@@ -300,12 +301,18 @@ fun UnitsTab(company: Company) {
                     
                     Column(modifier = Modifier.width(contentWidth)) {
                         // Table Header
-                        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp), verticalAlignment = Alignment.Bottom) {
-                            Text("Unit Symbol", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            if (!isMobile) Text("Formal Name", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Text("Quantity", modifier = Modifier.width(qtyWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Text("Avg Rate", modifier = Modifier.width(rateWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Text("Value", modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Unit Symbol", modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            if (!isMobile) Text("Formal Name", modifier = Modifier.weight(1f).padding(horizontal = 8.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Quantity", modifier = Modifier.width(qtyWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Avg Rate", modifier = Modifier.width(rateWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Value", modifier = Modifier.width(valueWidth).padding(end = 12.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                             Spacer(Modifier.width(40.dp))
                         }
                         HorizontalDivider(thickness = 1.dp, color = Color.Black)
@@ -580,11 +587,17 @@ fun StockGroupsTab(company: Company) {
                     
                     Column(modifier = Modifier.width(contentWidth)) {
                         // Table Header
-                        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp), verticalAlignment = Alignment.Bottom) {
-                            Text("Group Name", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Text("Quantity", modifier = Modifier.width(qtyWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Text("Avg Rate", modifier = Modifier.width(rateWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Text("Value", modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Group Name", modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Quantity", modifier = Modifier.width(qtyWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Avg Rate", modifier = Modifier.width(rateWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Value", modifier = Modifier.width(valueWidth).padding(end = 12.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                             Spacer(Modifier.width(40.dp))
                         }
                         HorizontalDivider(thickness = 1.dp, color = Color.Black)
@@ -893,42 +906,22 @@ fun StockItemsTab(company: Company) {
                     Column(modifier = Modifier.width(contentWidth)) {
                         // Table Header
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 1.dp),
-                            verticalAlignment = Alignment.Bottom
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "Particulars",
-                                modifier = Modifier.weight(1.5f),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text("Particulars", modifier = Modifier.weight(1.5f).padding(start = 12.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                             if (!isMobile) {
-                                Text(
-                                    text = "HSN",
-                                    modifier = Modifier.weight(1f),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = "GST",
-                                    modifier = Modifier.weight(0.8f),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Text("HSN", modifier = Modifier.weight(1f).padding(horizontal = 8.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                                Text("GST", modifier = Modifier.weight(0.8f).padding(horizontal = 8.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                             }
                             
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = "Closing Balance",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(bottom = 2.dp)
-                                )
-                                Row {
-                                    Text("Qty", modifier = Modifier.width(qtyWidth), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
-                                    Text("Rate", modifier = Modifier.width(rateWidth), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
-                                    Text("Value", modifier = Modifier.width(valueWidth), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
-                                }
+                            Row(modifier = Modifier.weight(1.5f), horizontalArrangement = Arrangement.End) {
+                                Text("Qty", modifier = Modifier.width(qtyWidth).padding(horizontal = 4.dp), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
+                                Text("Rate", modifier = Modifier.width(rateWidth).padding(horizontal = 4.dp), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
+                                Text("Value", modifier = Modifier.width(valueWidth).padding(end = 12.dp), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
                             }
                             Spacer(Modifier.width(40.dp))
                         }

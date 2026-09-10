@@ -46,6 +46,10 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **Adaptive Header:** Optimized Home page header with a centered period display and reorganized actions, ensuring zero UI overlap even on narrow mobile screens.
     - **Intelligent Sidebar/Drawer:** Responsive navigation that provides a permanent sidebar for Desktop users and a space-saving modal drawer for Mobile users.
     - **Subtle Integrated Theme:** Modern Material 3 container-based palette that blends perfectly with the application background for a premium feel.
+    - **Professional Tabular Layouts:** 
+        - Converted all master management lists (Ledgers, Groups, Items, Units) and voucher entry sections into structured tabular forms.
+        - Integrated high-contrast `surfaceVariant` headers with pixel-perfect alignment to row data for a professional accounting experience.
+        - Optimized padding to ensure column titles align precisely with the text inside input fields and labels.
     - **Horizontal Table Scrolling:** Wide financial tables feature smooth horizontal scrolling in portrait mode, ensuring all data is accessible.
     - **Centered Desktop Forms:** All entry forms are centered with a `800.dp` max-width on desktop for a polished, professional experience.
 - **Native Distribution Support:**

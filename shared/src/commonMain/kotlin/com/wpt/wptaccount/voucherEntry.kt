@@ -1,5 +1,6 @@
 package com.wpt.wptaccount
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -335,13 +336,19 @@ fun VoucherEntryScreen(
                         
                         Column(modifier = Modifier.width(contentWidth)) {
                             // Table Header
-                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Text("Name of Item", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
-                                Text("HSN Code", modifier = Modifier.width(100.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
-                                Text("GST Rate (%)", modifier = Modifier.width(80.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
-                                Text("Quantity", modifier = Modifier.width(80.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
-                                Text("Rate", modifier = Modifier.width(100.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
-                                Text("Amount", modifier = Modifier.width(120.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                    .padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Name of Item", modifier = Modifier.weight(1f).padding(start = 12.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
+                                Text("HSN Code", modifier = Modifier.width(100.dp).padding(horizontal = 8.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                                Text("GST (%)", modifier = Modifier.width(80.dp).padding(horizontal = 8.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                                Text("Quantity", modifier = Modifier.width(80.dp).padding(horizontal = 8.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                                Text("Rate", modifier = Modifier.width(100.dp).padding(horizontal = 8.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                                Text("Amount", modifier = Modifier.width(120.dp).padding(end = 12.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
                                 Spacer(Modifier.width(48.dp))
                             }
 
@@ -445,11 +452,17 @@ fun VoucherEntryScreen(
                         
                         Column(modifier = Modifier.width(contentWidth)) {
                             // Table Header
-                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Text("Ledger Name", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
-                                Text("Rate (%)", modifier = Modifier.width(100.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                    .padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Ledger Name", modifier = Modifier.weight(1f).padding(start = 12.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
+                                Text("Rate (%)", modifier = Modifier.width(100.dp).padding(horizontal = 8.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
                                 Spacer(Modifier.width(80.dp))
-                                Text("Amount", modifier = Modifier.width(120.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                                Text("Amount", modifier = Modifier.width(120.dp).padding(end = 12.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
                                 Spacer(Modifier.width(48.dp))
                             }
 
