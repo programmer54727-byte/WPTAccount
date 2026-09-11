@@ -61,7 +61,7 @@ The output (MSI, EXE, etc.) will be found in:
 
 ### Run locally
 ```bash
-./gradlew :desktopApp:run
+  ./gradlew :desktopApp:run
 ```
 
 ---

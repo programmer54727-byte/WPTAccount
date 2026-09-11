@@ -1220,7 +1220,7 @@ fun StockItemsTab(company: Company) {
                                 fetchData()
                             } catch (e: Exception) {
                                 println("Error saving stock item: ${e.message}")
-                                saveError = "Failed to save item. Please check your connection."
+                                saveError = e.toUserFriendlyMessage()
                             } finally {
                                 isSaving = false
                             }

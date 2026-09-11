@@ -159,3 +159,33 @@ fun Company.getDefaultPeriod(): AccountPeriod {
     }
     return AccountPeriod("2024-04-01", "2025-03-31")
 }
+
+/**
+ * Sanitizes technical exceptions into user-friendly messages.
+ * Prevents leaking database schema, internal paths, or SQL details.
+ */
+fun Exception.toUserFriendlyMessage(): String {
+    val msg = this.message ?: ""
+    
+    return when {
+        // Auth Errors
+        msg.contains("invalid_credentials", ignoreCase = true) -> "Invalid email or password."
+        msg.contains("user_already_exists", ignoreCase = true) -> "An account with this email already exists."
+        msg.contains("Invalid login credentials", ignoreCase = true) -> "Invalid email or password."
+        
+        // Network Errors
+        msg.contains("ConnectException", ignoreCase = true) || 
+        msg.contains("SocketTimeoutException", ignoreCase = true) ||
+        msg.contains("Unable to resolve host", ignoreCase = true) -> "Connection failed. Please check your internet."
+        
+        // Database / Postgrest Errors
+        msg.contains("duplicate key", ignoreCase = true) -> "A record with this name already exists."
+        msg.contains("foreign key constraint", ignoreCase = true) -> "Cannot perform this action because this record is in use."
+        msg.contains("null value in column", ignoreCase = true) -> "Required information is missing."
+        msg.contains("invalid input syntax", ignoreCase = true) -> "Invalid data format provided."
+        
+        // Generic / Fallback
+        msg.isNotEmpty() && msg.length < 60 && !msg.contains("public.") && !msg.contains("sql", ignoreCase = true) -> msg
+        else -> "An unexpected error occurred. Please try again."
+    }
+}

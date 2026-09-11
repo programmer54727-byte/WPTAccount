@@ -1102,7 +1102,7 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
                                 fetchData()
                             } catch (e: Exception) {
                                 println("Error saving ledger: ${e.message}")
-                                saveError = "Failed to save ledger. Please check your connection."
+                                saveError = e.toUserFriendlyMessage()
                             } finally {
                                 isSaving = false
                             }

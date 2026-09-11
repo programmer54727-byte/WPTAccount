@@ -69,11 +69,7 @@ fun SignUp(
                 onSignUpSuccess()
             } catch (e: Exception) {
                 println("Signup error: ${e.message}")
-                errorMessage = if (e.message?.contains("user_already_exists", ignoreCase = true) == true) {
-                    "An account with this email already exists."
-                } else {
-                    "Signup failed. Please try again."
-                }
+                errorMessage = e.toUserFriendlyMessage()
             } finally {
                 isLoading = false
             }
@@ -167,7 +163,8 @@ fun SignUp(
                                 )
                                 onSignUpSuccess()
                             } catch (e: Exception) {
-                                errorMessage = e.message ?: "Verification failed"
+                                println("OTP Verification error: ${e.message}")
+                                errorMessage = e.toUserFriendlyMessage()
                             } finally {
                                 isLoading = false
                             }

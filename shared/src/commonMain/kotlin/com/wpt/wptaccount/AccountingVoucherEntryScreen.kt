@@ -443,7 +443,8 @@ private fun saveVoucher(
             }
             onSuccess()
         } catch (e: Exception) {
-            setError("Failed to save: ${e.message}")
+            println("Accounting voucher save error: ${e.message}")
+            setError("Failed to save: ${e.toUserFriendlyMessage()}")
         } finally {
             setSaving(false)
         }

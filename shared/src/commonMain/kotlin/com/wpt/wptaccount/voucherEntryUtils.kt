@@ -114,7 +114,7 @@ internal fun performSave(
             onSuccess()
         } catch (e: Exception) {
             println("Save error details: ${e.message}")
-            setError("Failed to save: ${e.message?.take(100) ?: "Unknown error"}")
+            setError("Failed to save: ${e.toUserFriendlyMessage()}")
         } finally {
             setSaving(false)
         }

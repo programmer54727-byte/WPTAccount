@@ -40,6 +40,7 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **Intentional Interaction:** Implemented a "Tap to Select, Double-tap to Open" model to prevent accidental navigation on mobile and desktop.
     - **Period Selection:** Integrated date-range selection in reports to switch between financial years or custom periods instantly.
     - **System-Based Rotation:** Follows standard Android auto-rotate settings for all reports, giving users control over their viewing orientation.
+    - **Centralized Error Sanitization:** Advanced application-wide error handling that masks technical database, Ktor, and SQL details from users while preserving full logs for developers, ensuring zero leakage of sensitive schema or network information.
     - **Robust Data Saving:** Comprehensive error handling (try-catch) on all save operations with detailed feedback to prevent app crashes.
 - **Responsive & Modern UI:**
     - **UI State Persistence:** All forms, navigation, and transactional entries now use `rememberSaveable` with custom `Saver` implementations, ensuring data is never lost during screen rotation (Android) or window resizing (Desktop).
