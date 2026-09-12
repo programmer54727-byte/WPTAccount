@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -132,17 +133,21 @@ fun UserHome(
                             Box(modifier = Modifier.fillMaxWidth()) {
                                 Text(
                                     text = company.company_name,
-                                    modifier = Modifier.align(Alignment.CenterStart)
+                                    modifier = Modifier.align(Alignment.CenterStart),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                                 
-                                Text(
-                                    text = "Period: ${currentPeriod.startDate.toDisplayDate()} to ${currentPeriod.endDate.toDisplayDate()}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .align(Alignment.Center)
-                                        .clickable { showPeriodDialog = true }
-                                )
+                                if (isDesktop) {
+                                    Text(
+                                        text = "Period: ${currentPeriod.startDate.toDisplayDate()} to ${currentPeriod.endDate.toDisplayDate()}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier
+                                            .align(Alignment.Center)
+                                            .clickable { showPeriodDialog = true }
+                                    )
+                                }
                             }
                         },
                         navigationIcon = {

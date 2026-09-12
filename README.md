@@ -44,7 +44,7 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **Robust Data Saving:** Comprehensive error handling (try-catch) on all save operations with detailed feedback to prevent app crashes.
 - **Responsive & Modern UI:**
     - **UI State Persistence:** All forms, navigation, and transactional entries now use `rememberSaveable` with custom `Saver` implementations, ensuring data is never lost during screen rotation (Android) or window resizing (Desktop).
-    - **Adaptive Header:** Optimized Home page header with a centered period display and reorganized actions, ensuring zero UI overlap even on narrow mobile screens.
+    - **Adaptive Header:** Optimized Home page header with a centered period display and reorganized actions. Includes intelligent overlap prevention that hides the period summary on narrow screens and handles long company names with ellipses.
     - **Intelligent Sidebar/Drawer:** Responsive navigation that provides a permanent sidebar for Desktop users and a space-saving modal drawer for Mobile users.
     - **Subtle Integrated Theme:** Modern Material 3 container-based palette that blends perfectly with the application background for a premium feel.
     - **Professional Tabular Layouts:** 

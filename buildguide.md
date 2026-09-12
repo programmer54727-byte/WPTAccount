@@ -63,7 +63,7 @@ The output (MSI, EXE, etc.) will be found in:
 ```bash
   ./gradlew :desktopApp:run
 ```
-
+x`
 ---
 
 ## 🌐 Web (WebAssembly)
@@ -92,3 +92,26 @@ The production-ready files (HTML, CSS, Wasm) will be located in:
   ```bash
   ./gradlew clean
   ```
+
+---
+
+## 🔑 Configuration (local.properties)
+
+The application uses **BuildKonfig** to securely inject Supabase credentials into the Kotlin code. These credentials must be provided in a `local.properties` file in the project root.
+
+### Structure
+Create a file named `local.properties` in the root folder of the project with the following content:
+
+```properties
+supabase.url=https://your-project-id.supabase.co
+supabase.key=your-anon-key-here
+```
+
+### How it works
+1. **Gradle Loading**: The `shared/build.gradle.kts` file reads this file using the `java.util.Properties` class.
+2. **BuildKonfig Injection**: The keys are mapped to `buildConfigField` within the `buildkonfig { ... }` block.
+3. **Kotlin Access**: During compilation, a class named `SupabaseConfig` is generated in the `com.wpt.wptaccount` package.
+4. **Usage in Code**: The app accesses these values via `SupabaseConfig.URL` and `SupabaseConfig.KEY` when initializing the Supabase client.
+
+> [!CAUTION]
+> Never commit `local.properties` to version control (it is already in `.gitignore`). This protects your database credentials from being exposed.
