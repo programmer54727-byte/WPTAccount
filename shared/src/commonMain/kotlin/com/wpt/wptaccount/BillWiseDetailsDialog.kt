@@ -10,6 +10,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -74,6 +76,7 @@ fun BillWiseDetailsDialog(
                     Spacer(Modifier.width(48.dp))
                 }
 
+                val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     itemsIndexed(references) { index, ref ->
                         Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -102,7 +105,14 @@ fun BillWiseDetailsDialog(
                                     OutlinedTextField(
                                         value = ref.reference_no,
                                         onValueChange = { references[index] = ref.copy(reference_no = it) },
-                                        modifier = Modifier.fillMaxWidth(),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .onPreviewKeyEvent { event ->
+                                                if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                                    focusManager.moveFocus(FocusDirection.Next)
+                                                    true
+                                                } else false
+                                            },
                                         textStyle = MaterialTheme.typography.bodySmall,
                                         singleLine = true,
                                         enabled = ref.reference_type != "On Account"
@@ -116,7 +126,14 @@ fun BillWiseDetailsDialog(
                                     val amt = it.toDoubleOrNull() ?: 0.0
                                     references[index] = ref.copy(amount = amt)
                                 },
-                                modifier = Modifier.width(100.dp),
+                                modifier = Modifier
+                                    .width(100.dp)
+                                    .onPreviewKeyEvent { event ->
+                                        if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                            focusManager.moveFocus(FocusDirection.Next)
+                                            true
+                                        } else false
+                                    },
                                 textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
                                 singleLine = true
                             )

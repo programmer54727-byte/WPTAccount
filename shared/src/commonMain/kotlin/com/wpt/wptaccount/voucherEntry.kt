@@ -15,6 +15,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -379,10 +381,18 @@ fun VoucherEntryScreen(
                                             }
                                         }
                                     }
+                                    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
                                     OutlinedTextField(
                                         value = row.hsnCode,
                                         onValueChange = {},
-                                        modifier = Modifier.width(100.dp),
+                                        modifier = Modifier
+                                            .width(100.dp)
+                                            .onPreviewKeyEvent { event ->
+                                                if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                                    focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Next)
+                                                    true
+                                                } else false
+                                            },
                                         textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
                                         singleLine = true,
                                         readOnly = true
@@ -390,7 +400,14 @@ fun VoucherEntryScreen(
                                     OutlinedTextField(
                                         value = row.gstRate.toString(),
                                         onValueChange = {},
-                                        modifier = Modifier.width(80.dp),
+                                        modifier = Modifier
+                                            .width(80.dp)
+                                            .onPreviewKeyEvent { event ->
+                                                if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                                    focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Next)
+                                                    true
+                                                } else false
+                                            },
                                         textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
                                         singleLine = true,
                                         suffix = { Text("%", style = MaterialTheme.typography.bodySmall) },
@@ -402,7 +419,14 @@ fun VoucherEntryScreen(
                                             val a = (it.toDoubleOrNull() ?: 0.0) * (row.rate.toDoubleOrNull() ?: 0.0)
                                             items[index] = row.copy(qty = it, amount = a.format(2))
                                         },
-                                        modifier = Modifier.width(80.dp),
+                                        modifier = Modifier
+                                            .width(80.dp)
+                                            .onPreviewKeyEvent { event ->
+                                                if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                                    focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Next)
+                                                    true
+                                                } else false
+                                            },
                                         textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
                                         singleLine = true
                                     )
@@ -412,7 +436,14 @@ fun VoucherEntryScreen(
                                             val a = (row.qty.toDoubleOrNull() ?: 0.0) * (it.toDoubleOrNull() ?: 0.0)
                                             items[index] = row.copy(rate = it, amount = a.format(2))
                                         },
-                                        modifier = Modifier.width(100.dp),
+                                        modifier = Modifier
+                                            .width(100.dp)
+                                            .onPreviewKeyEvent { event ->
+                                                if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                                    focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Next)
+                                                    true
+                                                } else false
+                                            },
                                         textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
                                         singleLine = true
                                     )
@@ -423,7 +454,14 @@ fun VoucherEntryScreen(
                                             val r = if (q != 0.0) (it.toDoubleOrNull() ?: 0.0) / q else 0.0
                                             items[index] = row.copy(amount = it, rate = if (q != 0.0) r.format(2) else row.rate)
                                         },
-                                        modifier = Modifier.width(120.dp),
+                                        modifier = Modifier
+                                            .width(120.dp)
+                                            .onPreviewKeyEvent { event ->
+                                                if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                                    focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Next)
+                                                    true
+                                                } else false
+                                            },
                                         textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End, fontWeight = FontWeight.Bold),
                                         singleLine = true
                                     )
@@ -467,6 +505,7 @@ fun VoucherEntryScreen(
                             }
 
                             taxEntries.forEachIndexed { index, row ->
+                                val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
                                 Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Box(modifier = Modifier.weight(1f)) {
                                         TallySearchableInput(
@@ -493,7 +532,14 @@ fun VoucherEntryScreen(
                                             val newRate = it.toDoubleOrNull() ?: 0.0
                                             taxEntries[index] = row.copy(taxRate = newRate, amount = (itemSubTotal * newRate) / 100.0)
                                         },
-                                        modifier = Modifier.width(100.dp),
+                                        modifier = Modifier
+                                            .width(100.dp)
+                                            .onPreviewKeyEvent { event ->
+                                                if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                                    focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Next)
+                                                    true
+                                                } else false
+                                            },
                                         textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
                                         singleLine = true,
                                         suffix = { Text("%", style = MaterialTheme.typography.bodySmall) }
@@ -506,7 +552,14 @@ fun VoucherEntryScreen(
                                         onValueChange = { 
                                             taxEntries[index] = row.copy(amount = it.toDoubleOrNull() ?: 0.0)
                                         },
-                                        modifier = Modifier.width(120.dp),
+                                        modifier = Modifier
+                                            .width(120.dp)
+                                            .onPreviewKeyEvent { event ->
+                                                if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                                    focusManager.moveFocus(FocusDirection.Next)
+                                                    true
+                                                } else false
+                                            },
                                         textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
                                         singleLine = true
                                     )

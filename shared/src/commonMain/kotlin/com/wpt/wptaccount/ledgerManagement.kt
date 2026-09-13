@@ -162,6 +162,7 @@ fun LedgerManagement(
     if (showPeriodDialog) {
         var start by remember { mutableStateOf(currentPeriod.startDate.toDisplayDate()) }
         var end by remember { mutableStateOf(currentPeriod.endDate.toDisplayDate()) }
+        val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
 
         AlertDialog(
             onDismissRequest = { showPeriodDialog = false },
@@ -172,17 +173,33 @@ fun LedgerManagement(
                         value = start,
                         onValueChange = { start = it },
                         label = { Text("Start Date (DD/MM/YYYY)") },
-                        modifier = Modifier.onFocusChanged { 
-                            if (!it.isFocused && start.isNotEmpty()) start = start.formatSmartDate()
-                        }
+                        modifier = Modifier
+                            .onFocusChanged { 
+                                if (!it.isFocused && start.isNotEmpty()) start = start.formatSmartDate()
+                            }
+                            .onPreviewKeyEvent { event ->
+                                if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                    focusManager.moveFocus(FocusDirection.Next)
+                                    true
+                                } else false
+                            },
+                        singleLine = true
                     )
                     OutlinedTextField(
                         value = end,
                         onValueChange = { end = it },
                         label = { Text("End Date (DD/MM/YYYY)") },
-                        modifier = Modifier.onFocusChanged { 
-                            if (!it.isFocused && end.isNotEmpty()) end = end.formatSmartDate()
-                        }
+                        modifier = Modifier
+                            .onFocusChanged { 
+                                if (!it.isFocused && end.isNotEmpty()) end = end.formatSmartDate()
+                            }
+                            .onPreviewKeyEvent { event ->
+                                if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                    focusManager.moveFocus(FocusDirection.Next)
+                                    true
+                                } else false
+                            },
+                        singleLine = true
                     )
                 }
             },
@@ -355,11 +372,11 @@ fun LedgerGroupsTab(company: Company, period: AccountPeriod) {
                                         }
                                 ) {
                                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Text(group.group_name, modifier = Modifier.weight(1f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
-                                        Text(group.nature ?: "", modifier = Modifier.width(80.dp), style = MaterialTheme.typography.bodySmall)
+                                        Text(group.group_name, modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.bodySmall)
+                                        Text(group.nature ?: "", modifier = Modifier.width(80.dp).padding(horizontal = 8.dp), style = MaterialTheme.typography.bodySmall)
                                         Text(
                                             totalBalance.formatWithSign(), 
-                                            modifier = Modifier.width(balanceWidth), 
+                                            modifier = Modifier.width(balanceWidth).padding(horizontal = 8.dp), 
                                             textAlign = TextAlign.End, 
                                             fontWeight = FontWeight.Bold, 
                                             style = MaterialTheme.typography.bodySmall
@@ -723,10 +740,10 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
                                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                                         val ledgerBalance = balances[ledger.id] ?: LedgerBalance(ledger.opening_balance, ledger.current_balance)
                                         
-                                        Text(ledger.ledger_name, modifier = Modifier.weight(1.5f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
-                                        if (!isMobile) Text(groupName, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                                        Text(ledgerBalance.opening.formatWithSign(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                                        Text(ledgerBalance.closing.formatWithSign(), modifier = Modifier.width(balanceWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                        Text(ledger.ledger_name, modifier = Modifier.weight(1.5f).padding(start = 12.dp), style = MaterialTheme.typography.bodySmall)
+                                        if (!isMobile) Text(groupName, modifier = Modifier.weight(1f).padding(horizontal = 8.dp), style = MaterialTheme.typography.bodySmall)
+                                        Text(ledgerBalance.opening.formatWithSign(), modifier = Modifier.width(balanceWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                                        Text(ledgerBalance.closing.formatWithSign(), modifier = Modifier.width(balanceWidth).padding(end = 12.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                         
                                         IconButton(
                                             onClick = { 

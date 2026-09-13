@@ -29,6 +29,7 @@ fun TallySearchableInput(
     val filteredOptions = options.filter { it.contains(searchText, ignoreCase = true) }
     var selectedIndex by remember { mutableStateOf(0) }
     val focusRequester = remember { FocusRequester() }
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
 
     LaunchedEffect(isExpanded) {
         if (isExpanded) selectedIndex = 0
@@ -71,6 +72,12 @@ fun TallySearchableInput(
                                     if (isExpanded && filteredOptions.isNotEmpty()) {
                                         onSelect(filteredOptions[selectedIndex])
                                         isExpanded = false
+                                        focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Next)
+                                    } else if (!isExpanded && searchText.isNotEmpty()) {
+                                        // If not expanded, try to select the best match or current text
+                                        val bestMatch = filteredOptions.firstOrNull() ?: searchText
+                                        onSelect(bestMatch)
+                                        focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Next)
                                     }
                                     true
                                 }

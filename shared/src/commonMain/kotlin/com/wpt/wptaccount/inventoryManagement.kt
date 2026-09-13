@@ -58,6 +58,7 @@ fun InventoryField(
     labelWidth: Dp = 150.dp,
     onValueChange: (String) -> Unit
 ) {
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier.padding(vertical = 4.dp)) {
         if (label.isNotEmpty()) {
             Text(
@@ -72,7 +73,14 @@ fun InventoryField(
             value = value,
             onValueChange = onValueChange,
             enabled = enabled,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .onPreviewKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                        focusManager.moveFocus(FocusDirection.Next)
+                        true
+                    } else false
+                },
             singleLine = true,
             textStyle = MaterialTheme.typography.bodySmall
         )
@@ -88,6 +96,7 @@ fun TallyDateField(
     labelWidth: Dp = 150.dp,
     onValueChange: (String) -> Unit
 ) {
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier.padding(vertical = 4.dp)) {
         if (label.isNotEmpty()) {
             Text(
@@ -108,6 +117,12 @@ fun TallyDateField(
                     if (!focusState.isFocused && value.isNotEmpty()) {
                         onValueChange(value.formatSmartDate())
                     }
+                }
+                .onPreviewKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                        focusManager.moveFocus(FocusDirection.Next)
+                        true
+                    } else false
                 },
             singleLine = true,
             textStyle = MaterialTheme.typography.bodySmall
@@ -118,6 +133,7 @@ fun TallyDateField(
 @Composable
 fun InventoryDropdown(label: String, options: List<String>, selected: String, modifier: Modifier = Modifier, onSelect: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier.padding(vertical = 4.dp)) {
         if (label.isNotEmpty()) {
             Text(
@@ -131,7 +147,14 @@ fun InventoryDropdown(label: String, options: List<String>, selected: String, mo
         Box(modifier = Modifier.weight(1f)) {
             OutlinedButton(
                 onClick = { expanded = true },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onPreviewKeyEvent { event ->
+                        if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                            expanded = true
+                            true
+                        } else false
+                    },
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
             ) {
@@ -144,6 +167,7 @@ fun InventoryDropdown(label: String, options: List<String>, selected: String, mo
                         onClick = {
                             onSelect(option)
                             expanded = false
+                            focusManager.moveFocus(FocusDirection.Next)
                         }
                     )
                 }
@@ -226,24 +250,33 @@ fun UnitsTab(company: Company, period: AccountPeriod) {
                 filter { eq("company_id", company.id!!) }
             }.decodeList<StockItem>()
 
-            val allTxns = supabase.from("voucher_stock_items").select(Columns.raw("stock_item_id, quantity, rate, amount, vouchers(date, company_id, voucher_type)")) {
+            val allTxns = supabase.from("voucher_stock_items").select(Columns.raw("stock_item_id, quantity, rate, amount, vouchers!inner(date, company_id, voucher_type)")) {
                 filter { eq("vouchers.company_id", company.id!!) }
             }.decodeList<VoucherStockItemWithVoucher>()
 
             val calcItems = items.map { item ->
-                var qty = item.opening_quantity
-                var value = item.opening_quantity * item.opening_rate
+                var totalInQty = item.opening_quantity
+                var totalInValue = item.opening_quantity * item.opening_rate
+                var totalOutQty = 0.0
 
                 allTxns.filter { it.stock_item_id == item.id }.forEach { txn ->
-                    val isInward = txn.vouchers.voucher_type == "Purchase" || txn.vouchers.voucher_type == "Receipt" // Simplify logic for now
-                    val sign = if (isInward) 1.0 else -1.0
-                    
                     if (txn.vouchers.date <= period.endDate) {
-                        qty += txn.quantity * sign
-                        value += txn.amount * sign
+                        when (txn.vouchers.voucher_type) {
+                            "Purchase" -> {
+                                totalInQty += txn.quantity
+                                totalInValue += txn.amount
+                            }
+                            "Sale" -> {
+                                totalOutQty += txn.quantity
+                            }
+                        }
                     }
                 }
-                item.copy(current_quantity = qty, opening_rate = if (qty != 0.0) value / qty else item.opening_rate)
+                
+                val currentQty = totalInQty - totalOutQty
+                val avgRate = if (totalInQty != 0.0) totalInValue / totalInQty else item.opening_rate
+                
+                item.copy(current_quantity = currentQty, opening_rate = avgRate)
             }
             items = calcItems
         }
@@ -348,11 +381,11 @@ fun UnitsTab(company: Company, period: AccountPeriod) {
                                         }
                                 ) {
                                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Text(unit.unit_symbol, modifier = Modifier.weight(1f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
-                                        if (!isMobile) Text(unit.formal_name ?: "", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                                        Text(totalQty.format(), modifier = Modifier.width(qtyWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                                        Text(avgRate.format(), modifier = Modifier.width(rateWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                                        Text(totalValue.format(), modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                        Text(unit.unit_symbol, modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.bodySmall)
+                                        if (!isMobile) Text(unit.formal_name ?: "", modifier = Modifier.weight(1f).padding(horizontal = 8.dp), style = MaterialTheme.typography.bodySmall)
+                                        Text(totalQty.format(), modifier = Modifier.width(qtyWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                                        Text(avgRate.format(), modifier = Modifier.width(rateWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                                        Text(totalValue.format(), modifier = Modifier.width(valueWidth).padding(end = 12.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                         
                                         IconButton(
                                             onClick = { 
@@ -445,6 +478,7 @@ fun UnitsTab(company: Company, period: AccountPeriod) {
             properties = DialogProperties(usePlatformDefaultWidth = false),
             title = { Text(if (unitToEdit != null) "Edit Unit of Measure" else "Add Unit of Measure") },
             text = {
+                val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -453,13 +487,29 @@ fun UnitsTab(company: Company, period: AccountPeriod) {
                         value = symbol, 
                         onValueChange = { symbol = it }, 
                         label = { Text("Symbol (e.g. Pcs)") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onPreviewKeyEvent { event ->
+                                if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                    focusManager.moveFocus(FocusDirection.Next)
+                                    true
+                                } else false
+                            },
+                        singleLine = true
                     )
                     OutlinedTextField(
                         value = formalName, 
                         onValueChange = { formalName = it }, 
                         label = { Text("Formal Name") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onPreviewKeyEvent { event ->
+                                if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                    focusManager.moveFocus(FocusDirection.Next)
+                                    true
+                                } else false
+                            },
+                        singleLine = true
                     )
                 }
             },
@@ -533,24 +583,33 @@ fun StockGroupsTab(company: Company, period: AccountPeriod) {
                 filter { eq("company_id", company.id!!) }
             }.decodeList<StockItem>()
 
-            val allTxns = supabase.from("voucher_stock_items").select(Columns.raw("stock_item_id, quantity, rate, amount, vouchers(date, company_id, voucher_type)")) {
+            val allTxns = supabase.from("voucher_stock_items").select(Columns.raw("stock_item_id, quantity, rate, amount, vouchers!inner(date, company_id, voucher_type)")) {
                 filter { eq("vouchers.company_id", company.id!!) }
             }.decodeList<VoucherStockItemWithVoucher>()
 
             val calcItems = baseItems.map { item ->
-                var qty = item.opening_quantity
-                var value = item.opening_quantity * item.opening_rate
+                var totalInQty = item.opening_quantity
+                var totalInValue = item.opening_quantity * item.opening_rate
+                var totalOutQty = 0.0
 
                 allTxns.filter { it.stock_item_id == item.id }.forEach { txn ->
-                    val isInward = txn.vouchers.voucher_type == "Purchase" || txn.vouchers.voucher_type == "Receipt" 
-                    val sign = if (isInward) 1.0 else -1.0
-                    
                     if (txn.vouchers.date <= period.endDate) {
-                        qty += txn.quantity * sign
-                        value += txn.amount * sign
+                        when (txn.vouchers.voucher_type) {
+                            "Purchase" -> {
+                                totalInQty += txn.quantity
+                                totalInValue += txn.amount
+                            }
+                            "Sale" -> {
+                                totalOutQty += txn.quantity
+                            }
+                        }
                     }
                 }
-                item.copy(current_quantity = qty, opening_rate = if (qty != 0.0) value / qty else item.opening_rate)
+                
+                val currentQty = totalInQty - totalOutQty
+                val avgRate = if (totalInQty != 0.0) totalInValue / totalInQty else item.opening_rate
+                
+                item.copy(current_quantity = currentQty, opening_rate = avgRate)
             }
             items = calcItems
         }
@@ -659,16 +718,16 @@ fun StockGroupsTab(company: Company, period: AccountPeriod) {
                                         }
                                 ) {
                                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Text(group.group_name, modifier = Modifier.weight(1f).padding(start = 4.dp), style = MaterialTheme.typography.bodySmall)
+                                        Text(group.group_name, modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.bodySmall)
                                         
                                         if (hasSameUnit && groupItems.isNotEmpty()) {
-                                            Text("${totalQty.format()} $unitSymbol", modifier = Modifier.width(qtyWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                                            Text(avgRate.format(), modifier = Modifier.width(rateWidth), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                                            Text("${totalQty.format()} $unitSymbol", modifier = Modifier.width(qtyWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                                            Text(avgRate.format(), modifier = Modifier.width(rateWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
                                         } else {
                                             Spacer(modifier = Modifier.width(qtyWidth + rateWidth)) 
                                         }
                                         
-                                        Text(totalValue.format(), modifier = Modifier.width(valueWidth), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                        Text(totalValue.format(), modifier = Modifier.width(valueWidth).padding(end = 12.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                         
                                         IconButton(
                                             onClick = { 
@@ -819,6 +878,7 @@ fun StockGroupsTab(company: Company, period: AccountPeriod) {
 @Composable
 fun StockItemsTab(company: Company, period: AccountPeriod) {
     var items by remember { mutableStateOf<List<StockItem>>(emptyList()) }
+    var rawItems by remember { mutableStateOf<List<StockItem>>(emptyList()) }
     var units by remember { mutableStateOf<List<UnitOfMeasure>>(emptyList()) }
     var groups by remember { mutableStateOf<List<StockGroup>>(emptyList()) }
     
@@ -868,25 +928,35 @@ fun StockItemsTab(company: Company, period: AccountPeriod) {
                 filter { eq("company_id", company.id!!) }
             }.decodeList<StockGroup>()
 
-            val allTxns = supabase.from("voucher_stock_items").select(Columns.raw("stock_item_id, quantity, rate, amount, vouchers(date, company_id, voucher_type)")) {
+            val allTxns = supabase.from("voucher_stock_items").select(Columns.raw("stock_item_id, quantity, rate, amount, vouchers!inner(date, company_id, voucher_type)")) {
                 filter { eq("vouchers.company_id", company.id!!) }
             }.decodeList<VoucherStockItemWithVoucher>()
 
             val calcItems = baseItems.map { item ->
-                var qty = item.opening_quantity
-                var value = item.opening_quantity * item.opening_rate
+                var totalInQty = item.opening_quantity
+                var totalInValue = item.opening_quantity * item.opening_rate
+                var totalOutQty = 0.0
 
                 allTxns.filter { it.stock_item_id == item.id }.forEach { txn ->
-                    val isInward = txn.vouchers.voucher_type == "Purchase" || txn.vouchers.voucher_type == "Receipt" 
-                    val sign = if (isInward) 1.0 else -1.0
-                    
                     if (txn.vouchers.date <= period.endDate) {
-                        qty += txn.quantity * sign
-                        value += txn.amount * sign
+                        when (txn.vouchers.voucher_type) {
+                            "Purchase" -> {
+                                totalInQty += txn.quantity
+                                totalInValue += txn.amount
+                            }
+                            "Sale" -> {
+                                totalOutQty += txn.quantity
+                            }
+                        }
                     }
                 }
-                item.copy(current_quantity = qty, opening_rate = if (qty != 0.0) value / qty else item.opening_rate)
+                
+                val currentQty = totalInQty - totalOutQty
+                val avgRate = if (totalInQty != 0.0) totalInValue / totalInQty else item.opening_rate
+                
+                item.copy(current_quantity = currentQty, opening_rate = avgRate)
             }
+            rawItems = baseItems
             items = calcItems
             
             if (units.isNotEmpty() && selectedUnitId.isEmpty()) selectedUnitId = units[0].id!!
@@ -1003,36 +1073,36 @@ fun StockItemsTab(company: Company, period: AccountPeriod) {
                                     ) {
                                         Text(
                                             text = item.item_name,
-                                            modifier = Modifier.weight(1.5f).padding(start = 4.dp),
+                                            modifier = Modifier.weight(1.5f).padding(start = 12.dp),
                                             style = MaterialTheme.typography.bodySmall
                                         )
                                         if (!isMobile) {
                                             Text(
                                                 text = "${item.hsn_sac_number ?: ""}",
-                                                modifier = Modifier.weight(1f),
+                                                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
                                                 style = MaterialTheme.typography.bodySmall
                                             )
                                             Text(
                                                 text = if (item.gst_rate % 1.0 == 0.0) "${item.gst_rate.toInt()}%" else "${item.gst_rate.format(2)}%",
-                                                modifier = Modifier.weight(0.8f),
+                                                modifier = Modifier.weight(0.8f).padding(horizontal = 8.dp),
                                                 style = MaterialTheme.typography.bodySmall
                                             )
                                         }
                                         Text(
                                             text = "${item.current_quantity.format()} $unitSymbol",
-                                            modifier = Modifier.width(qtyWidth),
+                                            modifier = Modifier.width(qtyWidth).padding(horizontal = 4.dp),
                                             style = MaterialTheme.typography.bodySmall,
                                             textAlign = TextAlign.End
                                         )
                                         Text(
                                             text = item.opening_rate.format(),
-                                            modifier = Modifier.width(rateWidth),
+                                            modifier = Modifier.width(rateWidth).padding(horizontal = 4.dp),
                                             style = MaterialTheme.typography.bodySmall,
                                             textAlign = TextAlign.End
                                         )
                                         Text(
                                             text = value.format(),
-                                            modifier = Modifier.width(valueWidth),
+                                            modifier = Modifier.width(valueWidth).padding(end = 12.dp),
                                             style = MaterialTheme.typography.bodySmall,
                                             textAlign = TextAlign.End,
                                             fontWeight = FontWeight.Bold
@@ -1051,8 +1121,9 @@ fun StockItemsTab(company: Company, period: AccountPeriod) {
                                                 taxabilityType = item.taxability_type
                                                 gstRate = item.gst_rate.toString()
                                                 typeOfSupply = item.type_of_supply
-                                                qty = item.opening_quantity.toString()
-                                                rate = item.opening_rate.toString()
+                                                val originalItem = rawItems.find { it.id == item.id }
+                                                qty = originalItem?.opening_quantity?.toString() ?: item.opening_quantity.toString()
+                                                rate = originalItem?.opening_rate?.toString() ?: item.opening_rate.toString()
                                                 showDialog = true 
                                             }, 
                                             modifier = Modifier.size(40.dp)
@@ -1349,14 +1420,21 @@ fun StockItemMonthlySummary(
                 }
 
                 var currentQty = item.opening_quantity
-                var currentValue = item.opening_quantity * item.opening_rate
+                var totalInQty = item.opening_quantity
+                var totalInValue = item.opening_quantity * item.opening_rate
                 
                 monthSequence.forEach { m ->
                     val monthData = dataMap[m]!!
+                    
+                    totalInQty += monthData.inwardQty
+                    totalInValue += monthData.inwardValue
+                    
+                    val currentAvgRate = if (totalInQty != 0.0) totalInValue / totalInQty else item.opening_rate
+                    
                     monthData.closingQty = currentQty + monthData.inwardQty - monthData.outwardQty
-                    monthData.closingValue = currentValue + monthData.inwardValue - monthData.outwardValue
+                    monthData.closingValue = monthData.closingQty * currentAvgRate
+                    
                     currentQty = monthData.closingQty
-                    currentValue = monthData.closingValue
                 }
 
                 monthlyDataMap = dataMap
