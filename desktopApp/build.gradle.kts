@@ -1,4 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import java.util.*
 
 plugins {
     alias(libs.plugins.kotlinJvm)
@@ -6,6 +7,14 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
 }
+
+val calendar = Calendar.getInstance()
+val month = calendar.get(Calendar.MONTH) + 1
+val day = calendar.get(Calendar.DAY_OF_MONTH)
+val hour = calendar.get(Calendar.HOUR_OF_DAY)
+val minute = calendar.get(Calendar.MINUTE)
+val buildNumber = day * 1000 + hour * 60 + minute
+val dynamicVersion = "1.$month.$buildNumber"
 
 dependencies {
     implementation(projects.shared)
@@ -24,7 +33,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Exe)
             packageName = "WPT Account"
-            packageVersion = "1.0.4"
+            packageVersion = dynamicVersion
             description = "WPT Account Management System"
             copyright = "© 2026 WPT"
             vendor = "WPT"

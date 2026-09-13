@@ -28,7 +28,7 @@ android {
         applicationId = "com.wpt.wptaccount"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
+        versionCode = (System.currentTimeMillis() / 60000).toInt() // Unique code based on current time (minutes)
         versionName = "1.0.4"
     }
     packaging {

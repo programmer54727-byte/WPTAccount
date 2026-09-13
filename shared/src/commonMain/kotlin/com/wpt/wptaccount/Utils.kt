@@ -120,14 +120,74 @@ fun String.toDisplayDate(): String {
     } catch (e: Exception) { this }
 }
 
+/**
+ * Smart Date Parser: Converts short inputs to DD/MM/YYYY
+ * Examples: "1jun" -> "01/06/2024", "1-6" -> "01/06/2024", "1/6/26" -> "01/06/2026"
+ */
+fun String.formatSmartDate(defaultYear: Int = 2024): String {
+    val cleanInput = this.trim().lowercase()
+    if (cleanInput.isEmpty()) return this
+
+    // Month name mapping
+    val months = mapOf(
+        "jan" to 1, "feb" to 2, "mar" to 3, "apr" to 4,
+        "may" to 5, "jun" to 6, "jul" to 7, "aug" to 8,
+        "sep" to 9, "oct" to 10, "nov" to 11, "dec" to 12
+    )
+
+    // Regex to split digits and letters: "1jun26" -> ["1", "jun", "26"]
+    val parts = Regex("([0-9]+|[a-z]+)")
+        .findAll(cleanInput)
+        .map { it.value }
+        .toList()
+
+    if (parts.isEmpty()) return this
+
+    var day: Int
+    var month: Int
+    var year = defaultYear
+
+    try {
+        // Part 1: Day
+        day = parts[0].toIntOrNull() ?: return this
+        
+        // Part 2: Month
+        if (parts.size >= 2) {
+            val mPart = parts[1]
+            month = mPart.toIntOrNull() ?: months.entries.find { it.key.startsWith(mPart.take(3)) }?.value ?: return this
+        } else {
+            return this
+        }
+
+        // Part 3: Year
+        if (parts.size >= 3) {
+            val yPart = parts[2]
+            year = yPart.toIntOrNull() ?: defaultYear
+            if (year < 100) year += 2000
+        }
+
+        if (day in 1..31 && month in 1..12) {
+            return "${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/$year"
+        }
+    } catch (e: Exception) {
+        return this
+    }
+
+    return this
+}
+
 fun String.toDbDate(): String {
     return try {
+        // First try to format the string smartly
+        val smartDate = this.formatSmartDate()
+        
         // Handle both / and - as separators for user input
-        val parts = if (this.contains("/")) this.split("/") else this.split("-")
+        val parts = if (smartDate.contains("/")) smartDate.split("/") else smartDate.split("-")
         if (parts.size == 3) {
             val d = parts[0].padStart(2, '0')
             val m = parts[1].padStart(2, '0')
-            val y = parts[2]
+            var y = parts[2]
+            if (y.length == 2) y = "20$y"
             "$y-$m-$d"
         } else this
     } catch (e: Exception) { this }

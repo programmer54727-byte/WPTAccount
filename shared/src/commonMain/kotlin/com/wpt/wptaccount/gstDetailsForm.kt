@@ -12,6 +12,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.launch
@@ -225,7 +226,7 @@ fun GstDetailsScreen(
                         DividerWithLabel("e-Way Bill Details")
                         GstSwitch("e-Way Bill applicable", ewayBillApplicable) { ewayBillApplicable = it }
                         if (ewayBillApplicable) {
-                            GstField("Applicable from", ewayBillDate) { ewayBillDate = it }
+                            GstDateField("Applicable from", ewayBillDate) { ewayBillDate = it }
                             GstSwitch("Applicable for intrastate", ewayBillIntrastate) { ewayBillIntrastate = it }
                         }
 
@@ -247,6 +248,23 @@ fun DividerWithLabel(label: String) {
     Column {
         Text(text = label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+    }
+}
+
+@Composable
+fun GstDateField(label: String, value: String, onValueChange: (String) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "$label : ", modifier = Modifier.width(200.dp))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier
+                .weight(1f)
+                .onFocusChanged { 
+                    if (!it.isFocused && value.isNotEmpty()) onValueChange(value.formatSmartDate())
+                },
+            singleLine = true
+        )
     }
 }
 

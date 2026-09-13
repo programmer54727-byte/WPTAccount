@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -278,8 +279,12 @@ fun CreateCompanyForm(
                 OutlinedTextField(
                     value = finYearBeginning, 
                     onValueChange = { finYearBeginning = it }, 
-                    label = { Text("Financial Year Beginning (YYYY-MM-DD)") }, 
-                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Financial Year Beginning (DD/MM/YYYY)") }, 
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { 
+                            if (!it.isFocused && finYearBeginning.isNotEmpty()) finYearBeginning = finYearBeginning.formatSmartDate()
+                        },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
@@ -287,8 +292,12 @@ fun CreateCompanyForm(
                 OutlinedTextField(
                     value = booksBeginning, 
                     onValueChange = { booksBeginning = it }, 
-                    label = { Text("Books Beginning (YYYY-MM-DD)") }, 
-                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Books Beginning (DD/MM/YYYY)") }, 
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { 
+                            if (!it.isFocused && booksBeginning.isNotEmpty()) booksBeginning = booksBeginning.formatSmartDate()
+                        },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })

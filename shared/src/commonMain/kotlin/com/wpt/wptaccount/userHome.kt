@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -230,12 +231,18 @@ fun UserHome(
                     OutlinedTextField(
                         value = start,
                         onValueChange = { start = it },
-                        label = { Text("Start Date (DD/MM/YYYY)") }
+                        label = { Text("Start Date (DD/MM/YYYY)") },
+                        modifier = Modifier.onFocusChanged { 
+                            if (!it.isFocused && start.isNotEmpty()) start = start.formatSmartDate()
+                        }
                     )
                     OutlinedTextField(
                         value = end,
                         onValueChange = { end = it },
-                        label = { Text("End Date (DD/MM/YYYY)") }
+                        label = { Text("End Date (DD/MM/YYYY)") },
+                        modifier = Modifier.onFocusChanged { 
+                            if (!it.isFocused && end.isNotEmpty()) end = end.formatSmartDate()
+                        }
                     )
                 }
             },

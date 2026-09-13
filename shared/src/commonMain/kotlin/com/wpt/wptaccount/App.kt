@@ -167,6 +167,7 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                             selectedCompany?.let { company ->
                                 CompanyDashboard(
                                     company = company,
+                                    period = selectedPeriod!!,
                                     onHomeClick = { currentScreen = "company_home" },
                                     onVoucherListClick = { currentScreen = "voucher_list" },
                                     onStockClick = { currentScreen = "inventory_management" },
@@ -202,17 +203,7 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                             selectedCompany?.let { company ->
                                 InventoryManagement(
                                     company = company,
-                                    onHomeClick = { currentScreen = "company_home" },
-                                    onDashboardClick = { currentScreen = "company_dashboard" },
-                                    onGstDetailsClick = { currentScreen = "gst_details" },
-                                    onLedgerClick = { currentScreen = "ledger_management" },
-                                    onVoucherListClick = { currentScreen = "voucher_list" },
-                                    onSaleClick = { currentScreen = "voucher_sale" },
-                                    onPurchaseClick = { currentScreen = "voucher_purchase" },
-                                    onPaymentClick = { currentScreen = "voucher_payment" },
-                                    onReceiptClick = { currentScreen = "voucher_receipt" },
-                                    onContraClick = { currentScreen = "voucher_contra" },
-                                    onJournalClick = { currentScreen = "voucher_journal" },
+                                    period = selectedPeriod!!,
                                     onBack = { currentScreen = "company_home" }
                                 )
                             } ?: run {
@@ -400,6 +391,7 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                             selectedCompany?.let { company ->
                                 VoucherListScreen(
                                     company = company,
+                                    period = selectedPeriod!!,
                                     onHomeClick = { currentScreen = "company_home" },
                                     onDashboardClick = { currentScreen = "company_dashboard" },
                                     onStockSummaryClick = { currentScreen = "inventory_management" },

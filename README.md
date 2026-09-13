@@ -29,7 +29,8 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **Units & Groups:** Full lifecycle management (Add, View, Edit, Delete) with aggregated summaries (Total Qty, Avg Rate, Total Value).
     - **Tally-Style Stock Summary:** Professional table layout displaying Particulars, HSN, and GST (formatted as %).
 - **Dynamic Reporting Engine:**
-    - **Visual Analytics:** Integrated **Company Dashboard** featuring bar charts for real-time visualization of Monthly Sales vs. Purchases.
+    - **Live Business Dashboard:** Integrated real-time transactional data visualization (Monthly Sales vs. Purchases) with period-filtered analytics, replacing all placeholder data.
+    - **Intelligent Stock Summary:** Period-aware inventory calculation that accurately reflects stock balances based on historical transactions up to the selected end date.
     - **Live Monthly Summaries:** Real-time calculation of Inwards, Outwards, and rolling Closing Balances fetched directly from voucher data.
     - **Accounting Precision:** Rolling balance logic for ledgers that correctly handles Debit (Dr) vs. Credit (Cr) types.
     - **Period Awareness:** Selectable accounting periods (e.g., Financial Year) that automatically calculate "Effective Opening Balances" by summing all historical transactions prior to the period start date.
@@ -40,11 +41,13 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **Intentional Interaction:** Implemented a "Tap to Select, Double-tap to Open" model to prevent accidental navigation on mobile and desktop.
     - **Period Selection:** Integrated date-range selection in reports to switch between financial years or custom periods instantly.
     - **System-Based Rotation:** Follows standard Android auto-rotate settings for all reports, giving users control over their viewing orientation.
+    - **Smart Date Entry (Tally-Style):** Specialized `TallyDateField` that automatically expands short inputs like "1jun", "1-6", or "1/6/26" into standard `DD/MM/YYYY` format on focus loss.
     - **Centralized Error Sanitization:** Advanced application-wide error handling that masks technical database, Ktor, and SQL details from users while preserving full logs for developers, ensuring zero leakage of sensitive schema or network information.
     - **Robust Data Saving:** Comprehensive error handling (try-catch) on all save operations with detailed feedback to prevent app crashes.
 - **Responsive & Modern UI:**
     - **UI State Persistence:** All forms, navigation, and transactional entries now use `rememberSaveable` with custom `Saver` implementations, ensuring data is never lost during screen rotation (Android) or window resizing (Desktop).
     - **Adaptive Header:** Optimized Home page header with a centered period display and reorganized actions. Includes intelligent overlap prevention that hides the period summary on narrow screens and handles long company names with ellipses.
+    - **Focused Management UI:** Removed side navigation from Inventory Management to maximize horizontal workspace for dense financial tables, ensuring a clutter-free environment for master data management.
     - **Intelligent Sidebar/Drawer:** Responsive navigation that provides a permanent sidebar for Desktop users and a space-saving modal drawer for Mobile users.
     - **Subtle Integrated Theme:** Modern Material 3 container-based palette that blends perfectly with the application background for a premium feel.
     - **Professional Tabular Layouts:** 
@@ -54,6 +57,7 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **Horizontal Table Scrolling:** Wide financial tables feature smooth horizontal scrolling in portrait mode, ensuring all data is accessible.
     - **Centered Desktop Forms:** All entry forms are centered with a `800.dp` max-width on desktop for a polished, professional experience.
 - **Native Distribution Support:**
+    - **Automated Build Versioning:** Dynamic versioning for Android (`versionCode`) and Windows (`packageVersion`) using timestamps and smart build numbers, eliminating "App not installed" errors during development and distribution.
     - **Windows MSI/EXE Packaging:** Pre-configured with unique `upgradeUuid` for seamless software updates and repairs.
     - **High-DPI Branding:** Support for multi-resolution icons (.ico) to ensure professional visual appearance on all desktop resolutions.
 - **Cross-Platform:** 100% shared UI and business logic across Android, Desktop, and Web.

@@ -207,7 +207,7 @@ fun AccountingVoucherEntryScreen(
                         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        InventoryField("Date", date, Modifier.width(200.dp), labelWidth = 60.dp) { date = it }
+                        TallyDateField("Date", date, Modifier.width(200.dp), labelWidth = 60.dp) { date = it }
                         InventoryField("Voucher No.", voucherNo, Modifier.width(150.dp), labelWidth = 80.dp) { voucherNo = it }
                     }
 

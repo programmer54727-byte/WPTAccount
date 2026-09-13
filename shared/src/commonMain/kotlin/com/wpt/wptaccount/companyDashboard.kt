@@ -16,6 +16,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.*
 
 data class DashboardItem(
     val title: String,
@@ -27,6 +30,7 @@ data class DashboardItem(
 @Composable
 fun CompanyDashboard(
     company: Company,
+    period: AccountPeriod,
     onHomeClick: () -> Unit,
     onVoucherListClick: () -> Unit,
     onStockClick: () -> Unit,
@@ -84,6 +88,54 @@ fun CompanyDashboard(
                 )
             }
         ) { padding ->
+            var salesData by remember { mutableStateOf<List<Float>>(emptyList()) }
+            var purchaseData by remember { mutableStateOf<List<Float>>(emptyList()) }
+            var labels by remember { mutableStateOf<List<String>>(emptyList()) }
+            var isLoading by remember { mutableStateOf(true) }
+            val scope = rememberCoroutineScope()
+
+            fun fetchData() {
+                scope.launch {
+                    try {
+                        isLoading = true
+                        val vouchers = supabase.from("vouchers").select {
+                            filter { 
+                                eq("company_id", company.id!!)
+                                gte("date", period.startDate)
+                                lte("date", period.endDate)
+                            }
+                        }.decodeList<Voucher>()
+
+                        // Group by Month
+                        val monthlySales = mutableMapOf<String, Double>()
+                        val monthlyPurchases = mutableMapOf<String, Double>()
+                        
+                        vouchers.forEach { v ->
+                            val monthLabel = v.date.toMonthYearLabel()
+                            if (v.voucher_type == "Sale") {
+                                monthlySales[monthLabel] = (monthlySales[monthLabel] ?: 0.0) + v.total_amount
+                            } else if (v.voucher_type == "Purchase") {
+                                monthlyPurchases[monthLabel] = (monthlyPurchases[monthLabel] ?: 0.0) + v.total_amount
+                            }
+                        }
+
+                        val allMonths = (monthlySales.keys + monthlyPurchases.keys).distinct().sorted() // Sorted might be alphabetical, better to sort by date
+                        labels = allMonths
+                        
+                        val maxVal = (monthlySales.values + monthlyPurchases.values).maxOrNull() ?: 1.0
+                        salesData = allMonths.map { (monthlySales[it] ?: 0.0).toFloat() / maxVal.toFloat() }
+                        purchaseData = allMonths.map { (monthlyPurchases[it] ?: 0.0).toFloat() / maxVal.toFloat() }
+
+                    } catch (e: Exception) {
+                        println("Dashboard error: ${e.message}")
+                    } finally {
+                        isLoading = false
+                    }
+                }
+            }
+
+            LaunchedEffect(period) { fetchData() }
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -98,21 +150,31 @@ fun CompanyDashboard(
                     fontWeight = FontWeight.Bold
                 )
 
-                // Sales Graph Card
-                GraphCard(
-                    title = "Monthly Sales",
-                    data = listOf(0.4f, 0.7f, 0.5f, 0.9f, 0.6f, 0.8f),
-                    color = MaterialTheme.colorScheme.primary,
-                    labels = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun")
-                )
+                if (isLoading) {
+                    Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else if (labels.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                        Text("No data available for this period", style = MaterialTheme.typography.bodySmall)
+                    }
+                } else {
+                    // Sales Graph Card
+                    GraphCard(
+                        title = "Monthly Sales",
+                        data = salesData,
+                        color = MaterialTheme.colorScheme.primary,
+                        labels = labels
+                    )
 
-                // Purchase Graph Card
-                GraphCard(
-                    title = "Monthly Purchases",
-                    data = listOf(0.3f, 0.5f, 0.8f, 0.4f, 0.7f, 0.5f),
-                    color = MaterialTheme.colorScheme.secondary,
-                    labels = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun")
-                )
+                    // Purchase Graph Card
+                    GraphCard(
+                        title = "Monthly Purchases",
+                        data = purchaseData,
+                        color = MaterialTheme.colorScheme.secondary,
+                        labels = labels
+                    )
+                }
                 
                 Spacer(modifier = Modifier.height(16.dp))
             }

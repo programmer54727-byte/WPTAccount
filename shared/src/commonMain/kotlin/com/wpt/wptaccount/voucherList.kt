@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun VoucherListScreen(
     company: Company,
+    period: AccountPeriod,
     onHomeClick: () -> Unit,
     onDashboardClick: () -> Unit,
     onStockSummaryClick: () -> Unit,
@@ -51,7 +52,11 @@ fun VoucherListScreen(
             try {
                 isLoading = true
                 vouchers = supabase.from("vouchers").select {
-                    filter { eq("company_id", company.id!!) }
+                    filter { 
+                        eq("company_id", company.id!!) 
+                        gte("date", period.startDate)
+                        lte("date", period.endDate)
+                    }
                     order("date", order = Order.DESCENDING)
                 }.decodeList<Voucher>()
 
@@ -66,7 +71,7 @@ fun VoucherListScreen(
         }
     }
 
-    LaunchedEffect(Unit) { fetchData() }
+    LaunchedEffect(period) { fetchData() }
 
     val filteredVouchers = vouchers.filter { voucher ->
         val partyName = ledgers.find { it.id == voucher.party_ledger_id }?.ledger_name ?: ""

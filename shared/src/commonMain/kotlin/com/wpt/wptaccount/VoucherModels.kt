@@ -47,6 +47,7 @@ data class VoucherStockItem(
 
 @Serializable
 data class VoucherStockItemWithVoucher(
+    val stock_item_id: String,
     val quantity: Double,
     val rate: Double,
     val amount: Double,

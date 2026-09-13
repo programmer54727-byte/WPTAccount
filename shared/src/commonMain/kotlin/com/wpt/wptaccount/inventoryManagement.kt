@@ -36,6 +36,8 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.style.TextOverflow
 
 data class MonthlyStockData(
     val monthName: String,
@@ -71,6 +73,42 @@ fun InventoryField(
             onValueChange = onValueChange,
             enabled = enabled,
             modifier = Modifier.weight(1f),
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodySmall
+        )
+    }
+}
+
+@Composable
+fun TallyDateField(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    labelWidth: Dp = 150.dp,
+    onValueChange: (String) -> Unit
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier.padding(vertical = 4.dp)) {
+        if (label.isNotEmpty()) {
+            Text(
+                text = "$label : ", 
+                style = MaterialTheme.typography.bodySmall, 
+                modifier = Modifier.width(labelWidth),
+                textAlign = TextAlign.End
+            )
+            Spacer(Modifier.width(8.dp))
+        }
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            enabled = enabled,
+            modifier = Modifier
+                .weight(1f)
+                .onFocusChanged { focusState ->
+                    if (!focusState.isFocused && value.isNotEmpty()) {
+                        onValueChange(value.formatSmartDate())
+                    }
+                },
             singleLine = true,
             textStyle = MaterialTheme.typography.bodySmall
         )
@@ -119,99 +157,49 @@ fun InventoryDropdown(label: String, options: List<String>, selected: String, mo
 @Composable
 fun InventoryManagement(
     company: Company,
-    onHomeClick: () -> Unit,
-    onDashboardClick: () -> Unit,
-    onGstDetailsClick: () -> Unit,
-    onLedgerClick: () -> Unit,
-    onVoucherListClick: () -> Unit,
-    onSaleClick: () -> Unit,
-    onPurchaseClick: () -> Unit,
-    onPaymentClick: () -> Unit = {},
-    onReceiptClick: () -> Unit = {},
-    onContraClick: () -> Unit = {},
-    onJournalClick: () -> Unit = {},
+    period: AccountPeriod,
     onBack: () -> Unit
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(0) }
     val tabs = listOf("Units", "Groups", "Items")
 
-    AppNavigationDrawer(
-        currentScreen = ScreenType.Stock,
-        companyName = company.company_name,
-        onNavigate = { screen ->
-            when (screen) {
-                ScreenType.Home -> onHomeClick()
-                ScreenType.Dashboard -> onDashboardClick()
-                ScreenType.Exit -> onBack()
-                ScreenType.Sale -> onSaleClick()
-                ScreenType.Purchase -> onPurchaseClick()
-                ScreenType.Payment -> onPaymentClick()
-                ScreenType.Receipt -> onReceiptClick()
-                ScreenType.Ledger -> onLedgerClick()
-                ScreenType.Contra -> onContraClick()
-                ScreenType.Journal -> onJournalClick()
-                ScreenType.CreditNote -> { /* TODO */ }
-                ScreenType.DebitNote -> { /* TODO */ }
-                ScreenType.BalanceSheet -> { /* TODO */ }
-                ScreenType.ProfitAndLoss -> { /* TODO */ }
-                ScreenType.CashFlow -> { /* TODO */ }
-                ScreenType.Stock -> { /* Already here */ }
-                ScreenType.Gst -> onGstDetailsClick()
-                ScreenType.DayBook -> onVoucherListClick()
-            }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Inventory: ${company.company_name}", style = MaterialTheme.typography.titleMedium) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
         }
-    ) { _, onToggleDrawer, isDesktop ->
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("Inventory: ${company.company_name}", style = MaterialTheme.typography.titleMedium) },
-                    navigationIcon = {
-                        if (isDesktop) {
-                            IconButton(onClick = onBack) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                            }
-                        } else {
-                            IconButton(onClick = onToggleDrawer) {
-                                Icon(Icons.Default.Menu, contentDescription = "Menu")
-                            }
-                        }
-                    },
-                    actions = {
-                        if (!isDesktop) {
-                            IconButton(onClick = onBack) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                            }
-                        }
-                    }
-                )
+    ) { padding ->
+        Column(modifier = Modifier.padding(padding)) {
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = MaterialTheme.colorScheme.surface
+            ) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        text = { Text(title, style = MaterialTheme.typography.bodySmall) }
+                    )
+                }
             }
-        ) { padding ->
-            Column(modifier = Modifier.padding(padding)) {
-                TabRow(
-                    selectedTabIndex = selectedTab,
-                    containerColor = MaterialTheme.colorScheme.surface
-                ) {
-                    tabs.forEachIndexed { index, title ->
-                        Tab(
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index },
-                            text = { Text(title, style = MaterialTheme.typography.bodySmall) }
-                        )
-                    }
-                }
 
-                when (selectedTab) {
-                    0 -> UnitsTab(company)
-                    1 -> StockGroupsTab(company)
-                    2 -> StockItemsTab(company)
-                }
+            when (selectedTab) {
+                0 -> UnitsTab(company, period)
+                1 -> StockGroupsTab(company, period)
+                2 -> StockItemsTab(company, period)
             }
         }
     }
 }
 
 @Composable
-fun UnitsTab(company: Company) {
+fun UnitsTab(company: Company, period: AccountPeriod) {
     var units by remember { mutableStateOf<List<UnitOfMeasure>>(emptyList()) }
     var items by remember { mutableStateOf<List<StockItem>>(emptyList()) }
     var selectedUnitForItems by remember { mutableStateOf<UnitOfMeasure?>(null) }
@@ -237,10 +225,31 @@ fun UnitsTab(company: Company) {
             items = supabase.from("stock_items").select {
                 filter { eq("company_id", company.id!!) }
             }.decodeList<StockItem>()
+
+            val allTxns = supabase.from("voucher_stock_items").select(Columns.raw("stock_item_id, quantity, rate, amount, vouchers(date, company_id, voucher_type)")) {
+                filter { eq("vouchers.company_id", company.id!!) }
+            }.decodeList<VoucherStockItemWithVoucher>()
+
+            val calcItems = items.map { item ->
+                var qty = item.opening_quantity
+                var value = item.opening_quantity * item.opening_rate
+
+                allTxns.filter { it.stock_item_id == item.id }.forEach { txn ->
+                    val isInward = txn.vouchers.voucher_type == "Purchase" || txn.vouchers.voucher_type == "Receipt" // Simplify logic for now
+                    val sign = if (isInward) 1.0 else -1.0
+                    
+                    if (txn.vouchers.date <= period.endDate) {
+                        qty += txn.quantity * sign
+                        value += txn.amount * sign
+                    }
+                }
+                item.copy(current_quantity = qty, opening_rate = if (qty != 0.0) value / qty else item.opening_rate)
+            }
+            items = calcItems
         }
     }
 
-    LaunchedEffect(Unit) { 
+    LaunchedEffect(period) { 
         fetchData()
         focusRequester.requestFocus()
     }
@@ -489,7 +498,7 @@ fun UnitsTab(company: Company) {
 }
 
 @Composable
-fun StockGroupsTab(company: Company) {
+fun StockGroupsTab(company: Company, period: AccountPeriod) {
     var groups by remember { mutableStateOf<List<StockGroup>>(emptyList()) }
     var items by remember { mutableStateOf<List<StockItem>>(emptyList()) }
     var units by remember { mutableStateOf<List<UnitOfMeasure>>(emptyList()) }
@@ -516,17 +525,38 @@ fun StockGroupsTab(company: Company) {
                 filter { eq("company_id", company.id!!) }
             }.decodeList<StockGroup>()
             
-            items = supabase.from("stock_items").select {
-                filter { eq("company_id", company.id!!) }
-            }.decodeList<StockItem>()
-            
             units = supabase.from("units").select {
                 filter { eq("company_id", company.id!!) }
             }.decodeList<UnitOfMeasure>()
+
+            val baseItems = supabase.from("stock_items").select {
+                filter { eq("company_id", company.id!!) }
+            }.decodeList<StockItem>()
+
+            val allTxns = supabase.from("voucher_stock_items").select(Columns.raw("stock_item_id, quantity, rate, amount, vouchers(date, company_id, voucher_type)")) {
+                filter { eq("vouchers.company_id", company.id!!) }
+            }.decodeList<VoucherStockItemWithVoucher>()
+
+            val calcItems = baseItems.map { item ->
+                var qty = item.opening_quantity
+                var value = item.opening_quantity * item.opening_rate
+
+                allTxns.filter { it.stock_item_id == item.id }.forEach { txn ->
+                    val isInward = txn.vouchers.voucher_type == "Purchase" || txn.vouchers.voucher_type == "Receipt" 
+                    val sign = if (isInward) 1.0 else -1.0
+                    
+                    if (txn.vouchers.date <= period.endDate) {
+                        qty += txn.quantity * sign
+                        value += txn.amount * sign
+                    }
+                }
+                item.copy(current_quantity = qty, opening_rate = if (qty != 0.0) value / qty else item.opening_rate)
+            }
+            items = calcItems
         }
     }
 
-    LaunchedEffect(Unit) { 
+    LaunchedEffect(period) { 
         fetchData()
         focusRequester.requestFocus()
     }
@@ -787,7 +817,7 @@ fun StockGroupsTab(company: Company) {
 }
 
 @Composable
-fun StockItemsTab(company: Company) {
+fun StockItemsTab(company: Company, period: AccountPeriod) {
     var items by remember { mutableStateOf<List<StockItem>>(emptyList()) }
     var units by remember { mutableStateOf<List<UnitOfMeasure>>(emptyList()) }
     var groups by remember { mutableStateOf<List<StockGroup>>(emptyList()) }
@@ -826,7 +856,7 @@ fun StockItemsTab(company: Company) {
 
     fun fetchData() {
         scope.launch {
-            items = supabase.from("stock_items").select {
+            val baseItems = supabase.from("stock_items").select {
                 filter { eq("company_id", company.id!!) }
             }.decodeList<StockItem>()
             
@@ -837,12 +867,33 @@ fun StockItemsTab(company: Company) {
             groups = supabase.from("stock_groups").select {
                 filter { eq("company_id", company.id!!) }
             }.decodeList<StockGroup>()
+
+            val allTxns = supabase.from("voucher_stock_items").select(Columns.raw("stock_item_id, quantity, rate, amount, vouchers(date, company_id, voucher_type)")) {
+                filter { eq("vouchers.company_id", company.id!!) }
+            }.decodeList<VoucherStockItemWithVoucher>()
+
+            val calcItems = baseItems.map { item ->
+                var qty = item.opening_quantity
+                var value = item.opening_quantity * item.opening_rate
+
+                allTxns.filter { it.stock_item_id == item.id }.forEach { txn ->
+                    val isInward = txn.vouchers.voucher_type == "Purchase" || txn.vouchers.voucher_type == "Receipt" 
+                    val sign = if (isInward) 1.0 else -1.0
+                    
+                    if (txn.vouchers.date <= period.endDate) {
+                        qty += txn.quantity * sign
+                        value += txn.amount * sign
+                    }
+                }
+                item.copy(current_quantity = qty, opening_rate = if (qty != 0.0) value / qty else item.opening_rate)
+            }
+            items = calcItems
             
             if (units.isNotEmpty() && selectedUnitId.isEmpty()) selectedUnitId = units[0].id!!
         }
     }
 
-    LaunchedEffect(Unit) { 
+    LaunchedEffect(period) { 
         fetchData()
         focusRequester.requestFocus()
     }
