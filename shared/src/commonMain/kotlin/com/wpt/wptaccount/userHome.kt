@@ -1,5 +1,6 @@
 package com.wpt.wptaccount
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -19,6 +20,8 @@ import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.SyncAlt
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -76,20 +79,20 @@ fun UserHome(
     }
 
     val items = listOf(
-        DashboardItem("Balance Sheet", Icons.Default.AccountBalance, Color(0xFF3F51B5)),
-        DashboardItem("Profit & Loss", Icons.Default.Description, Color(0xFF4CAF50)),
-        DashboardItem("Cash Flow", Icons.Default.SyncAlt, Color(0xFFFF9800)),
-        DashboardItem("Stock Summary", Icons.Default.Inventory, Color(0xFF795548)),
-        DashboardItem("Sale", Icons.Default.ShoppingCart, MaterialTheme.colorScheme.primary),
-        DashboardItem("Purchase", Icons.Default.AddShoppingCart, MaterialTheme.colorScheme.secondary),
-        DashboardItem("Payment", Icons.Default.Payments, MaterialTheme.colorScheme.tertiary),
-        DashboardItem("Receipt", Icons.Default.Receipt, MaterialTheme.colorScheme.error),
-        DashboardItem("Contra", Icons.Default.SyncAlt, Color(0xFF009688)),
-        DashboardItem("Journal", Icons.Default.Description, Color(0xFFFF5722)),
-        DashboardItem("Credit Note", Icons.AutoMirrored.Filled.AssignmentReturn, Color(0xFF9C27B0)),
-        DashboardItem("Debit Note", Icons.AutoMirrored.Filled.KeyboardReturn, Color(0xFF00BCD4)),
-        DashboardItem("Ledger", Icons.Default.AccountBalance, MaterialTheme.colorScheme.primary),
-        DashboardItem("Day Book", Icons.Default.Description, Color(0xFF607D8B)),
+        DashboardItem("Balance Sheet", Icons.Default.PieChart, androidx.compose.ui.graphics.Color(0xFF1E88E5)),
+        DashboardItem("Profit & Loss", Icons.AutoMirrored.Filled.TrendingUp, androidx.compose.ui.graphics.Color(0xFF43A047)),
+        DashboardItem("Cash Flow", Icons.Default.AccountBalanceWallet, androidx.compose.ui.graphics.Color(0xFFF4511E)),
+        DashboardItem("Stock Summary", Icons.Default.Layers, androidx.compose.ui.graphics.Color(0xFF7E57C2)),
+        DashboardItem("Sale", Icons.Default.ShoppingCart, androidx.compose.ui.graphics.Color(0xFF1E88E5)),
+        DashboardItem("Purchase", Icons.Default.ShoppingCart, androidx.compose.ui.graphics.Color(0xFF7E57C2)),
+        DashboardItem("Payment", Icons.Default.Savings, androidx.compose.ui.graphics.Color(0xFF546E7A)),
+        DashboardItem("Receipt", Icons.Default.ArrowDownward, androidx.compose.ui.graphics.Color(0xFFE53935)),
+        DashboardItem("Contra", Icons.Default.Autorenew, androidx.compose.ui.graphics.Color(0xFF00897B)),
+        DashboardItem("Journal", Icons.AutoMirrored.Filled.Assignment, androidx.compose.ui.graphics.Color(0xFFFFB300)),
+        DashboardItem("Credit Note", Icons.AutoMirrored.Filled.AssignmentReturn, androidx.compose.ui.graphics.Color(0xFF8E24AA)),
+        DashboardItem("Debit Note", Icons.AutoMirrored.Filled.Assignment, androidx.compose.ui.graphics.Color(0xFF00ACC1)),
+        DashboardItem("Ledger", Icons.Default.AccountBalance, androidx.compose.ui.graphics.Color(0xFF5E35B1)),
+        DashboardItem("Day Book", Icons.AutoMirrored.Filled.Assignment, androidx.compose.ui.graphics.Color(0xFF78909C)),
     )
 
     if (isInitializing) {
@@ -128,26 +131,49 @@ fun UserHome(
             }
         ) { _, onToggleDrawer, isDesktop ->
             Scaffold(
+                containerColor = Color(0xFFF8F9FA),
                 topBar = {
                     TopAppBar(
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent
+                        ),
                         title = { 
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                Text(
-                                    text = company.company_name,
-                                    modifier = Modifier.align(Alignment.CenterStart),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(start = 8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CorporateFare,
+                                    contentDescription = null,
+                                    tint = Color(0xFF7C4DFF),
+                                    modifier = Modifier.size(36.dp)
                                 )
-                                
-                                if (isDesktop) {
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
                                     Text(
-                                        text = "Period: ${currentPeriod.startDate.toDisplayDate()} to ${currentPeriod.endDate.toDisplayDate()}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier
-                                            .align(Alignment.Center)
-                                            .clickable { showPeriodDialog = true }
+                                        text = company.company_name,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF1D1B20)
                                     )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.clickable { showPeriodDialog = true }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.CalendarMonth,
+                                            contentDescription = null,
+                                            tint = Color(0xFF49454F),
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "${currentPeriod.startDate.toDisplayDate()} to ${currentPeriod.endDate.toDisplayDate()}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color(0xFF49454F)
+                                        )
+                                    }
                                 }
                             }
                         },
@@ -161,15 +187,25 @@ fun UserHome(
                         actions = {
                             OutlinedButton(
                                 onClick = onGstDetailsClick,
-                                modifier = Modifier.height(32.dp),
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                                modifier = Modifier.height(36.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = Color(0xFF1D1B20),
+                                    containerColor = Color.White
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp)
                             ) {
-                                Text("GST Detail", style = MaterialTheme.typography.labelSmall)
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Assignment,
+                                    contentDescription = null,
+                                    tint = Color(0xFF7C4DFF),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("GST Detail", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
                             }
-                            IconButton(onClick = { showPeriodDialog = true }) {
-                                Icon(Icons.Default.Event, contentDescription = "Change Period")
-                            }
+                            Spacer(modifier = Modifier.width(16.dp))
                         }
                     )
                 }
@@ -264,31 +300,50 @@ fun TransactionCard(item: DashboardItem, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp)
+            .height(84.dp)
             .clickable { onClick() },
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(
-            containerColor = item.color.copy(alpha = 0.1f)
-        )
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = item.icon,
-                contentDescription = item.title,
-                tint = item.color,
-                modifier = Modifier.size(32.dp)
+            // Left color strip indicator
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(4.dp)
+                    .background(item.color, androidx.compose.foundation.shape.RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp))
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            // Soft rounded backing circle for high fidelity icon contrast
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(item.color.copy(alpha = 0.08f), androidx.compose.foundation.shape.CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = item.icon,
+                    contentDescription = item.title,
+                    tint = item.color,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
             Text(
                 text = item.title,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = item.color
+                fontWeight = FontWeight.Normal,
+                color = Color(0xFF1D1B20)
             )
         }
     }

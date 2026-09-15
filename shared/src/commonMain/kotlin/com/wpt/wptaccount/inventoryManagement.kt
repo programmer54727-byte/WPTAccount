@@ -1,7 +1,6 @@
 package com.wpt.wptaccount
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.horizontalScroll
@@ -19,6 +18,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -188,12 +188,27 @@ fun InventoryManagement(
     val tabs = listOf("Units", "Groups", "Items")
 
     Scaffold(
+        containerColor = Color(0xFFF8F9FA),
         topBar = {
             TopAppBar(
-                title = { Text("Inventory: ${company.company_name}", style = MaterialTheme.typography.titleMedium) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                ),
+                title = { 
+                    Text(
+                        text = "Inventory Management", 
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1D1B20)
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Back",
+                            tint = Color(0xFF7C4DFF)
+                        )
                     }
                 }
             )
@@ -202,13 +217,31 @@ fun InventoryManagement(
         Column(modifier = Modifier.padding(padding)) {
             TabRow(
                 selectedTabIndex = selectedTab,
-                containerColor = MaterialTheme.colorScheme.surface
+                containerColor = Color.Transparent,
+                contentColor = Color(0xFF7C4DFF),
+                divider = { HorizontalDivider(color = Color(0xFFE0E0E0)) },
+                indicator = { tabPositions ->
+                    if (selectedTab < tabPositions.size) {
+                        TabRowDefaults.SecondaryIndicator(
+                            modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                            color = Color(0xFF7C4DFF)
+                        )
+                    }
+                }
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
                         selected = selectedTab == index,
                         onClick = { selectedTab = index },
-                        text = { Text(title, style = MaterialTheme.typography.bodySmall) }
+                        selectedContentColor = Color(0xFF7C4DFF),
+                        unselectedContentColor = Color(0xFF49454F),
+                        text = { 
+                            Text(
+                                text = title, 
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Medium
+                            ) 
+                        }
                     )
                 }
             }
@@ -346,61 +379,78 @@ fun UnitsTab(company: Company, period: AccountPeriod) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = 12.dp, horizontal = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Unit Symbol", modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            if (!isMobile) Text("Formal Name", modifier = Modifier.weight(1f).padding(horizontal = 8.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Text("Quantity", modifier = Modifier.width(qtyWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Text("Avg Rate", modifier = Modifier.width(rateWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Text("Value", modifier = Modifier.width(valueWidth).padding(end = 12.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Spacer(Modifier.width(40.dp))
+                            Text("Unit Symbol", modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                            if (!isMobile) Text("Formal Name", modifier = Modifier.weight(1f).padding(horizontal = 8.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                            Text("Quantity", modifier = Modifier.width(qtyWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                            Text("Avg Rate", modifier = Modifier.width(rateWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                            Text("Value", modifier = Modifier.width(valueWidth).padding(end = 12.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                            Spacer(Modifier.width(80.dp))
                         }
-                        HorizontalDivider(thickness = 1.dp, color = Color.Black)
 
-                        LazyColumn(modifier = Modifier.weight(1f)) {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             itemsIndexed(units) { index, unit ->
                                 val unitItems = items.filter { it.unit_id == unit.id }
                                 val totalQty = unitItems.sumOf { it.current_quantity }
                                 val totalValue = unitItems.sumOf { it.current_quantity * it.opening_rate }
                                 val avgRate = if (totalQty > 0) totalValue / totalQty else 0.0
 
-                                Surface(
-                                    color = if (index == selectedIndex) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                                    contentColor = if (index == selectedIndex) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 1.dp)
+                                        .height(64.dp)
                                         .clickable { 
                                             if (selectedIndex == index) {
                                                 selectedUnitForItems = unit
                                             } else {
                                                 selectedIndex = index
                                             }
-                                        }
+                                        },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (index == selectedIndex) Color(0xFFEDE7F6) else Color.White
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                                 ) {
-                                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Text(unit.unit_symbol, modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.bodySmall)
-                                        if (!isMobile) Text(unit.formal_name ?: "", modifier = Modifier.weight(1f).padding(horizontal = 8.dp), style = MaterialTheme.typography.bodySmall)
-                                        Text(totalQty.format(), modifier = Modifier.width(qtyWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                                        Text(avgRate.format(), modifier = Modifier.width(rateWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                                        Text(totalValue.format(), modifier = Modifier.width(valueWidth).padding(end = 12.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                    Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                                        // Left accent strip
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxHeight()
+                                                .width(4.dp)
+                                                .background(
+                                                    if (index == selectedIndex) Color(0xFF7C4DFF) else Color.Transparent, 
+                                                    RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp)
+                                                )
+                                        )
                                         
-                                        IconButton(
-                                            onClick = { 
-                                                unitToEdit = unit
-                                                symbol = unit.unit_symbol
-                                                formalName = unit.formal_name ?: ""
-                                                showDialog = true 
-                                            }, 
-                                            modifier = Modifier.size(40.dp)
-                                        ) {
-                                            Icon(Icons.Default.Edit, contentDescription = "Edit Unit", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                                        }
+                                        Text(unit.unit_symbol, modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1D1B20))
+                                        if (!isMobile) Text(unit.formal_name ?: "", modifier = Modifier.weight(1f).padding(horizontal = 8.dp), style = MaterialTheme.typography.bodyMedium, color = Color(0xFF49454F))
+                                        Text(totalQty.format(), modifier = Modifier.width(qtyWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF1D1B20))
+                                        Text(avgRate.format(), modifier = Modifier.width(rateWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF49454F))
+                                        Text(totalValue.format(), modifier = Modifier.width(valueWidth).padding(end = 12.dp), textAlign = TextAlign.End, fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF1D1B20))
+                                        
+                                        Row(modifier = Modifier.padding(end = 8.dp)) {
+                                            IconButton(
+                                                onClick = { 
+                                                    unitToEdit = unit
+                                                    symbol = unit.unit_symbol
+                                                    formalName = unit.formal_name ?: ""
+                                                    showDialog = true 
+                                                }, 
+                                                modifier = Modifier.size(36.dp)
+                                            ) {
+                                                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color(0xFF7C4DFF), modifier = Modifier.size(18.dp))
+                                            }
 
-                                        IconButton(onClick = { unitToDelete = unit }, modifier = Modifier.size(40.dp)) {
-                                            Icon(Icons.Default.Delete, contentDescription = "Delete Unit", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                                            IconButton(onClick = { unitToDelete = unit }, modifier = Modifier.size(36.dp)) {
+                                                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFD32F2F), modifier = Modifier.size(18.dp))
+                                            }
                                         }
                                     }
                                 }
@@ -411,6 +461,9 @@ fun UnitsTab(company: Company, period: AccountPeriod) {
                 
                 FloatingActionButton(
                     onClick = { showDialog = true },
+                    containerColor = Color(0xFF7C4DFF),
+                    contentColor = Color.White,
+                    shape = androidx.compose.foundation.shape.CircleShape,
                     modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
                 ) {
                     Icon(Icons.Default.Add, "Add Unit")
@@ -679,19 +732,20 @@ fun StockGroupsTab(company: Company, period: AccountPeriod) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = 12.dp, horizontal = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Group Name", modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Text("Quantity", modifier = Modifier.width(qtyWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Text("Avg Rate", modifier = Modifier.width(rateWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Text("Value", modifier = Modifier.width(valueWidth).padding(end = 12.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Spacer(Modifier.width(40.dp))
+                            Text("Group Name", modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                            Text("Quantity", modifier = Modifier.width(qtyWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                            Text("Avg Rate", modifier = Modifier.width(rateWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                            Text("Value", modifier = Modifier.width(valueWidth).padding(end = 12.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                            Spacer(Modifier.width(80.dp))
                         }
-                        HorizontalDivider(thickness = 1.dp, color = Color.Black)
 
-                        LazyColumn(modifier = Modifier.weight(1f)) {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             itemsIndexed(groups) { index, group ->
                                 val groupItems = items.filter { it.group_id == group.id }
                                 val totalValue = groupItems.sumOf { it.current_quantity * it.opening_rate }
@@ -703,46 +757,62 @@ fun StockGroupsTab(company: Company, period: AccountPeriod) {
                                 val totalQty = groupItems.sumOf { it.current_quantity }
                                 val avgRate = if (totalQty > 0) totalValue / totalQty else 0.0
 
-                                Surface(
-                                    color = if (index == selectedIndex) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                                    contentColor = if (index == selectedIndex) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 1.dp)
+                                        .height(64.dp)
                                         .clickable { 
                                             if (selectedIndex == index) {
                                                 selectedGroupForItems = group
                                             } else {
                                                 selectedIndex = index
                                             }
-                                        }
+                                        },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (index == selectedIndex) Color(0xFFEDE7F6) else Color.White
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                                 ) {
-                                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Text(group.group_name, modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.bodySmall)
+                                    Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                                        // Left accent strip
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxHeight()
+                                                .width(4.dp)
+                                                .background(
+                                                    if (index == selectedIndex) Color(0xFF7C4DFF) else Color.Transparent, 
+                                                    RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp)
+                                                )
+                                        )
+
+                                        Text(group.group_name, modifier = Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1D1B20))
                                         
                                         if (hasSameUnit && groupItems.isNotEmpty()) {
-                                            Text("${totalQty.format()} $unitSymbol", modifier = Modifier.width(qtyWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                                            Text(avgRate.format(), modifier = Modifier.width(rateWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+                                            Text("${totalQty.format()} $unitSymbol", modifier = Modifier.width(qtyWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF1D1B20))
+                                            Text(avgRate.format(), modifier = Modifier.width(rateWidth).padding(horizontal = 8.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF49454F))
                                         } else {
                                             Spacer(modifier = Modifier.width(qtyWidth + rateWidth)) 
                                         }
                                         
-                                        Text(totalValue.format(), modifier = Modifier.width(valueWidth).padding(end = 12.dp), textAlign = TextAlign.End, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                        Text(totalValue.format(), modifier = Modifier.width(valueWidth).padding(end = 12.dp), textAlign = TextAlign.End, fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF1D1B20))
                                         
-                                        IconButton(
-                                            onClick = { 
-                                                groupToEdit = group
-                                                name = group.group_name
-                                                selectedParentId = group.parent_group_id
-                                                showDialog = true 
-                                            }, 
-                                            modifier = Modifier.size(40.dp)
-                                        ) {
-                                            Icon(Icons.Default.Edit, contentDescription = "Edit Group", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                                        }
-                                        
-                                        IconButton(onClick = { groupToDelete = group }, modifier = Modifier.size(40.dp)) {
-                                            Icon(Icons.Default.Delete, contentDescription = "Delete Group", tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                                        Row(modifier = Modifier.padding(end = 8.dp)) {
+                                            IconButton(
+                                                onClick = { 
+                                                    groupToEdit = group
+                                                    name = group.group_name
+                                                    selectedParentId = group.parent_group_id
+                                                    showDialog = true 
+                                                }, 
+                                                modifier = Modifier.size(36.dp)
+                                            ) {
+                                                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color(0xFF7C4DFF), modifier = Modifier.size(18.dp))
+                                            }
+                                            
+                                            IconButton(onClick = { groupToDelete = group }, modifier = Modifier.size(36.dp)) {
+                                                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFD32F2F), modifier = Modifier.size(18.dp))
+                                            }
                                         }
                                     }
                                 }
@@ -753,6 +823,9 @@ fun StockGroupsTab(company: Company, period: AccountPeriod) {
                 
                 FloatingActionButton(
                     onClick = { showDialog = true },
+                    containerColor = Color(0xFF7C4DFF),
+                    contentColor = Color.White,
+                    shape = androidx.compose.foundation.shape.CircleShape,
                     modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
                 ) {
                     Icon(Icons.Default.Add, "Add Group")
@@ -1029,120 +1102,146 @@ fun StockItemsTab(company: Company, period: AccountPeriod) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = 12.dp, horizontal = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Particulars", modifier = Modifier.weight(1.5f).padding(start = 12.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Particulars", modifier = Modifier.weight(1.5f).padding(start = 12.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
                             if (!isMobile) {
-                                Text("HSN", modifier = Modifier.weight(1f).padding(horizontal = 8.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                                Text("GST", modifier = Modifier.weight(0.8f).padding(horizontal = 8.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                                Text("HSN", modifier = Modifier.weight(1f).padding(horizontal = 8.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                                Text("GST", modifier = Modifier.weight(0.8f).padding(horizontal = 8.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
                             }
                             
                             Row(modifier = Modifier.weight(1.5f), horizontalArrangement = Arrangement.End) {
-                                Text("Qty", modifier = Modifier.width(qtyWidth).padding(horizontal = 4.dp), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
-                                Text("Rate", modifier = Modifier.width(rateWidth).padding(horizontal = 4.dp), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
-                                Text("Value", modifier = Modifier.width(valueWidth).padding(end = 12.dp), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
+                                Text("Qty", modifier = Modifier.width(qtyWidth).padding(horizontal = 4.dp), style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.End, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                                Text("Rate", modifier = Modifier.width(rateWidth).padding(horizontal = 4.dp), style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.End, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                                Text("Value", modifier = Modifier.width(valueWidth).padding(end = 12.dp), style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.End, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
                             }
-                            Spacer(Modifier.width(40.dp))
+                            Spacer(Modifier.width(80.dp))
                         }
-                        HorizontalDivider(thickness = 1.dp, color = Color.Black)
 
-                        LazyColumn(modifier = Modifier.weight(1f)) {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             itemsIndexed(items) { index, item ->
                                 val unitSymbol = units.find { it.id == item.unit_id }?.unit_symbol ?: ""
                                 val value = item.current_quantity * item.opening_rate
                                 
-                                Surface(
-                                    color = if (index == selectedIndex) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                                    contentColor = if (index == selectedIndex) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 1.dp)
+                                        .height(64.dp)
                                         .clickable { 
                                             if (selectedIndex == index) {
                                                 isSummaryMode = true
                                             } else {
                                                 selectedIndex = index
                                             }
-                                        }
+                                        },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (index == selectedIndex) Color(0xFFEDE7F6) else Color.White
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                                 ) {
                                     Row(
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                        modifier = Modifier.fillMaxSize(),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
+                                        // Left accent strip
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxHeight()
+                                                .width(4.dp)
+                                                .background(
+                                                    if (index == selectedIndex) Color(0xFF7C4DFF) else Color.Transparent, 
+                                                    RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp)
+                                                )
+                                        )
+
                                         Text(
                                             text = item.item_name,
                                             modifier = Modifier.weight(1.5f).padding(start = 12.dp),
-                                            style = MaterialTheme.typography.bodySmall
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF1D1B20)
                                         )
                                         if (!isMobile) {
                                             Text(
                                                 text = "${item.hsn_sac_number ?: ""}",
                                                 modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
-                                                style = MaterialTheme.typography.bodySmall
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = Color(0xFF49454F)
                                             )
                                             Text(
                                                 text = if (item.gst_rate % 1.0 == 0.0) "${item.gst_rate.toInt()}%" else "${item.gst_rate.format(2)}%",
                                                 modifier = Modifier.weight(0.8f).padding(horizontal = 8.dp),
-                                                style = MaterialTheme.typography.bodySmall
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = Color(0xFF49454F)
                                             )
                                         }
-                                        Text(
-                                            text = "${item.current_quantity.format()} $unitSymbol",
-                                            modifier = Modifier.width(qtyWidth).padding(horizontal = 4.dp),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            textAlign = TextAlign.End
-                                        )
-                                        Text(
-                                            text = item.opening_rate.format(),
-                                            modifier = Modifier.width(rateWidth).padding(horizontal = 4.dp),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            textAlign = TextAlign.End
-                                        )
-                                        Text(
-                                            text = value.format(),
-                                            modifier = Modifier.width(valueWidth).padding(end = 12.dp),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            textAlign = TextAlign.End,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                        Row(modifier = Modifier.weight(1.5f), horizontalArrangement = Arrangement.End) {
+                                            Text(
+                                                text = "${item.current_quantity.format()} $unitSymbol",
+                                                modifier = Modifier.width(qtyWidth).padding(horizontal = 4.dp),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                textAlign = TextAlign.End,
+                                                color = Color(0xFF1D1B20)
+                                            )
+                                            Text(
+                                                text = item.opening_rate.format(),
+                                                modifier = Modifier.width(rateWidth).padding(horizontal = 4.dp),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                textAlign = TextAlign.End,
+                                                color = Color(0xFF49454F)
+                                            )
+                                            Text(
+                                                text = value.format(),
+                                                modifier = Modifier.width(valueWidth).padding(end = 12.dp),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                textAlign = TextAlign.End,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = Color(0xFF1D1B20)
+                                            )
+                                        }
                                         
-                                        IconButton(
-                                            onClick = { 
-                                                itemToEdit = item
-                                                name = item.item_name
-                                                alias = item.alias ?: ""
-                                                selectedUnitId = item.unit_id
-                                                selectedGroupId = item.group_id
-                                                gstApplicability = item.gst_applicability
-                                                hsnNumber = item.hsn_sac_number ?: ""
-                                                hsnDescription = item.hsn_description ?: ""
-                                                taxabilityType = item.taxability_type
-                                                gstRate = item.gst_rate.toString()
-                                                typeOfSupply = item.type_of_supply
-                                                val originalItem = rawItems.find { it.id == item.id }
-                                                qty = originalItem?.opening_quantity?.toString() ?: item.opening_quantity.toString()
-                                                rate = originalItem?.opening_rate?.toString() ?: item.opening_rate.toString()
-                                                showDialog = true 
-                                            }, 
-                                            modifier = Modifier.size(40.dp)
-                                        ) {
-                                            Icon(
-                                                Icons.Default.Edit, 
-                                                contentDescription = "Edit Item", 
-                                                tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                        }
+                                        Row(modifier = Modifier.padding(end = 8.dp)) {
+                                            IconButton(
+                                                onClick = { 
+                                                    itemToEdit = item
+                                                    name = item.item_name
+                                                    alias = item.alias ?: ""
+                                                    selectedUnitId = item.unit_id
+                                                    selectedGroupId = item.group_id
+                                                    gstApplicability = item.gst_applicability
+                                                    hsnNumber = item.hsn_sac_number ?: ""
+                                                    hsnDescription = item.hsn_description ?: ""
+                                                    taxabilityType = item.taxability_type
+                                                    gstRate = item.gst_rate.toString()
+                                                    typeOfSupply = item.type_of_supply
+                                                    val originalItem = rawItems.find { it.id == item.id }
+                                                    qty = originalItem?.opening_quantity?.toString() ?: item.opening_quantity.toString()
+                                                    rate = originalItem?.opening_rate?.toString() ?: item.opening_rate.toString()
+                                                    showDialog = true 
+                                                }, 
+                                                modifier = Modifier.size(36.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Edit, 
+                                                    contentDescription = "Edit", 
+                                                    tint = Color(0xFF7C4DFF),
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
 
-                                        IconButton(onClick = { itemToDelete = item }, modifier = Modifier.size(40.dp)) {
-                                            Icon(
-                                                Icons.Default.Delete, 
-                                                contentDescription = "Delete Item", 
-                                                tint = if (index == selectedIndex) Color.White else MaterialTheme.colorScheme.error,
-                                                modifier = Modifier.size(20.dp)
-                                            )
+                                            IconButton(onClick = { itemToDelete = item }, modifier = Modifier.size(36.dp)) {
+                                                Icon(
+                                                    Icons.Default.Delete, 
+                                                    contentDescription = "Delete", 
+                                                    tint = Color(0xFFD32F2F),
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -1153,6 +1252,9 @@ fun StockItemsTab(company: Company, period: AccountPeriod) {
                 
                 FloatingActionButton(
                     onClick = { showDialog = true },
+                    containerColor = Color(0xFF7C4DFF),
+                    contentColor = Color.White,
+                    shape = androidx.compose.foundation.shape.CircleShape,
                     modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
                 ) {
                     Icon(Icons.Default.Add, "Add Item")
@@ -1451,26 +1553,29 @@ fun StockItemMonthlySummary(
     val openingValue = item.opening_quantity * item.opening_rate
 
     Scaffold(
+        containerColor = Color(0xFFF8F9FA),
         topBar = {
-            Column(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(4.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                ),
+                navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color(0xFF7C4DFF))
                     }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                        Text(item.item_name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Text("Monthly Summary", style = MaterialTheme.typography.bodySmall)
-                        // Note: Period dates for stock aren't currently passed in, 
-                        // but we can use default period if needed or just show month range.
-                        Text("Financial Year 2024-25", style = MaterialTheme.typography.bodySmall)
+                },
+                title = {
+                    Column {
+                        Text(item.item_name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color(0xFF1D1B20))
+                        Text("Monthly Summary • FY 2024-25", style = MaterialTheme.typography.labelSmall, color = Color(0xFF49454F))
                     }
                 }
-            }
+            )
         }
     ) { padding ->
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(color = Color(0xFF7C4DFF))
             }
         } else {
             BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -1489,13 +1594,13 @@ fun StockItemMonthlySummary(
                         
                         Column(modifier = Modifier.width(contentWidth)) {
                             // Header
-                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-                                Text("Particulars", modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalAlignment = Alignment.Bottom) {
+                                Text("Particulars", modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
                                 SummaryColumnHeader("Inwards", Modifier.weight(2.5f))
                                 SummaryColumnHeader("Outwards", Modifier.weight(2.5f))
                                 SummaryColumnHeader("Closing Balance", Modifier.weight(2.5f))
                             }
-                            HorizontalDivider(thickness = 2.dp, color = Color.Black)
+                            HorizontalDivider(color = Color(0xFFE0E0E0))
 
                             LazyColumn(modifier = Modifier.weight(1f)) {
                                 // Opening Balance Row
@@ -1531,7 +1636,7 @@ fun StockItemMonthlySummary(
                                 }
                             }
 
-                            HorizontalDivider(thickness = 2.dp, color = Color.Black)
+                            HorizontalDivider(color = Color(0xFFE0E0E0))
                             // Grand Total Row
                             val totalInQty = monthlyDataMap.values.sumOf { it.inwardQty }
                             val totalInVal = monthlyDataMap.values.sumOf { it.inwardValue }
@@ -1563,11 +1668,11 @@ fun StockItemMonthlySummary(
 @Composable
 fun SummaryColumnHeader(label: String, modifier: Modifier) {
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+        Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(0xFF7C4DFF))
         Row(modifier = Modifier.fillMaxWidth()) {
-            Text("Quantity", modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall)
-            Text("Rate", modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall)
-            Text("Value", modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall)
+            Text("Quantity", modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, color = Color(0xFF49454F))
+            Text("Rate", modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, color = Color(0xFF49454F))
+            Text("Value", modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, color = Color(0xFF49454F))
         }
     }
 }
@@ -1587,28 +1692,29 @@ fun SummaryRow(
     closingRate: String = "",
     closingValue: String = ""
 ) {
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = label,
             modifier = Modifier.weight(1.2f),
             fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
+            color = if (bold) Color(0xFF1D1B20) else Color(0xFF49454F),
             style = if (italic) MaterialTheme.typography.bodyMedium.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic) else MaterialTheme.typography.bodyMedium
         )
         
         Row(modifier = Modifier.weight(2.5f)) {
-            Text(inwardQty, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-            Text(inwardRate, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-            Text(inwardValue, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+            Text(inwardQty, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall, color = Color(0xFF1D1B20))
+            Text(inwardRate, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall, color = Color(0xFF49454F))
+            Text(inwardValue, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall, color = Color(0xFF1D1B20))
         }
         Row(modifier = Modifier.weight(2.5f)) {
-            Text(outwardQty, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-            Text(outwardRate, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-            Text(outwardValue, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
+            Text(outwardQty, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall, color = Color(0xFF1D1B20))
+            Text(outwardRate, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall, color = Color(0xFF49454F))
+            Text(outwardValue, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall, color = Color(0xFF1D1B20))
         }
         Row(modifier = Modifier.weight(2.5f)) {
-            Text(closingQty, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-            Text(closingRate, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-            Text(closingValue, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal)
+            Text(closingQty, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall, color = Color(0xFF1D1B20), fontWeight = FontWeight.Bold)
+            Text(closingRate, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall, color = Color(0xFF49454F))
+            Text(closingValue, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall, color = Color(0xFF1D1B20), fontWeight = if (bold) FontWeight.ExtraBold else FontWeight.Bold)
         }
     }
 }
@@ -1676,7 +1782,7 @@ fun FilteredStockItemsList(
             val valueWidth = if (isMobile) 80.dp else 100.dp
             val scrollState = rememberScrollState()
 
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF8F9FA))) {
                 val constraints = this@BoxWithConstraints
                 Column(
                     modifier = Modifier
@@ -1690,91 +1796,97 @@ fun FilteredStockItemsList(
                         // Header with Back Button
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
                             IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", modifier = Modifier.size(20.dp))
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color(0xFF7C4DFF), modifier = Modifier.size(20.dp))
                             }
                             Text(
                                 text = title,
-                                style = MaterialTheme.typography.titleSmall,
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1D1B20),
                                 modifier = Modifier.padding(start = 8.dp)
                             )
                         }
 
                         // Table Header
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 1.dp),
-                            verticalAlignment = Alignment.Bottom
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "Particulars",
-                                modifier = Modifier.weight(1.5f),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                            
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = "Closing Balance",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(bottom = 2.dp)
-                                )
-                                Row {
-                                    Text("Qty", modifier = Modifier.width(qtyWidth), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
-                                    Text("Rate", modifier = Modifier.width(rateWidth), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
-                                    Text("Value", modifier = Modifier.width(valueWidth), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
-                                }
-                            }
+                            Text("Particulars", modifier = Modifier.weight(1.5f).padding(start = 12.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                            Text("Quantity", modifier = Modifier.width(qtyWidth).padding(horizontal = 4.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                            Text("Rate", modifier = Modifier.width(rateWidth).padding(horizontal = 4.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                            Text("Value", modifier = Modifier.width(valueWidth).padding(end = 12.dp), textAlign = TextAlign.End, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
                             Spacer(Modifier.width(40.dp))
                         }
-                        HorizontalDivider(thickness = 1.dp, color = Color.Black)
 
-                        LazyColumn(modifier = Modifier.weight(1f)) {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             itemsIndexed(items) { index, item ->
                                 val unitSymbol = units.find { it.id == item.unit_id }?.unit_symbol ?: ""
                                 val value = item.current_quantity * item.opening_rate
                                 
-                                Surface(
-                                    color = if (index == selectedIndex) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                                    contentColor = if (index == selectedIndex) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 1.dp)
+                                        .height(64.dp)
                                         .clickable { 
                                             if (selectedIndex == index) {
                                                 isSummaryMode = true
                                             } else {
                                                 selectedIndex = index
                                             }
-                                        }
+                                        },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (index == selectedIndex) Color(0xFFEDE7F6) else Color.White
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                                 ) {
                                     Row(
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                        modifier = Modifier.fillMaxSize(),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
+                                        // Left accent strip
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxHeight()
+                                                .width(4.dp)
+                                                .background(
+                                                    if (index == selectedIndex) Color(0xFF7C4DFF) else Color.Transparent, 
+                                                    RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp)
+                                                )
+                                        )
+
                                         Text(
                                             text = item.item_name,
-                                            modifier = Modifier.weight(1.5f).padding(start = 4.dp),
-                                            style = MaterialTheme.typography.bodySmall
+                                            modifier = Modifier.weight(1.5f).padding(start = 12.dp),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF1D1B20)
                                         )
                                         Text(
                                             text = "${item.current_quantity.format()} $unitSymbol",
-                                            modifier = Modifier.width(qtyWidth),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            textAlign = TextAlign.End
+                                            modifier = Modifier.width(qtyWidth).padding(horizontal = 4.dp),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            textAlign = TextAlign.End,
+                                            color = Color(0xFF1D1B20)
                                         )
                                         Text(
                                             text = item.opening_rate.format(),
-                                            modifier = Modifier.width(rateWidth),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            textAlign = TextAlign.End
+                                            modifier = Modifier.width(rateWidth).padding(horizontal = 4.dp),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            textAlign = TextAlign.End,
+                                            color = Color(0xFF49454F)
                                         )
                                         Text(
                                             text = value.format(),
-                                            modifier = Modifier.width(valueWidth),
-                                            style = MaterialTheme.typography.bodySmall,
+                                            modifier = Modifier.width(valueWidth).padding(end = 12.dp),
+                                            style = MaterialTheme.typography.bodyMedium,
                                             textAlign = TextAlign.End,
-                                            fontWeight = FontWeight.Bold
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color(0xFF1D1B20)
                                         )
                                         Spacer(Modifier.width(40.dp))
                                     }

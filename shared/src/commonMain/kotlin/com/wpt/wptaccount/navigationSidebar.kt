@@ -48,8 +48,9 @@ fun AppNavigationDrawer(
                 drawerContent = {
                     PermanentDrawerSheet(
                         modifier = Modifier
-                            .width(240.dp)
-                            .verticalScroll(scrollState)
+                            .width(260.dp)
+                            .verticalScroll(scrollState),
+                        drawerContainerColor = androidx.compose.ui.graphics.Color(0xFFF5F3F8)
                     ) {
                         DrawerContent(currentScreen, companyName, onNavigate)
                     }
@@ -62,12 +63,10 @@ fun AppNavigationDrawer(
                 drawerState = drawerState,
                 drawerContent = {
                     ModalDrawerSheet(
-                        modifier = Modifier.verticalScroll(rememberScrollState())
+                        modifier = Modifier.verticalScroll(rememberScrollState()),
+                        drawerContainerColor = androidx.compose.ui.graphics.Color(0xFFF5F3F8)
                     ) {
-                        DrawerContent(currentScreen, companyName) { screen ->
-                            scope.launch { drawerState.close() }
-                            onNavigate(screen)
-                        }
+                        DrawerContent(currentScreen, companyName, onNavigate)
                     }
                 }
             ) {
@@ -83,20 +82,30 @@ private fun DrawerContent(
     companyName: String,
     onNavigate: (ScreenType) -> Unit
 ) {
+    val drawerColors = NavigationDrawerItemDefaults.colors(
+        selectedContainerColor = androidx.compose.ui.graphics.Color(0xFF7C4DFF),
+        unselectedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+        selectedIconColor = androidx.compose.ui.graphics.Color.White,
+        unselectedIconColor = androidx.compose.ui.graphics.Color(0xFF49454F),
+        selectedTextColor = androidx.compose.ui.graphics.Color.White,
+        unselectedTextColor = androidx.compose.ui.graphics.Color(0xFF1D1B20)
+    )
+
     Spacer(Modifier.height(12.dp))
     Text(
         text = companyName,
         style = MaterialTheme.typography.titleMedium,
         modifier = Modifier.padding(horizontal = 28.dp, vertical = 16.dp),
-        color = MaterialTheme.colorScheme.primary
+        color = androidx.compose.ui.graphics.Color(0xFF7C4DFF)
     )
-    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = androidx.compose.ui.graphics.Color(0xFFE0E0E0))
     
     NavigationDrawerItem(
         icon = { Icon(Icons.Default.Home, contentDescription = null) },
         label = { Text("Home") },
         selected = currentScreen == ScreenType.Home,
         onClick = { onNavigate(ScreenType.Home) },
+        colors = drawerColors,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
     NavigationDrawerItem(
@@ -104,10 +113,11 @@ private fun DrawerContent(
         label = { Text("Dashboard") },
         selected = currentScreen == ScreenType.Dashboard,
         onClick = { onNavigate(ScreenType.Dashboard) },
+        colors = drawerColors,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
 
-    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = androidx.compose.ui.graphics.Color(0xFFE0E0E0))
     Text(
         text = "Reports",
         style = MaterialTheme.typography.labelMedium,
@@ -120,6 +130,7 @@ private fun DrawerContent(
         label = { Text("Balance Sheet") },
         selected = currentScreen == ScreenType.BalanceSheet,
         onClick = { onNavigate(ScreenType.BalanceSheet) },
+        colors = drawerColors,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
     NavigationDrawerItem(
@@ -127,6 +138,7 @@ private fun DrawerContent(
         label = { Text("Profit & Loss") },
         selected = currentScreen == ScreenType.ProfitAndLoss,
         onClick = { onNavigate(ScreenType.ProfitAndLoss) },
+        colors = drawerColors,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
     NavigationDrawerItem(
@@ -134,6 +146,7 @@ private fun DrawerContent(
         label = { Text("Cash Flow") },
         selected = currentScreen == ScreenType.CashFlow,
         onClick = { onNavigate(ScreenType.CashFlow) },
+        colors = drawerColors,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
     NavigationDrawerItem(
@@ -141,10 +154,11 @@ private fun DrawerContent(
         label = { Text("Stock Summary") },
         selected = currentScreen == ScreenType.Stock,
         onClick = { onNavigate(ScreenType.Stock) },
+        colors = drawerColors,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
 
-    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = androidx.compose.ui.graphics.Color(0xFFE0E0E0))
     Text(
         text = "Transactions",
         style = MaterialTheme.typography.labelMedium,
@@ -157,6 +171,7 @@ private fun DrawerContent(
         label = { Text("Sale") },
         selected = currentScreen == ScreenType.Sale,
         onClick = { onNavigate(ScreenType.Sale) },
+        colors = drawerColors,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
     NavigationDrawerItem(
@@ -164,6 +179,7 @@ private fun DrawerContent(
         label = { Text("Purchase") },
         selected = currentScreen == ScreenType.Purchase,
         onClick = { onNavigate(ScreenType.Purchase) },
+        colors = drawerColors,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
     NavigationDrawerItem(
@@ -171,6 +187,7 @@ private fun DrawerContent(
         label = { Text("Payment") },
         selected = currentScreen == ScreenType.Payment,
         onClick = { onNavigate(ScreenType.Payment) },
+        colors = drawerColors,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
     NavigationDrawerItem(
@@ -178,6 +195,7 @@ private fun DrawerContent(
         label = { Text("Receipt") },
         selected = currentScreen == ScreenType.Receipt,
         onClick = { onNavigate(ScreenType.Receipt) },
+        colors = drawerColors,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
     NavigationDrawerItem(
@@ -185,6 +203,7 @@ private fun DrawerContent(
         label = { Text("Contra") },
         selected = currentScreen == ScreenType.Contra,
         onClick = { onNavigate(ScreenType.Contra) },
+        colors = drawerColors,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
     NavigationDrawerItem(
@@ -192,6 +211,7 @@ private fun DrawerContent(
         label = { Text("Journal") },
         selected = currentScreen == ScreenType.Journal,
         onClick = { onNavigate(ScreenType.Journal) },
+        colors = drawerColors,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
     NavigationDrawerItem(
@@ -199,6 +219,7 @@ private fun DrawerContent(
         label = { Text("Credit Note") },
         selected = currentScreen == ScreenType.CreditNote,
         onClick = { onNavigate(ScreenType.CreditNote) },
+        colors = drawerColors,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
     NavigationDrawerItem(
@@ -206,6 +227,7 @@ private fun DrawerContent(
         label = { Text("Debit Note") },
         selected = currentScreen == ScreenType.DebitNote,
         onClick = { onNavigate(ScreenType.DebitNote) },
+        colors = drawerColors,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
     NavigationDrawerItem(
@@ -213,6 +235,7 @@ private fun DrawerContent(
         label = { Text("Ledger") },
         selected = currentScreen == ScreenType.Ledger,
         onClick = { onNavigate(ScreenType.Ledger) },
+        colors = drawerColors,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
 
@@ -221,25 +244,28 @@ private fun DrawerContent(
         label = { Text("Day Book") },
         selected = currentScreen == ScreenType.DayBook,
         onClick = { onNavigate(ScreenType.DayBook) },
+        colors = drawerColors,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
 
     NavigationDrawerItem(
-        icon = { Icon(Icons.Default.Description, contentDescription = null) }, // Using Description icon for GST
+        icon = { Icon(Icons.Default.Description, contentDescription = null) },
         label = { Text("GST Details") },
         selected = currentScreen == ScreenType.Gst,
         onClick = { onNavigate(ScreenType.Gst) },
+        colors = drawerColors,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
     
     Spacer(Modifier.height(16.dp))
     
-    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = androidx.compose.ui.graphics.Color(0xFFE0E0E0))
     NavigationDrawerItem(
         icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null) },
         label = { Text("Exit Company") },
         selected = false,
         onClick = { onNavigate(ScreenType.Exit) },
+        colors = drawerColors,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
     Spacer(Modifier.height(12.dp))

@@ -49,6 +49,14 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **Smart Date Entry (Tally-Style):** Specialized `TallyDateField` that automatically expands short inputs like "1jun", "1-6", or "1/6/26" into standard `DD/MM/YYYY` format on focus loss.
     - **Centralized Error Sanitization:** Advanced application-wide error handling that masks technical database, Ktor, and SQL details from users while preserving full logs for developers, ensuring zero leakage of sensitive schema or network information.
     - **Robust Data Saving:** Comprehensive error handling (try-catch) on all save operations with detailed feedback to prevent app crashes.
+- **High-Fidelity Corporate UI Theme:**
+    - **Unified Brand Identity:** Complete visual overhaul utilizing a professional corporate palette: Vibrant Purple (`0xFF7C4DFF`) accents, Soft Lavender (`0xFFF5F3F8`) navigation containers, and clean Off-White (`0xFFF8F9FA`) application surfaces.
+    - **Modern Selection Sidebar:** Redesigned navigation system featuring lavender sheet backgrounds and high-contrast solid purple pill indicators for the active selection, matching premium dashboard aesthetics.
+    - **Corporate Card Architecture:** Refactored all data lists (Company Selection, Stock Management, Day Book, and Ledgers) into high-fidelity white elevation cards. Each card features a distinct left-aligned vertical accent strip for visual focus and category separation.
+    - **Color-Coded Contextual UI:** Integrated intelligent color-coded strips throughout the app to instantly identify transaction types: **Blue** (Sale), **Deep Purple** (Purchase), **Red** (Receipts), **Teal** (Contra), and **Amber** (Journal).
+    - **High-Fidelity Iconography:** Upgraded all primary interaction points with modern, corporate-themed icons (Building/Corporate Fare, Calendar Month, Search, and Logout) for a polished, cohesive look.
+    - **Card-Based Form Organization:** Transformed complex voucher creation and reporting forms into logical card-based layouts, significantly improving data hierarchy and user focus on desktop and mobile screens.
+    - **Themed Interactive Elements:** Global synchronization of all Floating Action Buttons (FABs), primary "Save" buttons, and input field focus states with the corporate vibrant purple identity.
 - **Responsive & Modern UI:**
     - **UI State Persistence:** All forms, navigation, and transactional entries now use `rememberSaveable` with custom `Saver` implementations, ensuring data is never lost during screen rotation (Android) or window resizing (Desktop).
     - **Adaptive Header:** Optimized Home page header with a centered period display and reorganized actions. Includes intelligent overlap prevention that hides the period summary on narrow screens and handles long company names with ellipses.

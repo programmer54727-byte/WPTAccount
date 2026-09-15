@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -48,6 +49,16 @@ fun VoucherMonthlySummary(
     var isLoading by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
 
+    val accentColor = when(voucherType) {
+        "Sale" -> Color(0xFF1E88E5)
+        "Purchase" -> Color(0xFF7E57C2)
+        "Payment" -> Color(0xFF546E7A)
+        "Receipt" -> Color(0xFFE53935)
+        "Contra" -> Color(0xFF00897B)
+        "Journal" -> Color(0xFFFFB300)
+        else -> Color(0xFF7C4DFF)
+    }
+
     fun fetchData() {
         scope.launch {
             try {
@@ -88,20 +99,30 @@ fun VoucherMonthlySummary(
     LaunchedEffect(voucherType, period) { fetchData() }
 
     Scaffold(
+        containerColor = Color(0xFFF8F9FA),
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                ),
                 title = {
                     Column {
-                        Text(voucherType, style = MaterialTheme.typography.titleMedium)
                         Text(
-                            "Monthly Summary (${period.startDate.toDisplayDate()} - ${period.endDate.toDisplayDate()})",
-                            style = MaterialTheme.typography.labelSmall
+                            text = "$voucherType Monthly Summary", 
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1D1B20)
+                        )
+                        Text(
+                            text = "FY ${period.startDate.toDisplayDate().takeLast(4)}-${period.endDate.toDisplayDate().takeLast(2)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF49454F)
                         )
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color(0xFF7C4DFF))
                     }
                 }
             )
@@ -109,45 +130,82 @@ fun VoucherMonthlySummary(
     ) { padding ->
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(color = Color(0xFF7C4DFF))
             }
         } else {
-            Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+            Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp, vertical = 8.dp)) {
                 // Table Header
-                Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalAlignment = Alignment.Bottom) {
-                    Text("Particulars", modifier = Modifier.weight(1.5f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                    Text("Vch Count", modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                    Text("Total Value", modifier = Modifier.weight(1.5f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp), 
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Particulars", modifier = Modifier.weight(1.5f), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                    Text("Vch Count", modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                    Text("Total Value", modifier = Modifier.weight(1.5f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
                 }
-                HorizontalDivider(thickness = 1.dp, color = Color.Black)
 
-                LazyColumn(modifier = Modifier.weight(1f)) {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
                     items(monthSequence) { m ->
                         val data = monthlyDataMap[m]!!
-                        Surface(
+                        Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onMonthClick(m) }
-                                .padding(vertical = 4.dp),
-                            color = Color.Transparent
+                                .height(64.dp)
+                                .clickable { onMonthClick(m) },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                         ) {
-                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(data.monthName, modifier = Modifier.weight(1.5f), style = MaterialTheme.typography.bodyMedium)
-                                Text(data.count.toString(), modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                                Text(data.totalAmount.format(), modifier = Modifier.weight(1.5f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                            Row(
+                                modifier = Modifier.fillMaxSize(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Left accent strip
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .width(4.dp)
+                                        .background(accentColor, RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp))
+                                )
+                                
+                                Row(
+                                    modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(data.monthName, modifier = Modifier.weight(1.5f), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = Color(0xFF1D1B20))
+                                    Text(data.count.toString(), modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF49454F))
+                                    Text(data.totalAmount.format(), modifier = Modifier.weight(1.5f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1D1B20))
+                                }
                             }
                         }
-                        HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
                     }
                     
-                    // Grand Total
+                    // Grand Total Row
                     item {
                         val totalCount = monthlyDataMap.values.sumOf { it.count }
                         val grandTotal = monthlyDataMap.values.sumOf { it.totalAmount }
-                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("Grand Total", modifier = Modifier.weight(1.5f), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                            Text(totalCount.toString(), modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                            Text(grandTotal.format(), modifier = Modifier.weight(1.5f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                        
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(72.dp)
+                                .padding(top = 8.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F3F8)),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0))
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Grand Total", modifier = Modifier.weight(1.5f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1D1B20))
+                                Text(totalCount.toString(), modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                                Text(grandTotal.format(), modifier = Modifier.weight(1.5f), textAlign = TextAlign.End, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = accentColor)
+                            }
                         }
                     }
                 }

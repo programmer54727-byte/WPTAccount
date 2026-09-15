@@ -8,6 +8,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.CorporateFare
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -51,20 +56,57 @@ fun CompanyList(
     }
 
     Scaffold(
+        containerColor = Color(0xFFF8F9FA),
         topBar = {
             TopAppBar(
-                title = { Text("Select Company") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                ),
+                title = { 
+                    Text(
+                        text = "Select Company",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1D1B20),
+                        modifier = Modifier.padding(start = 8.dp)
+                    ) 
+                },
                 actions = {
-                    TextButton(onClick = onLogout) {
-                        Text("Logout")
+                    TextButton(
+                        onClick = onLogout,
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Logout,
+                            contentDescription = null,
+                            tint = Color(0xFF7C4DFF),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Logout",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF7C4DFF)
+                        )
                     }
                 }
             )
         },
         floatingActionButton = {
             if (companies.isNotEmpty()) {
-                FloatingActionButton(onClick = onCreateCompanyClick) {
-                    Icon(Icons.Default.Add, contentDescription = "Create Company")
+                FloatingActionButton(
+                    onClick = onCreateCompanyClick,
+                    containerColor = Color(0xFF7C4DFF),
+                    contentColor = Color.White,
+                    shape = androidx.compose.foundation.shape.CircleShape,
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add, 
+                        contentDescription = "Create Company",
+                        modifier = Modifier.size(28.dp)
+                    )
                 }
             }
         }
@@ -123,36 +165,123 @@ fun CompanyList(
                     item {
                         Text(
                             text = "Your Companies",
-                            style = MaterialTheme.typography.headlineSmall,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 8.dp)
+                            color = Color(0xFF1D1B20),
+                            modifier = Modifier.padding(start = 4.dp, bottom = 12.dp, top = 8.dp)
                         )
                     }
                     items(companies) { company ->
                         Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = { onCompanyClick(company) }
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(96.dp)
+                                .clickable { onCompanyClick(company) },
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color.White
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                         ) {
-                            ListItem(
-                                headlineContent = { Text(company.company_name) },
-                                supportingContent = { 
-                                    company.state?.let { state ->
-                                        company.country?.let { country ->
-                                            Text("$state, $country")
+                            Row(
+                                modifier = Modifier.fillMaxSize(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Left accent strip indicator matching screenshot
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .width(5.dp)
+                                        .background(Color(0xFF7C4DFF), androidx.compose.foundation.shape.RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp))
+                                )
+                                
+                                Spacer(modifier = Modifier.width(16.dp))
+                                
+                                // Violet tinted circular icon backing
+                                Box(
+                                    modifier = Modifier
+                                        .size(54.dp)
+                                        .background(Color(0xFF7C4DFF).copy(alpha = 0.08f), androidx.compose.foundation.shape.CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CorporateFare,
+                                        contentDescription = null,
+                                        tint = Color(0xFF7C4DFF),
+                                        modifier = Modifier.size(30.dp)
+                                    )
+                                }
+                                
+                                Spacer(modifier = Modifier.width(16.dp))
+                                
+                                // Text details block
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = company.company_name,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF1D1B20)
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    val locationText = buildString {
+                                        company.state?.let { append(it) }
+                                        if (company.country != null) {
+                                            if (isNotEmpty()) append(", ")
+                                            append(company.country)
                                         }
                                     }
-                                },
-                                trailingContent = {
-                                    Row {
-                                        IconButton(onClick = { onEditCompanyClick(company) }) {
-                                            Icon(Icons.Default.Edit, contentDescription = "Edit Company", tint = MaterialTheme.colorScheme.primary)
-                                        }
-                                        IconButton(onClick = { companyToDelete = company }) {
-                                            Icon(Icons.Default.Delete, contentDescription = "Delete Company", tint = MaterialTheme.colorScheme.error)
-                                        }
+                                    if (locationText.isNotEmpty()) {
+                                        Text(
+                                            text = locationText,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color(0xFF49454F)
+                                        )
                                     }
                                 }
-                            )
+                                
+                                // Sleek actions area matching screenshot bounds
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(end = 16.dp)
+                                ) {
+                                    IconButton(
+                                        onClick = { onEditCompanyClick(company) }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Edit, 
+                                            contentDescription = "Edit Company", 
+                                            tint = Color(0xFF7C4DFF),
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    
+                                    // Subtle thin vertical divider line
+                                    Box(
+                                        modifier = Modifier
+                                            .height(32.dp)
+                                            .width(1.dp)
+                                            .background(Color(0xFFE0E0E0))
+                                    )
+                                    
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    
+                                    IconButton(
+                                        onClick = { companyToDelete = company }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete, 
+                                            contentDescription = "Delete Company", 
+                                            tint = Color(0xFFD32F2F),
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }

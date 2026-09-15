@@ -1,11 +1,13 @@
 package com.wpt.wptaccount
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -47,6 +49,16 @@ fun VoucherTypeMonthList(
         else -> ""
     }
 
+    val accentColor = when(voucherType) {
+        "Sale" -> Color(0xFF1E88E5)
+        "Purchase" -> Color(0xFF7E57C2)
+        "Payment" -> Color(0xFF546E7A)
+        "Receipt" -> Color(0xFFE53935)
+        "Contra" -> Color(0xFF00897B)
+        "Journal" -> Color(0xFFFFB300)
+        else -> Color(0xFF7C4DFF)
+    }
+
     fun fetchData() {
         scope.launch {
             try {
@@ -84,23 +96,41 @@ fun VoucherTypeMonthList(
     }
 
     Scaffold(
+        containerColor = Color(0xFFF8F9FA),
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                ),
                 title = { 
                     Column {
-                        Text("$voucherType: $monthName", style = MaterialTheme.typography.titleMedium)
-                        Text("Day Book", style = MaterialTheme.typography.labelSmall)
+                        Text(
+                            text = "$voucherType: $monthName", 
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1D1B20)
+                        )
+                        Text(
+                            text = "Month Summary • Day Book", 
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF49454F)
+                        )
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color(0xFF7C4DFF))
                     }
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddClick) {
+            FloatingActionButton(
+                onClick = onAddClick,
+                containerColor = Color(0xFF7C4DFF),
+                contentColor = Color.White,
+                shape = androidx.compose.foundation.shape.CircleShape
+            ) {
                 Icon(Icons.Default.Add, "Add $voucherType")
             }
         }
@@ -110,53 +140,78 @@ fun VoucherTypeMonthList(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
-                placeholder = { Text("Search by Particulars or Vch No.") },
-                leadingIcon = { Icon(Icons.Default.Search, null) },
-                singleLine = true
+                placeholder = { Text("Search by Particulars or Vch No.", style = MaterialTheme.typography.bodyMedium) },
+                leadingIcon = { Icon(Icons.Default.Search, null, tint = Color(0xFF7C4DFF)) },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF7C4DFF),
+                    unfocusedBorderColor = Color(0xFFE0E0E0),
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White
+                )
             )
 
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = Color(0xFF7C4DFF))
                 }
             } else {
                 val scrollState = rememberScrollState()
                 Column(modifier = Modifier.fillMaxSize().horizontalScroll(scrollState)) {
-                    val contentWidth = 900.dp
+                    val contentWidth = 1000.dp
                     
                     // Header
                     Row(
-                        modifier = Modifier.width(contentWidth).padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.width(contentWidth).padding(horizontal = 24.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Date", modifier = Modifier.width(100.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
-                        Text("Vch No.", modifier = Modifier.width(100.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
-                        Text("Particulars", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
-                        Text("Amount", modifier = Modifier.width(120.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
+                        Text("Date", modifier = Modifier.width(100.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge, color = Color(0xFF49454F))
+                        Text("Vch No.", modifier = Modifier.width(120.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge, color = Color(0xFF49454F))
+                        Text("Particulars", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge, color = Color(0xFF49454F))
+                        Text("Amount", modifier = Modifier.width(140.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.End, color = Color(0xFF49454F))
                     }
-                    HorizontalDivider()
 
-                    LazyColumn(modifier = Modifier.width(contentWidth).fillMaxHeight()) {
+                    LazyColumn(
+                        modifier = Modifier.width(contentWidth).fillMaxHeight(),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         items(filteredVouchers) { voucher ->
                             val partyName = ledgers.find { it.id == voucher.party_ledger_id }?.ledger_name ?: "Direct Entry"
                             
-                            Surface(
+                            Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .height(64.dp)
                                     .clickable { onVoucherClick(voucher) },
-                                color = Color.Transparent
+                                shape = RoundedCornerShape(10.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                             ) {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                                    modifier = Modifier.fillMaxSize(),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(voucher.date.toDisplayDate(), modifier = Modifier.width(100.dp), style = MaterialTheme.typography.bodySmall)
-                                    Text(voucher.voucher_number ?: "-", modifier = Modifier.width(100.dp), style = MaterialTheme.typography.bodySmall)
-                                    Text(partyName, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                                    Text(voucher.total_amount.format(), modifier = Modifier.width(120.dp), style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
+                                    // Left accent strip
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxHeight()
+                                            .width(4.dp)
+                                            .background(accentColor, RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp))
+                                    )
+
+                                    Row(
+                                        modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(voucher.date.toDisplayDate(), modifier = Modifier.width(100.dp), style = MaterialTheme.typography.bodyMedium, color = Color(0xFF49454F))
+                                        Text(voucher.voucher_number ?: "-", modifier = Modifier.width(120.dp), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1D1B20))
+                                        Text(partyName, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = Color(0xFF1D1B20))
+                                        Text(voucher.total_amount.format(), modifier = Modifier.width(140.dp), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.End, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1D1B20))
+                                    }
                                 }
                             }
-                            HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
                         }
                     }
                 }

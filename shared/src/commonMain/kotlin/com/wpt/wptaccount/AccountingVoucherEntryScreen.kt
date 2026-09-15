@@ -180,12 +180,27 @@ fun AccountingVoucherEntryScreen(
         }
     ) { _, onToggleDrawer, isDesktop ->
         Scaffold(
+            containerColor = Color(0xFFF8F9FA),
             topBar = {
                 TopAppBar(
-                    title = { Text("$voucherType Creation") },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent
+                    ),
+                    title = { 
+                        Text(
+                            text = "$voucherType Creation", 
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1D1B20)
+                        ) 
+                    },
                     navigationIcon = {
                         IconButton(onClick = if (isDesktop) onBack else onToggleDrawer) {
-                            Icon(if (isDesktop) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Menu, contentDescription = null)
+                            Icon(
+                                imageVector = if (isDesktop) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Menu, 
+                                contentDescription = null,
+                                tint = Color(0xFF7C4DFF)
+                            )
                         }
                     }
                 )
@@ -193,7 +208,7 @@ fun AccountingVoucherEntryScreen(
         ) { padding ->
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = Color(0xFF7C4DFF))
                 }
             } else {
                 Column(
@@ -205,112 +220,155 @@ fun AccountingVoucherEntryScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Header Info
-                    Row(
-                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                     ) {
-                        TallyDateField("Date", date, Modifier.width(200.dp), labelWidth = 60.dp) { date = it }
-                        InventoryField("Voucher No.", voucherNo, Modifier.width(150.dp), labelWidth = 80.dp) { voucherNo = it }
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp).horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(24.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TallyDateField("Date", date, modifier = Modifier.width(200.dp), labelWidth = 60.dp) { date = it }
+                            InventoryField("Voucher No.", voucherNo, modifier = Modifier.width(150.dp), labelWidth = 90.dp) { voucherNo = it }
+                        }
                     }
 
-                    HorizontalDivider()
-
-                    // Entries Table
-                    Text("Particulars", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-
-                    // Table Header
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    // Entries Table Card
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                     ) {
-                        Text("Type", modifier = Modifier.width(80.dp).padding(start = 12.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Ledger Name", modifier = Modifier.weight(2f).padding(horizontal = 8.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Amount", modifier = Modifier.width(120.dp).padding(end = 12.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End)
-                        Spacer(Modifier.width(48.dp)) // For delete button alignment
-                    }
-                    
-                    entries.forEachIndexed { index, row ->
-                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                            // Dr/Cr Toggle
-                            Box(modifier = Modifier.width(80.dp)) {
-                                InventoryDropdown("", listOf("Debit", "Credit"), row.entryType) { type ->
-                                    entries[index] = row.copy(entryType = type)
-                                }
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Accounting Details", 
+                                style = MaterialTheme.typography.titleMedium, 
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF7C4DFF),
+                                modifier = Modifier.padding(bottom = 12.dp)
+                            )
+
+                            // Table Header
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFFF5F3F8), androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                                    .padding(vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Type", modifier = Modifier.width(80.dp).padding(start = 12.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium, color = Color(0xFF49454F))
+                                Text("Ledger Name", modifier = Modifier.weight(2f).padding(horizontal = 8.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium, color = Color(0xFF49454F))
+                                Text("Amount", modifier = Modifier.width(120.dp).padding(end = 12.dp), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.End, color = Color(0xFF49454F))
+                                Spacer(Modifier.width(48.dp))
                             }
                             
-                            Spacer(Modifier.width(8.dp))
+                            Spacer(Modifier.height(8.dp))
 
-                            // Ledger Selection
-                            Box(modifier = Modifier.weight(2f)) {
-                                TallySearchableInput(
-                                    label = "",
-                                    options = ledgers.map { it.ledger_name },
-                                    selected = ledgers.find { it.id == row.ledgerId }?.ledger_name ?: "",
-                                    onCreate = { showAddLedger = true }
-                                ) { name ->
-                                    val ledger = ledgers.find { it.ledger_name == name }
-                                    if (ledger != null) {
-                                        entries[index] = row.copy(ledgerId = ledger.id!!)
+                            entries.forEachIndexed { index, row ->
+                                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    // Dr/Cr Toggle
+                                    Box(modifier = Modifier.width(80.dp)) {
+                                        InventoryDropdown("", listOf("Debit", "Credit"), row.entryType) { type ->
+                                            entries[index] = row.copy(entryType = type)
+                                        }
+                                    }
+                                    
+                                    Spacer(Modifier.width(8.dp))
+
+                                    // Ledger Selection
+                                    Box(modifier = Modifier.weight(2f)) {
+                                        TallySearchableInput(
+                                            label = "",
+                                            options = ledgers.map { it.ledger_name },
+                                            selected = ledgers.find { it.id == row.ledgerId }?.ledger_name ?: "",
+                                            onCreate = { showAddLedger = true }
+                                        ) { name ->
+                                            val ledger = ledgers.find { it.ledger_name == name }
+                                            if (ledger != null) {
+                                                entries[index] = row.copy(ledgerId = ledger.id!!)
+                                            }
+                                        }
+                                    }
+                                    
+                                    Spacer(Modifier.width(8.dp))
+
+                                    // Amount
+                                    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+                                    OutlinedTextField(
+                                        value = row.amount,
+                                        onValueChange = { entries[index] = row.copy(amount = it) },
+                                        modifier = Modifier
+                                            .width(120.dp)
+                                            .onPreviewKeyEvent { event ->
+                                                if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                                    focusManager.moveFocus(FocusDirection.Next)
+                                                    true
+                                                } else false
+                                            },
+                                        textStyle = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.End, fontWeight = FontWeight.Bold),
+                                        singleLine = true,
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = Color(0xFF7C4DFF),
+                                            unfocusedBorderColor = Color(0xFFE0E0E0)
+                                        )
+                                    )
+
+                                    IconButton(onClick = { entries.removeAt(index) }) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFD32F2F))
                                     }
                                 }
                             }
-                            
-                            Spacer(Modifier.width(8.dp))
 
-                            // Amount
-                            val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
-                            OutlinedTextField(
-                                value = row.amount,
-                                onValueChange = { entries[index] = row.copy(amount = it) },
-                                modifier = Modifier
-                                    .width(120.dp)
-                                    .onPreviewKeyEvent { event ->
-                                        if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
-                                            focusManager.moveFocus(FocusDirection.Next)
-                                            true
-                                        } else false
-                                    },
-                                textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
-                                singleLine = true
-                            )
-
-                            IconButton(onClick = { entries.removeAt(index) }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete Row", tint = MaterialTheme.colorScheme.error)
+                            TextButton(
+                                onClick = { entries.add(AccountingRow(entryType = if (difference > 0) "Credit" else "Debit", amount = kotlin.math.abs(difference).toString())) },
+                                colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF7C4DFF))
+                            ) {
+                                Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Add Row", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
 
-                    TextButton(onClick = { entries.add(AccountingRow(entryType = if (difference > 0) "Credit" else "Debit", amount = kotlin.math.abs(difference).toString())) }) {
-                        Icon(Icons.Default.Add, null)
-                        Text("Add Row")
+                    // Narration Card
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            InventoryField("Narration", narration, labelWidth = 100.dp) { narration = it }
+                            
+                            Spacer(Modifier.height(16.dp))
+                            
+                            // Totals Row
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("Difference: ", style = MaterialTheme.typography.bodySmall, color = Color(0xFF49454F))
+                                        Text(difference.format(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = if (difference != 0.0) Color(0xFFD32F2F) else Color(0xFF43A047))
+                                    }
+                                    Spacer(Modifier.height(4.dp))
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("Grand Total: ", style = MaterialTheme.typography.titleMedium, color = Color(0xFF1D1B20))
+                                        Text(totalDebit.format(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = Color(0xFF7C4DFF))
+                                    }
+                                }
+                            }
+                        }
                     }
-
-                    HorizontalDivider()
-
-                    // Totals
-                    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
-                        Row(modifier = Modifier.width(300.dp)) {
-                            Text("Total Debit:", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                            Text(totalDebit.format(), modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                        }
-                        Row(modifier = Modifier.width(300.dp)) {
-                            Text("Total Credit:", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                            Text(totalCredit.format(), modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
-                        }
-                        if (difference != 0.0) {
-                            Text("Difference: ${difference.format()}", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-
-                    InventoryField("Narration", narration) { narration = it }
 
                     errorMessage?.let {
-                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                        Text(it, color = Color(0xFFD32F2F), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 8.dp))
                     }
 
                     Button(
@@ -320,26 +378,24 @@ fun AccountingVoucherEntryScreen(
                                 return@Button
                             }
                             
-                            // Sequential Bill-wise Dialog Logic
-                            // Find all indices where ledger has bill_by_bill enabled
                             val billByBillIndices = entries.indices.filter { idx ->
                                 val ledger = ledgers.find { it.id == entries[idx].ledgerId }
                                 ledger?.bill_by_bill == true
                             }
 
                             if (billByBillIndices.isNotEmpty()) {
-                                // Start showing dialogs from the first applicable index
                                 activeRefIndex = billByBillIndices.first()
                             } else {
-                                // Save immediately if no bill-by-bill logic needed
                                 saveVoucher(scope, company, voucherType, voucherNo, date, narration, totalDebit, entries, { isSaving = it }, { errorMessage = it }, onBack, initialVoucher?.id)
                             }
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C4DFF)),
                         enabled = !isSaving
                     ) {
-                        if (isSaving) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-                        else Text("Save $voucherType")
+                        if (isSaving) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                        else Text("Save $voucherType", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     }
                 }
             }
