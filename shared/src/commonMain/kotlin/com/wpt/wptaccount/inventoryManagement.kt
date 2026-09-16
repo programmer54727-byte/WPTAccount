@@ -75,8 +75,24 @@ fun InventoryField(
             enabled = enabled,
             modifier = Modifier
                 .weight(1f)
+                .onFocusChanged { focusState ->
+                    if (!focusState.isFocused && value.isNotEmpty()) {
+                        val evaluated = value.evaluateExpression()
+                        if (evaluated != null) {
+                            val formatted = if (evaluated % 1.0 == 0.0) evaluated.toInt().toString() else evaluated.format(2)
+                            onValueChange(formatted)
+                        }
+                    }
+                }
                 .onPreviewKeyEvent { event ->
                     if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                        if (value.isNotEmpty()) {
+                            val evaluated = value.evaluateExpression()
+                            if (evaluated != null) {
+                                val formatted = if (evaluated % 1.0 == 0.0) evaluated.toInt().toString() else evaluated.format(2)
+                                onValueChange(formatted)
+                            }
+                        }
                         focusManager.moveFocus(FocusDirection.Next)
                         true
                     } else false

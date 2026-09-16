@@ -249,3 +249,88 @@ fun Exception.toUserFriendlyMessage(): String {
         else -> "An unexpected error occurred. Please try again."
     }
 }
+
+private class ExpressionParser(val expr: String) {
+    var pos = 0
+    fun peek(): Char? = if (pos < expr.length) expr[pos] else null
+    fun consume(): Char? = if (pos < expr.length) expr[pos++] else null
+
+    fun parseNumber(): Double {
+        val start = pos
+        if (peek() == '-' || peek() == '+') {
+            consume()
+        }
+        while (peek() != null && (peek()!!.isDigit() || peek() == '.')) {
+            consume()
+        }
+        if (start == pos) throw IllegalArgumentException("Expected number")
+        return expr.substring(start, pos).toDouble()
+    }
+
+    fun parseFactor(): Double {
+        val next = peek()
+        if (next == '(') {
+            consume() // '('
+            val result = parseExpression()
+            if (consume() != ')') throw IllegalArgumentException("Expected ')'")
+            return result
+        }
+        return parseNumber()
+    }
+
+    fun parseTerm(): Double {
+        var result = parseFactor()
+        while (true) {
+            val next = peek()
+            if (next == '*' || next == '/') {
+                consume()
+                val factor = parseFactor()
+                if (next == '*') {
+                    result *= factor
+                } else {
+                    if (factor == 0.0) throw ArithmeticException("Division by zero")
+                    result /= factor
+                }
+            } else {
+                break
+            }
+        }
+        return result
+    }
+
+    fun parseExpression(): Double {
+        var result = parseTerm()
+        while (true) {
+            val next = peek()
+            if (next == '+' || next == '-') {
+                consume()
+                val term = parseTerm()
+                if (next == '+') {
+                    result += term
+                } else {
+                    result -= term
+                }
+            } else {
+                break
+            }
+        }
+        return result
+    }
+
+    fun evaluate(): Double? {
+        return try {
+            val res = parseExpression()
+            if (pos < expr.length) null else res
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
+
+fun String.evaluateExpression(): Double? {
+    val clean = this.replace(" ", "")
+    if (clean.isEmpty()) return null
+    return ExpressionParser(clean).evaluate()
+}
+
+

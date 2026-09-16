@@ -18,6 +18,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.font.FontWeight
@@ -384,11 +385,32 @@ fun VoucherEntryScreen(
                                             OutlinedTextField(
                                                 value = row.qty,
                                                 onValueChange = {
-                                                    val a = (it.toDoubleOrNull() ?: 0.0) * (row.rate.toDoubleOrNull() ?: 0.0)
+                                                    val q = it.evaluateExpression() ?: it.toDoubleOrNull() ?: 0.0
+                                                    val r = row.rate.evaluateExpression() ?: row.rate.toDoubleOrNull() ?: 0.0
+                                                    val a = q * r
                                                     items[index] = row.copy(qty = it, amount = a.format(2))
                                                 },
-                                                modifier = Modifier.width(80.dp).onPreviewKeyEvent { event ->
-                                                    if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) { focusManager.moveFocus(FocusDirection.Next); true } else false
+                                                modifier = Modifier.width(80.dp)
+                                                    .onFocusChanged { focusState ->
+                                                        if (!focusState.isFocused && row.qty.isNotEmpty()) {
+                                                            val evaluated = row.qty.evaluateExpression()
+                                                            if (evaluated != null) {
+                                                                val formatted = if (evaluated % 1.0 == 0.0) evaluated.toInt().toString() else evaluated.format(2)
+                                                                items[index] = row.copy(qty = formatted)
+                                                            }
+                                                        }
+                                                    }
+                                                    .onPreviewKeyEvent { event ->
+                                                    if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                                        if (row.qty.isNotEmpty()) {
+                                                            val evaluated = row.qty.evaluateExpression()
+                                                            if (evaluated != null) {
+                                                                val formatted = if (evaluated % 1.0 == 0.0) evaluated.toInt().toString() else evaluated.format(2)
+                                                                items[index] = row.copy(qty = formatted)
+                                                            }
+                                                        }
+                                                        focusManager.moveFocus(FocusDirection.Next); true
+                                                    } else false
                                                 },
                                                 textStyle = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.End),
                                                 singleLine = true,
@@ -396,12 +418,33 @@ fun VoucherEntryScreen(
                                             )
                                             OutlinedTextField(
                                                 value = row.rate,
-                                                onValueChange = { 
-                                                    val a = (row.qty.toDoubleOrNull() ?: 0.0) * (it.toDoubleOrNull() ?: 0.0)
+                                                onValueChange = {
+                                                    val q = row.qty.evaluateExpression() ?: row.qty.toDoubleOrNull() ?: 0.0
+                                                    val r = it.evaluateExpression() ?: it.toDoubleOrNull() ?: 0.0
+                                                    val a = q * r
                                                     items[index] = row.copy(rate = it, amount = a.format(2))
                                                 },
-                                                modifier = Modifier.width(100.dp).onPreviewKeyEvent { event ->
-                                                    if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) { focusManager.moveFocus(FocusDirection.Next); true } else false
+                                                modifier = Modifier.width(100.dp)
+                                                    .onFocusChanged { focusState ->
+                                                        if (!focusState.isFocused && row.rate.isNotEmpty()) {
+                                                            val evaluated = row.rate.evaluateExpression()
+                                                            if (evaluated != null) {
+                                                                val formatted = if (evaluated % 1.0 == 0.0) evaluated.toInt().toString() else evaluated.format(2)
+                                                                items[index] = row.copy(rate = formatted)
+                                                            }
+                                                        }
+                                                    }
+                                                    .onPreviewKeyEvent { event ->
+                                                    if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                                        if (row.rate.isNotEmpty()) {
+                                                            val evaluated = row.rate.evaluateExpression()
+                                                            if (evaluated != null) {
+                                                                val formatted = if (evaluated % 1.0 == 0.0) evaluated.toInt().toString() else evaluated.format(2)
+                                                                items[index] = row.copy(rate = formatted)
+                                                            }
+                                                        }
+                                                        focusManager.moveFocus(FocusDirection.Next); true
+                                                    } else false
                                                 },
                                                 textStyle = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.End),
                                                 singleLine = true,
@@ -409,13 +452,33 @@ fun VoucherEntryScreen(
                                             )
                                             OutlinedTextField(
                                                 value = row.amount,
-                                                onValueChange = { 
-                                                    val q = row.qty.toDoubleOrNull() ?: 1.0
-                                                    val r = if (q != 0.0) (it.toDoubleOrNull() ?: 0.0) / q else 0.0
-                                                    items[index] = row.copy(amount = it, rate = if (q != 0.0) r.format(2) else row.rate)
+                                                onValueChange = {
+                                                    val q = (row.qty.evaluateExpression() ?: row.qty.toDoubleOrNull() ?: 1.0).let { if (it == 0.0) 1.0 else it }
+                                                    val a = it.evaluateExpression() ?: it.toDoubleOrNull() ?: 0.0
+                                                    val r = a / q
+                                                    items[index] = row.copy(amount = it, rate = r.format(2))
                                                 },
-                                                modifier = Modifier.width(120.dp).onPreviewKeyEvent { event ->
-                                                    if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) { focusManager.moveFocus(FocusDirection.Next); true } else false
+                                                modifier = Modifier.width(120.dp)
+                                                    .onFocusChanged { focusState ->
+                                                        if (!focusState.isFocused && row.amount.isNotEmpty()) {
+                                                            val evaluated = row.amount.evaluateExpression()
+                                                            if (evaluated != null) {
+                                                                val formatted = evaluated.format(2)
+                                                                items[index] = row.copy(amount = formatted)
+                                                            }
+                                                        }
+                                                    }
+                                                    .onPreviewKeyEvent { event ->
+                                                    if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                                        if (row.amount.isNotEmpty()) {
+                                                            val evaluated = row.amount.evaluateExpression()
+                                                            if (evaluated != null) {
+                                                                val formatted = evaluated.format(2)
+                                                                items[index] = row.copy(amount = formatted)
+                                                            }
+                                                        }
+                                                        focusManager.moveFocus(FocusDirection.Next); true
+                                                    } else false
                                                 },
                                                 textStyle = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.End, fontWeight = FontWeight.Bold),
                                                 singleLine = true,
