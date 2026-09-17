@@ -64,6 +64,11 @@ fun CreateCompanyForm(
     var isSaving by rememberSaveable { mutableStateOf(false) }
     var saveError by rememberSaveable { mutableStateOf<String?>(null) }
     
+    var countries by remember { mutableStateOf<List<CountryData>>(emptyList()) }
+    LaunchedEffect(Unit) {
+        countries = CountryRepository.getCountries()
+    }
+    
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
@@ -200,25 +205,32 @@ fun CreateCompanyForm(
                 )
 
                 SectionHeader("Contact Details")
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = state, 
-                        onValueChange = { state = it }, 
-                        label = { Text("State") }, 
-                        modifier = Modifier.weight(1f),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Right) })
-                    )
-                    OutlinedTextField(
-                        value = country, 
-                        onValueChange = { country = it }, 
-                        label = { Text("Country") }, 
-                        modifier = Modifier.weight(1f),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
-                    )
+                SearchableDropdown(
+                    label = "Country",
+                    options = countries.map { it.country },
+                    selected = country,
+                    modifier = Modifier.fillMaxWidth(),
+                    labelWidth = 100.dp
+                ) {
+                    country = it
+                    val selectedCountry = countries.find { c -> c.country == it }
+                    if (selectedCountry != null) {
+                        val allRegions = selectedCountry.getAllRegions()
+                        if (allRegions.none { r -> r.name == state }) {
+                            state = ""
+                        }
+                    }
+                }
+
+                val currentCountryStates = countries.find { it.country == country }?.getAllRegions()?.map { it.name } ?: emptyList()
+                SearchableDropdown(
+                    label = "State",
+                    options = currentCountryStates,
+                    selected = state,
+                    modifier = Modifier.fillMaxWidth(),
+                    labelWidth = 100.dp
+                ) {
+                    state = it
                 }
                 OutlinedTextField(
                     value = pincode, 

@@ -22,6 +22,11 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **Flexible Tax Ledgers:** Replaced auto-GST with manual tax ledger selection from "Duties & Taxes", supporting custom rates (e.g., CGST 2.5%, SGST 2.5%) with automatic amount calculation.
     - **Inline Math Evaluation (Excel-Style):** Direct support for typing mathematical expressions (e.g., `3+5+7` or `10*5`) into numeric input fields like Quantity, Rate, Amount, and Opening Balance. The value automatically calculates live, and replaces the text field with the final result on pressing **Enter** or **Focus Loss**, without needing an `=` sign.
     - **Atomic Saving Logic:** Advanced **Supabase RPC (PostgreSQL functions)** handle all complex updates (Stock Quantity & Ledger Balance) in a single database-side transaction. This ensures 100% data consistency, prevents race conditions, and correctly applies accounting rules based on account nature (e.g., Assets vs. Liabilities).
+- **Searchable Country & State Selection:**
+    - **Resource-Based Data:** Integrated `countries.json` containing detailed country and state/union territory data (e.g., India, China) bundled directly into Compose Multiplatform resources.
+    - **Tally-Style In-place Search:** Replaced static text fields for Country and State with smart, in-place searchable dropdowns that appear as you type, matching the voucher entry experience.
+    - **Contextual Filtering:** Intelligent state filtering that dynamically updates available regions based on the selected country, ensuring data accuracy.
+    - **Full Keyboard Navigation:** Enhanced accessibility with arrow-key selection and `Enter` to confirm, maintaining a fast, Tally-like workflow.
 - **Ledger Management:**
     - **Groups & Ledgers:** Full lifecycle management (Add, View, Edit, Delete) of accounting groups and individual ledgers with aggregated totals.
     - **Smart Adaptive Form:** Intelligent ledger creation/editing dialog that dynamically shows/hides sections based on the chosen accounting group (Bank, Loans, Revenue, Assets, etc.).

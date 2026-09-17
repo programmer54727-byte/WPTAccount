@@ -646,6 +646,11 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
     var isSaving by remember { mutableStateOf(false) }
     var balances by remember { mutableStateOf<Map<String, LedgerBalance>>(emptyMap()) }
     
+    var countries by remember { mutableStateOf<List<CountryData>>(emptyList()) }
+    LaunchedEffect(Unit) {
+        countries = CountryRepository.getCountries()
+    }
+
     val scope = rememberCoroutineScope()
 
     fun fetchData() {
@@ -1016,8 +1021,23 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
                                 isMailingNameSynced = false
                             }
                             InventoryField("Address", address) { address = it }
-                            InventoryField("State", state) { state = it }
-                            InventoryField("Country", country) { country = it }
+                            
+                            SearchableDropdown("Country", countries.map { it.country }, country) {
+                                country = it
+                                val selectedCountry = countries.find { c -> c.country == it }
+                                if (selectedCountry != null) {
+                                    val allRegions = selectedCountry.getAllRegions()
+                                    if (allRegions.none { r -> r.name == state }) {
+                                        state = ""
+                                    }
+                                }
+                            }
+
+                            val currentCountryStates = countries.find { it.country == country }?.getAllRegions()?.map { it.name } ?: emptyList()
+                            SearchableDropdown("State", currentCountryStates, state) {
+                                state = it
+                            }
+                            
                             InventoryField("Pincode", pincode) { pincode = it }
                         }
 
