@@ -81,8 +81,7 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                         }
                         "signup" -> {
                             SignUp(
-                                onBackClick = { currentScreen = "landing" },
-                                onSignUpSuccess = { currentScreen = "company_list" }
+                                onBackClick = { currentScreen = "landing" }
                             )
                         }
                         "login" -> {

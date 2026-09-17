@@ -3,7 +3,7 @@
 This is a modern **Kotlin Multiplatform (KMP)** application that works on **Android**, **Desktop (JVM)**, and **Web (Wasm)**. It uses **Jetpack Compose** for the UI and **Supabase** as the backend.
 
 ## 🚀 Features
-- **User Authentication:** Secure email-based signup and login with sanitized error messages to prevent sensitive data leaks.
+- **User Authentication:** Secure email-based signup with link-based verification and login, featuring sanitized error messages to prevent sensitive data leaks.
 - **Session Persistence:** Stay logged in across app restarts using `multiplatform-settings`.
 - **Company Management:** Full lifecycle management (Create, View, Edit, Delete) of companies with professional, centered form layouts.
 - **Automated Accounting Setup:**

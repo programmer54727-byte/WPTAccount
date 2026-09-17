@@ -22,7 +22,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.style.TextAlign
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
-import io.github.jan.supabase.auth.OtpType
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -33,14 +32,12 @@ import wptaccount.shared.generated.resources.applogo
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignUp(
-    onBackClick: () -> Unit,
-    onSignUpSuccess: () -> Unit
+    onBackClick: () -> Unit
 ) {
     var fullName by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
-    // var otpCode by rememberSaveable { mutableStateOf("") }
-    // var isVerifying by rememberSaveable { mutableStateOf(false) }
+    var isSuccess by rememberSaveable { mutableStateOf(false) }
     var isLoading by rememberSaveable { mutableStateOf(false) }
     var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
     
@@ -65,8 +62,7 @@ fun SignUp(
                         put("full_name", fullName)
                     }
                 }
-                // isVerifying = true
-                onSignUpSuccess()
+                isSuccess = true
             } catch (e: Exception) {
                 println("Signup error: ${e.message}")
                 errorMessage = e.toUserFriendlyMessage()
@@ -79,7 +75,7 @@ fun SignUp(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Create Account") },
+                title = { Text(if (isSuccess) "Verification Sent" else "Create Account") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -106,93 +102,39 @@ fun SignUp(
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            Text(
-                text = "Join WPT Account",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-            
-            /*
-            // OTP verification UI commented out for now
-            if (isVerifying) {
+            if (isSuccess) {
                 Text(
-                    text = "We've sent a 6-digit verification code to $email",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "Verification link sent!",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "We've sent a confirmation link to $email. Please check your inbox and click the link to verify your account.",
+                    style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                OutlinedTextField(
-                    value = otpCode,
-                    onValueChange = { if (it.length <= 6) otpCode = it },
-                    label = { Text("Verification Code") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center)
-                )
-
-                errorMessage?.let {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = it,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Button(
-                    onClick = {
-                        if (otpCode.length < 6) {
-                            errorMessage = "Please enter the 6-digit code"
-                            return@Button
-                        }
-
-                        scope.launch {
-                            isLoading = true
-                            errorMessage = null
-                            try {
-                                supabase.auth.verifyEmailOtp(
-                                    type = OtpType.Email.SIGNUP,
-                                    email = email,
-                                    token = otpCode
-                                )
-                                onSignUpSuccess()
-                            } catch (e: Exception) {
-                                println("OTP Verification error: ${e.message}")
-                                errorMessage = e.toUserFriendlyMessage()
-                            } finally {
-                                isLoading = false
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading
+                    onClick = onBackClick,
+                    modifier = Modifier.widthIn(min = 200.dp)
                 ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text("Verify & Continue")
-                    }
-                }
-
-                TextButton(
-                    onClick = { isVerifying = false },
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text("Change Email")
+                    Text("Back to Login")
                 }
 
             } else {
-            */
+                Text(
+                    text = "Join WPT Account",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 OutlinedTextField(
@@ -270,7 +212,7 @@ fun SignUp(
                         Text("Sign Up")
                     }
                 }
-            // }
+            }
             
             Spacer(modifier = Modifier.height(16.dp))
         }
