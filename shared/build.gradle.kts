@@ -2,6 +2,7 @@ import org.gradle.declarative.dsl.schema.FqName.Empty.packageName
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
+import java.util.Calendar
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -19,6 +20,11 @@ val localProperties = Properties().apply {
     }
 }
 
+val calendar = Calendar.getInstance()
+val month = calendar.get(Calendar.MONTH) + 1
+val buildNumber = (System.currentTimeMillis() / 60000).toInt()
+val dynamicVersion = "1.$month.$buildNumber"
+
 buildkonfig {
     packageName = "com.wpt.wptaccount"
     objectName = "SupabaseConfig"
@@ -26,6 +32,8 @@ buildkonfig {
     defaultConfigs {
         buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "URL", localProperties.getProperty("supabase.url") ?: "")
         buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "KEY", localProperties.getProperty("supabase.key") ?: "")
+        buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "VERSION_NAME", dynamicVersion)
+        buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.INT, "VERSION_CODE", buildNumber.toString())
     }
 }
 

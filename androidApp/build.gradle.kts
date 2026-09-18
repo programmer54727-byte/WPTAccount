@@ -1,10 +1,16 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Calendar
 
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
 }
+
+val calendar = Calendar.getInstance()
+val month = calendar.get(Calendar.MONTH) + 1
+val buildNumber = (System.currentTimeMillis() / 60000).toInt()
+val dynamicVersion = "1.$month.$buildNumber"
 
 kotlin {
     compilerOptions {
@@ -28,8 +34,8 @@ android {
         applicationId = "com.wpt.wptaccount"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = (System.currentTimeMillis() / 60000).toInt() // Unique code based on current time (minutes)
-        versionName = "1.0.4"
+        versionCode = buildNumber
+        versionName = dynamicVersion
     }
     packaging {
         resources {
