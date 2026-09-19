@@ -72,6 +72,7 @@ fun VoucherTypeMonthList(
                     }
                     order("date", order = Order.DESCENDING)
                 }.decodeList<Voucher>().filter {
+                    if (it.date < period.startDate || it.date > period.endDate) return@filter false
                     val dateParts = it.date.split("-")
                     dateParts.size == 3 && dateParts[1].toInt() == monthInt
                 }

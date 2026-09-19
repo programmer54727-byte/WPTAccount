@@ -11,7 +11,8 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - Automatically initializes default ledgers (**Cash** and **Profit & Loss A/c**).
     - **Smart Check:** Automatically initializes groups/ledgers for older companies when opened.
 - **Voucher Management (Sale, Purchase & Accounting):**
-    - **Smart Default Date Logic:** Automatically defaults new voucher dates to the **last entered voucher date** for the company, or the **first day of the financial year** if no entries exist, significantly accelerating repetitive data entry.
+    - **Smart Default Date Logic:** Automatically defaults new voucher dates to the **last entered voucher date** within the *active selected accounting period*, or the first day of that period if no entries exist, keeping entries strictly contextual and significantly accelerating repetitive data entry.
+    - **Voucher Date Range Validation:** Enforces strict accounting period checks; saving vouchers with a date falling outside the selected active accounting period triggers immediate, user-friendly error feedback.
     - **Tally-Style Searchable Selectors:** Type names to filter parties, ledgers, or items instantly with full keyboard support (Arrows + Enter).
     - **On-the-fly Creation (Alt+C):** Create missing ledgers or stock items directly from the voucher entry screen using keyboard shortcuts.
     - **Advanced Bill-wise Details:** 
@@ -42,7 +43,7 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **Live Business Dashboard:** Integrated real-time transactional data visualization (Monthly Sales vs. Purchases) with period-filtered analytics, replacing all placeholder data.
     - **Intelligent Stock Summary:** Period-aware inventory calculation that accurately reflects stock balances based on historical transactions up to the selected end date.
     - **Weighted Average Cost Valuation:** Implemented professional inventory valuation using the **Weighted Average Cost** method. Average rates are dynamically calculated as `(Opening Value + Purchase Value) / (Opening Qty + Purchase Qty)`, ensuring accurate financial reporting. Sales correctly reduce quantities without skewing the cost basis.
-    - **Live Monthly Summaries:** Real-time calculation of Inwards, Outwards, and rolling Closing Balances fetched directly from voucher data.
+    - **Live Monthly Summaries:** Real-time calculation of Inwards, Outwards, and rolling Closing Balances fetched directly from voucher data with defensive date filters to prevent cross-financial-year leaks.
     - **Accounting Precision:** Rolling balance logic for ledgers that correctly handles Debit (Dr) vs. Credit (Cr) types.
     - **Period Awareness:** Selectable accounting periods (e.g., Financial Year) that automatically calculate "Effective Opening Balances" by summing all historical transactions prior to the period start date.
 - **Professional Workflows:**

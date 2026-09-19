@@ -119,9 +119,13 @@ fun AccountingVoucherEntryScreen(
                     if (entries.isEmpty()) entries.add(AccountingRow())
 
                 } else {
-                    // 1. Fetch last voucher date for this company to use as default
+                    // 1. Fetch last voucher date for this company inside current period to use as default
                     val lastAnyVouchers = supabase.from("vouchers").select {
-                        filter { eq("company_id", company.id!!) }
+                        filter { 
+                            eq("company_id", company.id!!) 
+                            gte("date", period.startDate)
+                            lte("date", period.endDate)
+                        }
                         order("date", order = Order.DESCENDING)
                         limit(1)
                     }.decodeList<Voucher>()
@@ -132,11 +136,13 @@ fun AccountingVoucherEntryScreen(
                         date = period.startDate.toDisplayDate()
                     }
 
-                    // 2. Fetch last voucher number to auto-increment for this TYPE
+                    // 2. Fetch last voucher number to auto-increment for this TYPE within selected period
                     val lastVouchers = supabase.from("vouchers").select {
                         filter {
                             eq("company_id", company.id!!)
                             eq("voucher_type", voucherType)
+                            gte("date", period.startDate)
+                            lte("date", period.endDate)
                         }
                         order("created_at", order = Order.DESCENDING)
                         limit(1)
@@ -391,6 +397,14 @@ fun AccountingVoucherEntryScreen(
                                 errorMessage = "Voucher not balanced or ledger missing"
                                 return@Button
                             }
+
+                            try {
+                                val dbVoucherDate = date.toDbDate()
+                                if (dbVoucherDate < period.startDate || dbVoucherDate > period.endDate) {
+                                    errorMessage = "Voucher Date is outside the current period (${period.startDate.toDisplayDate()} to ${period.endDate.toDisplayDate()})"
+                                    return@Button
+                                }
+                            } catch (_: Exception) {}
                             
                             val billByBillIndices = entries.indices.filter { idx ->
                                 val ledger = ledgers.find { it.id == entries[idx].ledgerId }

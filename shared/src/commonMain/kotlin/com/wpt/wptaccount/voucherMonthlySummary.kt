@@ -77,6 +77,7 @@ fun VoucherMonthlySummary(
                 }.toMutableMap()
 
                 vouchers.forEach { voucher ->
+                    if (voucher.date < period.startDate || voucher.date > period.endDate) return@forEach
                     val dateParts = voucher.date.split("-")
                     if (dateParts.size == 3) {
                         val month = dateParts[1].toInt()
