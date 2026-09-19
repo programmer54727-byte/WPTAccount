@@ -1,7 +1,6 @@
 package com.wpt.wptaccount
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.horizontalScroll
@@ -14,11 +13,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -595,6 +592,7 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
     // Selection and View Mode
     var selectedIndex by rememberSaveable { mutableStateOf(0) }
     var isSummaryMode by rememberSaveable { mutableStateOf(false) }
+    var selectedMonthForVouchers by rememberSaveable { mutableStateOf<Int?>(null) }
     val focusRequester = remember { FocusRequester() }
 
     // Form States
@@ -703,15 +701,29 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
         focusRequester.requestFocus()
     }
 
-    BackHandler(enabled = isSummaryMode) {
-        isSummaryMode = false
+    BackHandler(enabled = isSummaryMode || selectedMonthForVouchers != null) {
+        if (selectedMonthForVouchers != null) {
+            selectedMonthForVouchers = null
+        } else {
+            isSummaryMode = false
+            scope.launch { focusRequester.requestFocus() }
+        }
     }
 
-    if (isSummaryMode && ledgers.isNotEmpty() && selectedIndex < ledgers.size) {
+    if (selectedMonthForVouchers != null && ledgers.isNotEmpty() && selectedIndex < ledgers.size) {
+        LedgerVoucherList(
+            company = company,
+            ledger = ledgers[selectedIndex],
+            monthInt = selectedMonthForVouchers!!,
+            period = period,
+            onBack = { selectedMonthForVouchers = null }
+        )
+    } else if (isSummaryMode && ledgers.isNotEmpty() && selectedIndex < ledgers.size) {
         LedgerMonthlySummary(
             company = company,
             ledger = ledgers[selectedIndex],
             period = period,
+            onMonthClick = { selectedMonthForVouchers = it },
             onBack = { 
                 isSummaryMode = false 
                 scope.launch { focusRequester.requestFocus() }
@@ -1258,6 +1270,7 @@ fun FilteredLedgersList(
 ) {
     var selectedIndex by remember { mutableStateOf(0) }
     var isSummaryMode by remember { mutableStateOf(false) }
+    var selectedMonthForVouchers by remember { mutableStateOf<Int?>(null) }
     var balances by remember { mutableStateOf<Map<String, LedgerBalance>>(emptyMap()) }
     
     val focusRequester = remember { FocusRequester() }
@@ -1303,15 +1316,29 @@ fun FilteredLedgersList(
         focusRequester.requestFocus()
     }
 
-    BackHandler(enabled = isSummaryMode) {
-        isSummaryMode = false
+    BackHandler(enabled = isSummaryMode || selectedMonthForVouchers != null) {
+        if (selectedMonthForVouchers != null) {
+            selectedMonthForVouchers = null
+        } else {
+            isSummaryMode = false
+            scope.launch { focusRequester.requestFocus() }
+        }
     }
 
-    if (isSummaryMode && ledgers.isNotEmpty() && selectedIndex < ledgers.size) {
+    if (selectedMonthForVouchers != null && ledgers.isNotEmpty() && selectedIndex < ledgers.size) {
+        LedgerVoucherList(
+            company = company,
+            ledger = ledgers[selectedIndex],
+            monthInt = selectedMonthForVouchers!!,
+            period = period,
+            onBack = { selectedMonthForVouchers = null }
+        )
+    } else if (isSummaryMode && ledgers.isNotEmpty() && selectedIndex < ledgers.size) {
         LedgerMonthlySummary(
             company = company,
             ledger = ledgers[selectedIndex],
             period = period,
+            onMonthClick = { selectedMonthForVouchers = it },
             onBack = { 
                 isSummaryMode = false 
                 scope.launch { focusRequester.requestFocus() }
@@ -1414,6 +1441,7 @@ fun LedgerMonthlySummary(
     company: Company,
     ledger: Ledger,
     period: AccountPeriod,
+    onMonthClick: (Int) -> Unit,
     onBack: () -> Unit
 ) {
     val months = listOf(
@@ -1431,6 +1459,8 @@ fun LedgerMonthlySummary(
     var effectiveOpeningBalanceState by remember { mutableStateOf(0.0) }
     var isLoading by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
+
+    val accentColor = Color(0xFF7C4DFF)
 
     fun fetchData() {
         scope.launch {
@@ -1495,84 +1525,138 @@ fun LedgerMonthlySummary(
     LaunchedEffect(ledger.id, period) { fetchData() }
     
     Scaffold(
+        containerColor = Color(0xFFF8F9FA),
         topBar = {
-            Column(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(4.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                ),
+                title = {
+                    Column {
+                        Text(
+                            text = ledger.ledger_name, 
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1D1B20)
+                        )
+                        Text(
+                            text = "FY ${period.startDate.toDisplayDate().takeLast(4)}-${period.endDate.toDisplayDate().takeLast(2)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF49454F)
+                        )
                     }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                        Text(ledger.ledger_name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Text("Monthly Summary", style = MaterialTheme.typography.bodySmall)
-                        Text("For ${period.startDate.toDisplayDate()} to ${period.endDate.toDisplayDate()}", style = MaterialTheme.typography.bodySmall)
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color(0xFF7C4DFF))
                     }
                 }
-            }
+            )
         }
     ) { padding ->
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(color = Color(0xFF7C4DFF))
             }
         } else {
-            BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(padding)) {
-                val isMobile = maxWidth < 600.dp
-                val scrollState = rememberScrollState()
-                val constraints = this@BoxWithConstraints
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
-                        .horizontalScroll(scrollState)
+            Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp, vertical = 8.dp)) {
+                // Table Header
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp), 
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val contentWidth = if (isMobile) 800.dp else constraints.maxWidth
+                    Text("Particulars", modifier = Modifier.weight(1.5f), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                    Text("Debit", modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                    Text("Credit", modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                    Text("Closing", modifier = Modifier.weight(1.5f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                }
+
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
+                    // Opening Balance Row
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Opening Balance", modifier = Modifier.weight(1.5f), style = MaterialTheme.typography.bodyLarge, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, color = Color(0xFF49454F))
+                                Spacer(modifier = Modifier.weight(2f)) // Space for Debit/Credit
+                                Text(effectiveOpeningBalanceState.formatWithSign(), modifier = Modifier.weight(1.5f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = Color(0xFF1D1B20))
+                            }
+                        }
+                    }
+
+                    // Monthly Rows
+                    items(monthSequence) { m ->
+                        val data = monthlyDataMap[m]!!
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(64.dp)
+                                .clickable { onMonthClick(m) },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxSize(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Left accent strip
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .width(4.dp)
+                                        .background(accentColor, RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp))
+                                )
+                                
+                                Row(
+                                    modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(data.monthName, modifier = Modifier.weight(1.5f), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = Color(0xFF1D1B20))
+                                    Text(if (data.debit != 0.0) data.debit.format() else "", modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF49454F))
+                                    Text(if (data.credit != 0.0) data.credit.format() else "", modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF49454F))
+                                    Text(data.balance.formatWithSign(), modifier = Modifier.weight(1.5f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1D1B20))
+                                }
+                            }
+                        }
+                    }
                     
-                    Column(modifier = Modifier.width(contentWidth)) {
-                        // Header
-                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-                            Text("Particulars", modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            SummaryColumnHeader("Debit", Modifier.weight(1f))
-                            SummaryColumnHeader("Credit", Modifier.weight(1f))
-                            SummaryColumnHeader("Closing Balance", Modifier.weight(1.5f))
-                        }
-                        HorizontalDivider(thickness = 2.dp, color = Color.Black)
-
-                        LazyColumn(modifier = Modifier.weight(1f)) {
-                            // Opening Balance Row
-                            item {
-                                LedgerSummaryRow(
-                                    label = "Opening Balance",
-                                    italic = true,
-                                    closingValue = effectiveOpeningBalanceState.formatWithSign()
-                                )
-                            }
-
-                            // Monthly Rows
-                            items(monthSequence) { m ->
-                                val data = monthlyDataMap[m]!!
-                                LedgerSummaryRow(
-                                    label = data.monthName,
-                                    debit = if (data.debit != 0.0) data.debit.format() else "",
-                                    credit = if (data.credit != 0.0) data.credit.format() else "",
-                                    closingValue = data.balance.formatWithSign()
-                                )
-                            }
-                        }
-
-                        HorizontalDivider(thickness = 2.dp, color = Color.Black)
-                        // Grand Total Row
+                    // Grand Total Row
+                    item {
                         val totalDebit = monthlyDataMap.values.sumOf { it.debit }
                         val totalCredit = monthlyDataMap.values.sumOf { it.credit }
-                        val finalBal = monthlyDataMap[3]?.balance ?: 0.0
-
-                        LedgerSummaryRow(
-                            label = "Grand Total",
-                            bold = true,
-                            debit = totalDebit.format(),
-                            credit = totalCredit.format(),
-                            closingValue = finalBal.formatWithSign()
-                        )
+                        val finalBal = monthlyDataMap[monthSequence.last()]?.balance ?: 0.0
+                        
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(72.dp)
+                                .padding(top = 8.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F3F8)),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0))
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Grand Total", modifier = Modifier.weight(1.5f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1D1B20))
+                                Text(totalDebit.format(), modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                                Text(totalCredit.format(), modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                                Text(finalBal.formatWithSign(), modifier = Modifier.weight(1.5f), textAlign = TextAlign.End, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = accentColor)
+                            }
+                        }
                     }
                 }
             }
@@ -1587,9 +1671,13 @@ fun LedgerSummaryRow(
     italic: Boolean = false,
     debit: String = "",
     credit: String = "",
-    closingValue: String = ""
+    closingValue: String = "",
+    onClick: (() -> Unit)? = null
 ) {
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+    val modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).run {
+        if (onClick != null) clickable { onClick() } else this
+    }
+    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = label,
             modifier = Modifier.weight(1.2f),
@@ -1600,5 +1688,162 @@ fun LedgerSummaryRow(
         Text(debit, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
         Text(credit, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall)
         Text(closingValue, modifier = Modifier.weight(1.5f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LedgerVoucherList(
+    company: Company,
+    ledger: Ledger,
+    monthInt: Int,
+    period: AccountPeriod,
+    onBack: () -> Unit
+) {
+    var entries by remember { mutableStateOf<List<VoucherEntryWithVoucher>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var searchQuery by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+
+    val monthName = when (monthInt) {
+        1 -> "January"; 2 -> "February"; 3 -> "March"; 4 -> "April"
+        5 -> "May"; 6 -> "June"; 7 -> "July"; 8 -> "August"
+        9 -> "September"; 10 -> "October"; 11 -> "November"; 12 -> "December"
+        else -> ""
+    }
+
+    fun fetchData() {
+        scope.launch {
+            try {
+                isLoading = true
+                val allEntries = supabase.from("voucher_entries").select(Columns.raw("amount, entry_type, vouchers(date, company_id, voucher_type, voucher_number)")) {
+                    filter { eq("ledger_id", ledger.id!!) }
+                }.decodeList<VoucherEntryWithVoucher>()
+
+                entries = allEntries.filter { entry ->
+                    if (entry.vouchers.date < period.startDate || entry.vouchers.date > period.endDate) return@filter false
+                    
+                    val monthLabel = entry.vouchers.date.toMonthYearLabel()
+                    val mName = monthLabel.split(" ")[0]
+                    val mInt = when (mName) {
+                        "Jan" -> 1; "Feb" -> 2; "Mar" -> 3; "Apr" -> 4
+                        "May" -> 5; "Jun" -> 6; "Jul" -> 7; "Aug" -> 8
+                        "Sep" -> 9; "Oct" -> 10; "Nov" -> 11; "Dec" -> 12
+                        else -> 0
+                    }
+                    mInt == monthInt
+                }.sortedBy { it.vouchers.date }
+
+            } catch (e: Exception) {
+                println("Error fetching ledger voucher list: ${e.message}")
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    LaunchedEffect(ledger.id, monthInt, period) { fetchData() }
+
+    val filteredEntries = entries.filter {
+        searchQuery.isEmpty() || 
+        it.vouchers.voucher_number?.contains(searchQuery, ignoreCase = true) == true ||
+        it.vouchers.voucher_type.contains(searchQuery, ignoreCase = true)
+    }
+
+    Scaffold(
+        containerColor = Color(0xFFF8F9FA),
+        topBar = {
+            TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                title = {
+                    Column {
+                        Text(ledger.ledger_name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color(0xFF1D1B20))
+                        Text("$monthName Transactions", style = MaterialTheme.typography.labelSmall, color = Color(0xFF49454F))
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color(0xFF7C4DFF))
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color(0xFF7C4DFF))
+            }
+        } else {
+            Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp, vertical = 8.dp)) {
+                
+                // Search Bar
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    placeholder = { Text("Search by Voucher No. or Type", style = MaterialTheme.typography.bodyMedium) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF7C4DFF)) },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF7C4DFF),
+                        unfocusedBorderColor = Color(0xFFE0E0E0),
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
+                    ),
+                    singleLine = true
+                )
+
+                // Header Row
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), 
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Date", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                    Text("Vch No.", modifier = Modifier.weight(0.8f), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                    Text("Particulars", modifier = Modifier.weight(2f), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                    Text("Debit", modifier = Modifier.weight(1.2f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                    Text("Credit", modifier = Modifier.weight(1.2f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(0xFF49454F))
+                }
+
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
+                    items(filteredEntries) { entry ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth().height(64.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxSize(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Left accent strip
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .width(4.dp)
+                                        .background(Color(0xFF7C4DFF), RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp))
+                                )
+                                
+                                Row(
+                                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(entry.vouchers.date.toDisplayDate(), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = Color(0xFF49454F))
+                                    Text(entry.vouchers.voucher_number ?: "-", modifier = Modifier.weight(0.8f), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = Color(0xFF1D1B20))
+                                    Text(entry.vouchers.voucher_type, modifier = Modifier.weight(2f), style = MaterialTheme.typography.bodyMedium, color = Color(0xFF1D1B20))
+                                    Text(if (entry.entry_type == "Debit") entry.amount.format() else "", modifier = Modifier.weight(1.2f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = Color(0xFF1D1B20))
+                                    Text(if (entry.entry_type == "Credit") entry.amount.format() else "", modifier = Modifier.weight(1.2f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = Color(0xFF1D1B20))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

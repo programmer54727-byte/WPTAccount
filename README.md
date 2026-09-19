@@ -11,6 +11,7 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - Automatically initializes default ledgers (**Cash** and **Profit & Loss A/c**).
     - **Smart Check:** Automatically initializes groups/ledgers for older companies when opened.
 - **Voucher Management (Sale, Purchase & Accounting):**
+    - **Smart Default Date Logic:** Automatically defaults new voucher dates to the **last entered voucher date** for the company, or the **first day of the financial year** if no entries exist, significantly accelerating repetitive data entry.
     - **Tally-Style Searchable Selectors:** Type names to filter parties, ledgers, or items instantly with full keyboard support (Arrows + Enter).
     - **On-the-fly Creation (Alt+C):** Create missing ledgers or stock items directly from the voucher entry screen using keyboard shortcuts.
     - **Advanced Bill-wise Details:** 
@@ -29,6 +30,9 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **Full Keyboard Navigation:** Enhanced accessibility with arrow-key selection and `Enter` to confirm, maintaining a fast, Tally-like workflow.
 - **Ledger Management:**
     - **Groups & Ledgers:** Full lifecycle management (Add, View, Edit, Delete) of accounting groups and individual ledgers with aggregated totals.
+    - **Monthly Summary UI Overhaul:** Replaced dense tables with a modern **Card-Based Monthly Summary**. Each month displays Debit, Credit, and Closing Balances in a clean, elevated card with thematic side-accents.
+    - **Interactive Drill-down:** Click any month to view a detailed **Ledger Voucher List**, showing every transaction with Date, Vch No, Particulars, and amount breakdown.
+    - **Integrated Search:** Instant filtering within the Ledger Voucher List by voucher number or type, matching the Day Book experience.
     - **Smart Adaptive Form:** Intelligent ledger creation/editing dialog that dynamically shows/hides sections based on the chosen accounting group (Bank, Loans, Revenue, Assets, etc.).
     - **Automated Entry:** Intelligent auto-filling of mailing names from ledger names with optional manual override.
 - **Inventory Management:**
@@ -76,7 +80,7 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **Horizontal Table Scrolling:** Wide financial tables feature smooth horizontal scrolling in portrait mode, ensuring all data is accessible.
     - **Centered Desktop Forms:** All entry forms are centered with a `800.dp` max-width on desktop for a polished, professional experience.
 - **Native Distribution Support:**
-    - **Automated Build Versioning:** Dynamic versioning for Android (`versionCode`) and Windows (`packageVersion`) using timestamps and smart build numbers, eliminating "App not installed" errors during development and distribution.
+    - **Automated Build Versioning:** Dynamic versioning for Android (`versionCode`, `versionName`) and Windows (`packageVersion`) using timestamps and smart build numbers. Versions are automatically injected into the shared code via **BuildKonfig** for future in-app usage.
     - **Windows MSI/EXE Packaging:** Pre-configured with unique `upgradeUuid` for seamless software updates and repairs.
     - **High-DPI Branding:** Support for multi-resolution icons (.ico) to ensure professional visual appearance on all desktop resolutions.
 - **Cross-Platform:** 100% shared UI and business logic across Android, Desktop, and Web.

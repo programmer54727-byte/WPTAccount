@@ -56,6 +56,7 @@ val AccountingRowListSaver = listSaver<SnapshotStateList<AccountingRow>, String>
 fun AccountingVoucherEntryScreen(
     company: Company,
     voucherType: String, // "Payment", "Receipt", "Contra", "Journal"
+    period: AccountPeriod,
     onHomeClick: () -> Unit,
     onDashboardClick: () -> Unit,
     onStockSummaryClick: () -> Unit,
@@ -71,7 +72,7 @@ fun AccountingVoucherEntryScreen(
     onBack: () -> Unit,
     initialVoucher: Voucher? = null
 ) {
-    var date by rememberSaveable { mutableStateOf(initialVoucher?.date?.toDisplayDate() ?: "17/08/2024") }
+    var date by rememberSaveable { mutableStateOf(initialVoucher?.date?.toDisplayDate() ?: period.startDate.toDisplayDate()) }
     var voucherNo by rememberSaveable { mutableStateOf(initialVoucher?.voucher_number ?: "") }
     
     val entries = rememberSaveable(saver = AccountingRowListSaver) { mutableStateListOf<AccountingRow>() }
@@ -118,7 +119,20 @@ fun AccountingVoucherEntryScreen(
                     if (entries.isEmpty()) entries.add(AccountingRow())
 
                 } else {
-                    // Fetch last voucher number to auto-increment
+                    // 1. Fetch last voucher date for this company to use as default
+                    val lastAnyVouchers = supabase.from("vouchers").select {
+                        filter { eq("company_id", company.id!!) }
+                        order("date", order = Order.DESCENDING)
+                        limit(1)
+                    }.decodeList<Voucher>()
+
+                    if (lastAnyVouchers.isNotEmpty()) {
+                        date = lastAnyVouchers[0].date.toDisplayDate()
+                    } else {
+                        date = period.startDate.toDisplayDate()
+                    }
+
+                    // 2. Fetch last voucher number to auto-increment for this TYPE
                     val lastVouchers = supabase.from("vouchers").select {
                         filter {
                             eq("company_id", company.id!!)

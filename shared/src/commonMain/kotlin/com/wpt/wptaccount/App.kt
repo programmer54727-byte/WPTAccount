@@ -237,6 +237,7 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                 VoucherEntryScreen(
                                     company = company,
                                     voucherType = "Sale",
+                                    period = selectedPeriod!!,
                                     onHomeClick = { currentScreen = "company_home" },
                                     onDashboardClick = { currentScreen = "company_dashboard" },
                                     onStockSummaryClick = { currentScreen = "inventory_management" },
@@ -264,6 +265,7 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                 VoucherEntryScreen(
                                     company = company,
                                     voucherType = "Purchase",
+                                    period = selectedPeriod!!,
                                     onHomeClick = { currentScreen = "company_home" },
                                     onDashboardClick = { currentScreen = "company_dashboard" },
                                     onStockSummaryClick = { currentScreen = "inventory_management" },
@@ -291,6 +293,7 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                 AccountingVoucherEntryScreen(
                                     company = company,
                                     voucherType = "Payment",
+                                    period = selectedPeriod!!,
                                     onHomeClick = { currentScreen = "company_home" },
                                     onDashboardClick = { currentScreen = "company_dashboard" },
                                     onStockSummaryClick = { currentScreen = "inventory_management" },
@@ -316,6 +319,7 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                 AccountingVoucherEntryScreen(
                                     company = company,
                                     voucherType = "Receipt",
+                                    period = selectedPeriod!!,
                                     onHomeClick = { currentScreen = "company_home" },
                                     onDashboardClick = { currentScreen = "company_dashboard" },
                                     onStockSummaryClick = { currentScreen = "inventory_management" },
@@ -341,6 +345,7 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                 AccountingVoucherEntryScreen(
                                     company = company,
                                     voucherType = "Contra",
+                                    period = selectedPeriod!!,
                                     onHomeClick = { currentScreen = "company_home" },
                                     onDashboardClick = { currentScreen = "company_dashboard" },
                                     onStockSummaryClick = { currentScreen = "inventory_management" },
@@ -366,6 +371,7 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                 AccountingVoucherEntryScreen(
                                     company = company,
                                     voucherType = "Journal",
+                                    period = selectedPeriod!!,
                                     onHomeClick = { currentScreen = "company_home" },
                                     onDashboardClick = { currentScreen = "company_dashboard" },
                                     onStockSummaryClick = { currentScreen = "inventory_management" },

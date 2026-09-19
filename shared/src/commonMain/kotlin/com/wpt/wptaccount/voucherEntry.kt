@@ -37,6 +37,7 @@ import kotlinx.coroutines.launch
 fun VoucherEntryScreen(
     company: Company,
     voucherType: String, // "Sale" or "Purchase"
+    period: AccountPeriod,
     onHomeClick: () -> Unit,
     onDashboardClick: () -> Unit,
     onStockSummaryClick: () -> Unit,
@@ -57,10 +58,10 @@ fun VoucherEntryScreen(
     // ----------------------------------------------------------------
     
     // Basic Voucher Info
-    var date by rememberSaveable { mutableStateOf(initialVoucher?.date?.toDisplayDate() ?: "17/08/2024") }
+    var date by rememberSaveable { mutableStateOf(initialVoucher?.date?.toDisplayDate() ?: period.startDate.toDisplayDate()) }
     var voucherNo by rememberSaveable { mutableStateOf(initialVoucher?.voucher_number ?: "") }
     var invoiceNo by rememberSaveable { mutableStateOf(initialVoucher?.invoice_no ?: "") }
-    var invoiceDate by rememberSaveable { mutableStateOf(initialVoucher?.invoice_date?.toDisplayDate() ?: "17/08/2024") }
+    var invoiceDate by rememberSaveable { mutableStateOf(initialVoucher?.invoice_date?.toDisplayDate() ?: period.startDate.toDisplayDate()) }
     var selectedPartyId by rememberSaveable { mutableStateOf<String?>(initialVoucher?.party_ledger_id) }
     var selectedLedgerId by rememberSaveable { mutableStateOf<String?>(null) } // Sales or Purchase A/c
     
@@ -159,7 +160,23 @@ fun VoucherEntryScreen(
                     partyReferences.addAll(vRefs)
 
                 } else {
-                    // Auto-increment Voucher Number based on last entry
+                    // 1. Fetch last voucher date for this company to use as default
+                    val lastAnyVouchers = supabase.from("vouchers").select {
+                        filter { eq("company_id", company.id!!) }
+                        order("date", order = Order.DESCENDING)
+                        limit(1)
+                    }.decodeList<Voucher>()
+
+                    if (lastAnyVouchers.isNotEmpty()) {
+                        val lastDate = lastAnyVouchers[0].date.toDisplayDate()
+                        date = lastDate
+                        invoiceDate = lastDate
+                    } else {
+                        date = period.startDate.toDisplayDate()
+                        invoiceDate = period.startDate.toDisplayDate()
+                    }
+
+                    // 2. Auto-increment Voucher Number based on last entry of this TYPE
                     val lastVouchers = supabase.from("vouchers").select {
                         filter {
                             eq("company_id", company.id!!)
