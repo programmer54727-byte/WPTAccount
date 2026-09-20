@@ -66,7 +66,10 @@ fun AppNavigationDrawer(
                         modifier = Modifier.verticalScroll(rememberScrollState()),
                         drawerContainerColor = WptColors.NavigationBg
                     ) {
-                        DrawerContent(currentScreen, companyName, onNavigate)
+                        DrawerContent(currentScreen, companyName) { screen ->
+                            scope.launch { drawerState.close() }
+                            onNavigate(screen)
+                        }
                     }
                 }
             ) {

@@ -20,8 +20,24 @@ import kotlinx.coroutines.launch
 fun ProfitAndLossScreen(
     company: Company,
     period: AccountPeriod,
-    onBack: () -> Unit,
-    onHomeClick: () -> Unit
+    onHomeClick: () -> Unit,
+    onDashboardClick: () -> Unit,
+    onStockSummaryClick: () -> Unit,
+    onGstDetailsClick: () -> Unit,
+    onLedgerClick: () -> Unit,
+    onVoucherListClick: () -> Unit,
+    onSaleClick: () -> Unit,
+    onPurchaseClick: () -> Unit,
+    onPaymentClick: () -> Unit = {},
+    onReceiptClick: () -> Unit = {},
+    onContraClick: () -> Unit = {},
+    onJournalClick: () -> Unit = {},
+    onCreditNoteClick: () -> Unit = {},
+    onDebitNoteClick: () -> Unit = {},
+    onBalanceSheetClick: () -> Unit = {},
+    onProfitAndLossClick: () -> Unit = {},
+    onCashFlowClick: () -> Unit = {},
+    onBack: () -> Unit
 ) {
     var isLoading by remember { mutableStateOf(true) }
     var groupTotals by remember { mutableStateOf<Map<String, Double>>(emptyMap()) }
@@ -66,7 +82,28 @@ fun ProfitAndLossScreen(
     AppNavigationDrawer(
         currentScreen = ScreenType.ProfitAndLoss,
         companyName = company.company_name,
-        onNavigate = { if (it == ScreenType.Home) onHomeClick() else if (it == ScreenType.Exit) onBack() }
+        onNavigate = { screen ->
+            when (screen) {
+                ScreenType.Home -> onHomeClick()
+                ScreenType.Dashboard -> onDashboardClick()
+                ScreenType.Exit -> onBack()
+                ScreenType.Sale -> onSaleClick()
+                ScreenType.Purchase -> onPurchaseClick()
+                ScreenType.Payment -> onPaymentClick()
+                ScreenType.Receipt -> onReceiptClick()
+                ScreenType.Ledger -> onLedgerClick()
+                ScreenType.DayBook -> onVoucherListClick()
+                ScreenType.Contra -> onContraClick()
+                ScreenType.Journal -> onJournalClick()
+                ScreenType.CreditNote -> onCreditNoteClick()
+                ScreenType.DebitNote -> onDebitNoteClick()
+                ScreenType.BalanceSheet -> onBalanceSheetClick()
+                ScreenType.ProfitAndLoss -> { /* Already here */ }
+                ScreenType.CashFlow -> onCashFlowClick()
+                ScreenType.Stock -> onStockSummaryClick()
+                ScreenType.Gst -> onGstDetailsClick()
+            }
+        }
     ) { _, onToggleDrawer, isDesktop ->
         Scaffold(
             containerColor = WptColors.AppSurface,

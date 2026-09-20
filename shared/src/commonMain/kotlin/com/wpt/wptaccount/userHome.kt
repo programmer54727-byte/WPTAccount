@@ -50,8 +50,11 @@ fun UserHome(
     onReceiptClick: () -> Unit = {},
     onContraClick: () -> Unit = {},
     onJournalClick: () -> Unit = {},
+    onCreditNoteClick: () -> Unit = {},
+    onDebitNoteClick: () -> Unit = {},
     onBalanceSheetClick: () -> Unit = {},
     onProfitAndLossClick: () -> Unit = {},
+    onCashFlowClick: () -> Unit = {},
     onBack: () -> Unit,
     currentPeriod: AccountPeriod,
     onPeriodChange: (AccountPeriod) -> Unit
@@ -122,11 +125,11 @@ fun UserHome(
                     ScreenType.DayBook -> onVoucherListClick()
                     ScreenType.Contra -> onContraClick()
                     ScreenType.Journal -> onJournalClick()
-                    ScreenType.CreditNote -> { /* TODO */ }
-                    ScreenType.DebitNote -> { /* TODO */ }
+                    ScreenType.CreditNote -> onCreditNoteClick()
+                    ScreenType.DebitNote -> onDebitNoteClick()
                     ScreenType.BalanceSheet -> onBalanceSheetClick()
                     ScreenType.ProfitAndLoss -> onProfitAndLossClick()
-                    ScreenType.CashFlow -> { /* TODO */ }
+                    ScreenType.CashFlow -> onCashFlowClick()
                     ScreenType.Stock -> onStockSummaryClick()
                     ScreenType.Gst -> onGstDetailsClick()
                 }
@@ -248,8 +251,9 @@ fun UserHome(
                                     "Journal" -> onJournalClick()
                                     "Balance Sheet" -> onBalanceSheetClick()
                                     "Profit & Loss" -> onProfitAndLossClick()
-                                    "Cash Flow" -> { /* TODO */ }
-                                    "Credit Note", "Debit Note" -> { /* TODO */ }
+                                    "Cash Flow" -> onCashFlowClick()
+                                    "Credit Note" -> onCreditNoteClick()
+                                    "Debit Note" -> onDebitNoteClick()
                                 }
                             }
                         }

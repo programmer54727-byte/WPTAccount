@@ -134,4 +134,59 @@ object ReportEngine {
             return 0.0
         }
     }
+
+    /**
+     * Logic for Cash Flow - fetches monthly aggregated movements for all Cash and Bank ledgers.
+     */
+    suspend fun getCashFlowData(
+        companyId: String,
+        period: AccountPeriod
+    ): Map<Int, MonthlyLedgerData> {
+        val ledgers = supabase.from("ledgers").select {
+            filter { eq("company_id", companyId) }
+        }.decodeList<Ledger>()
+
+        val groups = supabase.from("groups").select {
+            filter { eq("company_id", companyId) }
+        }.decodeList<AccountingGroup>()
+
+        // Identify Cash and Bank ledgers
+        val cashBankLedgerIds = ledgers.filter { ledger ->
+            val group = groups.find { it.id == ledger.group_id }
+            val gName = group?.group_name ?: ""
+            gName.contains("Cash", true) || gName.contains("Bank", true)
+        }.map { it.id!! }
+
+        val entries = supabase.from("voucher_entries").select(Columns.raw("amount, entry_type, vouchers(date, company_id)")) {
+            filter { 
+                eq("vouchers.company_id", companyId)
+                isIn("ledger_id", cashBankLedgerIds)
+            }
+        }.decodeList<VoucherEntryWithVoucher>()
+
+        val monthSequence = listOf(4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3)
+        val months = listOf("April", "May", "June", "July", "August", "September", "October", "November", "December", "January", "February", "March")
+        val dataMap = monthSequence.associateWith { m -> 
+            MonthlyLedgerData(months[monthSequence.indexOf(m)]) 
+        }.toMutableMap()
+
+        entries.forEach { entry ->
+            if (entry.vouchers.date >= period.startDate && entry.vouchers.date <= period.endDate) {
+                val dateParts = entry.vouchers.date.split("-")
+                if (dateParts.size == 3) {
+                    val mInt = dateParts[1].toInt()
+                    val monthData = dataMap[mInt]
+                    if (monthData != null) {
+                        // For Cash Flow: 
+                        // Debit in Cash/Bank is Inflow (Receipt)
+                        // Credit in Cash/Bank is Outflow (Payment)
+                        if (entry.entry_type == "Debit") monthData.debit += entry.amount
+                        else monthData.credit += entry.amount
+                    }
+                }
+            }
+        }
+
+        return dataMap
+    }
 }

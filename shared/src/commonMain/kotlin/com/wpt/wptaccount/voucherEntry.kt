@@ -52,6 +52,7 @@ fun VoucherEntryScreen(
     onJournalClick: () -> Unit = {},
     onBalanceSheetClick: () -> Unit = {},
     onProfitAndLossClick: () -> Unit = {},
+    onCashFlowClick: () -> Unit = {},
     onBack: () -> Unit,
     initialVoucher: Voucher? = null
 ) {
@@ -244,6 +245,7 @@ fun VoucherEntryScreen(
                 ScreenType.Journal -> onJournalClick()
                 ScreenType.BalanceSheet -> onBalanceSheetClick()
                 ScreenType.ProfitAndLoss -> onProfitAndLossClick()
+                ScreenType.CashFlow -> onCashFlowClick()
                 ScreenType.Stock -> onStockSummaryClick()
                 ScreenType.Gst -> onGstDetailsClick()
                 ScreenType.DayBook -> onVoucherListClick()

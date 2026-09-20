@@ -53,9 +53,9 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
         CompositionLocalProvider(LocalScreenOrientation provides onOrientationRequest) {
             BackHandler(enabled = currentScreen != null && currentScreen != "landing" && currentScreen != "company_list") {
                 when (currentScreen) {
-                    "balance_sheet", "profit_and_loss", "inventory_management", "gst_details", "company_dashboard", "ledger_management", "voucher_list", "voucher_summary" -> currentScreen = "company_home"
+                    "balance_sheet", "profit_and_loss", "cash_flow", "inventory_management", "gst_details", "company_dashboard", "ledger_management", "voucher_list", "voucher_summary" -> currentScreen = "company_home"
                     "voucher_month_list" -> currentScreen = "voucher_summary"
-                    "voucher_sale", "voucher_purchase", "voucher_payment", "voucher_receipt", "voucher_contra", "voucher_journal" -> {
+                    "voucher_sale", "voucher_purchase", "voucher_payment", "voucher_receipt", "voucher_contra", "voucher_journal", "voucher_credit_note", "voucher_debit_note" -> {
                         currentScreen = "voucher_month_list"
                         editingVoucher = null
                     }
@@ -154,8 +154,17 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                         currentVoucherType = "Journal"
                                         currentScreen = "voucher_summary" 
                                     },
+                                    onCreditNoteClick = {
+                                        currentVoucherType = "Credit Note"
+                                        currentScreen = "voucher_summary"
+                                    },
+                                    onDebitNoteClick = {
+                                        currentVoucherType = "Debit Note"
+                                        currentScreen = "voucher_summary"
+                                    },
                                     onBalanceSheetClick = { currentScreen = "balance_sheet" },
                                     onProfitAndLossClick = { currentScreen = "profit_and_loss" },
+                                    onCashFlowClick = { currentScreen = "cash_flow" },
                                     onBack = { currentScreen = "company_list" },
 
                                     currentPeriod = selectedPeriod!!,
@@ -412,8 +421,24 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                 BalanceSheetScreen(
                                     company = company,
                                     period = selectedPeriod!!,
-                                    onBack = { currentScreen = "company_home" },
-                                    onHomeClick = { currentScreen = "company_home" }
+                                    onHomeClick = { currentScreen = "company_home" },
+                                    onDashboardClick = { currentScreen = "company_dashboard" },
+                                    onStockSummaryClick = { currentScreen = "inventory_management" },
+                                    onGstDetailsClick = { currentScreen = "gst_details" },
+                                    onLedgerClick = { currentScreen = "ledger_management" },
+                                    onVoucherListClick = { currentScreen = "voucher_list" },
+                                    onSaleClick = { currentScreen = "voucher_sale" },
+                                    onPurchaseClick = { currentScreen = "voucher_purchase" },
+                                    onPaymentClick = { currentScreen = "voucher_payment" },
+                                    onReceiptClick = { currentScreen = "voucher_receipt" },
+                                    onContraClick = { currentScreen = "voucher_contra" },
+                                    onJournalClick = { currentScreen = "voucher_journal" },
+                                    onCreditNoteClick = { currentScreen = "voucher_credit_note" },
+                                    onDebitNoteClick = { currentScreen = "voucher_debit_note" },
+                                    onBalanceSheetClick = { currentScreen = "balance_sheet" },
+                                    onProfitAndLossClick = { currentScreen = "profit_and_loss" },
+                                    onCashFlowClick = { currentScreen = "cash_flow" },
+                                    onBack = { currentScreen = "company_home" }
                                 )
                             } ?: run { currentScreen = "company_list" }
                         }
@@ -422,8 +447,108 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                 ProfitAndLossScreen(
                                     company = company,
                                     period = selectedPeriod!!,
-                                    onBack = { currentScreen = "company_home" },
-                                    onHomeClick = { currentScreen = "company_home" }
+                                    onHomeClick = { currentScreen = "company_home" },
+                                    onDashboardClick = { currentScreen = "company_dashboard" },
+                                    onStockSummaryClick = { currentScreen = "inventory_management" },
+                                    onGstDetailsClick = { currentScreen = "gst_details" },
+                                    onLedgerClick = { currentScreen = "ledger_management" },
+                                    onVoucherListClick = { currentScreen = "voucher_list" },
+                                    onSaleClick = { currentScreen = "voucher_sale" },
+                                    onPurchaseClick = { currentScreen = "voucher_purchase" },
+                                    onPaymentClick = { currentScreen = "voucher_payment" },
+                                    onReceiptClick = { currentScreen = "voucher_receipt" },
+                                    onContraClick = { currentScreen = "voucher_contra" },
+                                    onJournalClick = { currentScreen = "voucher_journal" },
+                                    onCreditNoteClick = { currentScreen = "voucher_credit_note" },
+                                    onDebitNoteClick = { currentScreen = "voucher_debit_note" },
+                                    onBalanceSheetClick = { currentScreen = "balance_sheet" },
+                                    onProfitAndLossClick = { currentScreen = "profit_and_loss" },
+                                    onCashFlowClick = { currentScreen = "cash_flow" },
+                                    onBack = { currentScreen = "company_home" }
+                                )
+                            } ?: run { currentScreen = "company_list" }
+                        }
+                        "cash_flow" -> {
+                            selectedCompany?.let { company ->
+                                CashFlowScreen(
+                                    company = company,
+                                    period = selectedPeriod!!,
+                                    onHomeClick = { currentScreen = "company_home" },
+                                    onDashboardClick = { currentScreen = "company_dashboard" },
+                                    onStockSummaryClick = { currentScreen = "inventory_management" },
+                                    onGstDetailsClick = { currentScreen = "gst_details" },
+                                    onLedgerClick = { currentScreen = "ledger_management" },
+                                    onVoucherListClick = { currentScreen = "voucher_list" },
+                                    onSaleClick = { currentScreen = "voucher_sale" },
+                                    onPurchaseClick = { currentScreen = "voucher_purchase" },
+                                    onPaymentClick = { currentScreen = "voucher_payment" },
+                                    onReceiptClick = { currentScreen = "voucher_receipt" },
+                                    onContraClick = { currentScreen = "voucher_contra" },
+                                    onJournalClick = { currentScreen = "voucher_journal" },
+                                    onCreditNoteClick = { currentScreen = "voucher_credit_note" },
+                                    onDebitNoteClick = { currentScreen = "voucher_debit_note" },
+                                    onBalanceSheetClick = { currentScreen = "balance_sheet" },
+                                    onProfitAndLossClick = { currentScreen = "profit_and_loss" },
+                                    onCashFlowClick = { currentScreen = "cash_flow" },
+                                    onBack = { currentScreen = "company_home" }
+                                )
+                            } ?: run { currentScreen = "company_list" }
+                        }
+                        "voucher_credit_note" -> {
+                            selectedCompany?.let { company ->
+                                VoucherEntryScreen(
+                                    company = company,
+                                    voucherType = "Credit Note",
+                                    period = selectedPeriod!!,
+                                    onHomeClick = { currentScreen = "company_home" },
+                                    onDashboardClick = { currentScreen = "company_dashboard" },
+                                    onStockSummaryClick = { currentScreen = "inventory_management" },
+                                    onGstDetailsClick = { currentScreen = "gst_details" },
+                                    onLedgerClick = { currentScreen = "ledger_management" },
+                                    onVoucherListClick = { currentScreen = "voucher_list" },
+                                    onSaleClick = { currentScreen = "voucher_sale" },
+                                    onPurchaseClick = { currentScreen = "voucher_purchase" },
+                                    onPaymentClick = { currentScreen = "voucher_payment" },
+                                    onReceiptClick = { currentScreen = "voucher_receipt" },
+                                    onContraClick = { currentScreen = "voucher_contra" },
+                                    onJournalClick = { currentScreen = "voucher_journal" },
+                                    onBalanceSheetClick = { currentScreen = "balance_sheet" },
+                                    onProfitAndLossClick = { currentScreen = "profit_and_loss" },
+                                    onCashFlowClick = { currentScreen = "cash_flow" },
+                                    onBack = { 
+                                        currentScreen = "voucher_month_list" 
+                                        editingVoucher = null
+                                    },
+                                    initialVoucher = editingVoucher
+                                )
+                            } ?: run { currentScreen = "company_list" }
+                        }
+                        "voucher_debit_note" -> {
+                            selectedCompany?.let { company ->
+                                VoucherEntryScreen(
+                                    company = company,
+                                    voucherType = "Debit Note",
+                                    period = selectedPeriod!!,
+                                    onHomeClick = { currentScreen = "company_home" },
+                                    onDashboardClick = { currentScreen = "company_dashboard" },
+                                    onStockSummaryClick = { currentScreen = "inventory_management" },
+                                    onGstDetailsClick = { currentScreen = "gst_details" },
+                                    onLedgerClick = { currentScreen = "ledger_management" },
+                                    onVoucherListClick = { currentScreen = "voucher_list" },
+                                    onSaleClick = { currentScreen = "voucher_sale" },
+                                    onPurchaseClick = { currentScreen = "voucher_purchase" },
+                                    onPaymentClick = { currentScreen = "voucher_payment" },
+                                    onReceiptClick = { currentScreen = "voucher_receipt" },
+                                    onContraClick = { currentScreen = "voucher_contra" },
+                                    onJournalClick = { currentScreen = "voucher_journal" },
+                                    onBalanceSheetClick = { currentScreen = "balance_sheet" },
+                                    onProfitAndLossClick = { currentScreen = "profit_and_loss" },
+                                    onCashFlowClick = { currentScreen = "cash_flow" },
+                                    onBack = { 
+                                        currentScreen = "voucher_month_list" 
+                                        editingVoucher = null
+                                    },
+                                    initialVoucher = editingVoucher
                                 )
                             } ?: run { currentScreen = "company_list" }
                         }
@@ -481,6 +606,8 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                             "Receipt" -> "voucher_receipt"
                                             "Contra" -> "voucher_contra"
                                             "Journal" -> "voucher_journal"
+                                            "Credit Note" -> "voucher_credit_note"
+                                            "Debit Note" -> "voucher_debit_note"
                                             else -> "company_home"
                                         }
                                     },
@@ -493,6 +620,8 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                             "Receipt" -> "voucher_receipt"
                                             "Contra" -> "voucher_contra"
                                             "Journal" -> "voucher_journal"
+                                            "Credit Note" -> "voucher_credit_note"
+                                            "Debit Note" -> "voucher_debit_note"
                                             else -> "company_home"
                                         }
                                     },

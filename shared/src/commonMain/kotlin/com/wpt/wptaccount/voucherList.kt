@@ -43,6 +43,7 @@ fun VoucherListScreen(
     onJournalClick: () -> Unit = {},
     onBalanceSheetClick: () -> Unit = {},
     onProfitAndLossClick: () -> Unit = {},
+    onCashFlowClick: () -> Unit = {},
     onBack: () -> Unit
 ) {
     var vouchers by remember { mutableStateOf<List<Voucher>>(emptyList()) }
@@ -104,7 +105,7 @@ fun VoucherListScreen(
                 ScreenType.DebitNote -> { /* TODO */ }
                 ScreenType.BalanceSheet -> onBalanceSheetClick()
                 ScreenType.ProfitAndLoss -> onProfitAndLossClick()
-                ScreenType.CashFlow -> { /* TODO */ }
+                ScreenType.CashFlow -> onCashFlowClick()
                 ScreenType.Stock -> onStockSummaryClick()
                 ScreenType.Gst -> onGstDetailsClick()
                 ScreenType.DayBook -> { /* Already here */ }
