@@ -606,8 +606,8 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
     var mailingName by rememberSaveable { mutableStateOf("") }
     var isMailingNameSynced by rememberSaveable { mutableStateOf(true) }
     var address by rememberSaveable { mutableStateOf("") }
-    var state by rememberSaveable { mutableStateOf("") }
-    var country by rememberSaveable { mutableStateOf("") }
+    var state by rememberSaveable { mutableStateOf(company.state ?: "") }
+    var country by rememberSaveable { mutableStateOf(company.country ?: "") }
     var pincode by rememberSaveable { mutableStateOf("") }
 
     // Tax Registration
@@ -880,7 +880,11 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
                 }
                 
                 FloatingActionButton(
-                    onClick = { showDialog = true },
+                    onClick = { 
+                        country = company.country ?: ""
+                        state = company.state ?: ""
+                        showDialog = true 
+                    },
                     containerColor = Color(0xFF7C4DFF),
                     contentColor = Color.White,
                     shape = androidx.compose.foundation.shape.CircleShape,
@@ -946,7 +950,7 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
                 showDialog = false
                 ledgerToEdit = null
                 isMailingNameSynced = true
-                name = ""; alias = ""; mailingName = ""; address = ""; state = ""; country = ""; pincode = ""
+                name = ""; alias = ""; mailingName = ""; address = ""; state = company.state ?: ""; country = company.country ?: ""; pincode = ""
                 panItNumber = ""; gstinUin = ""; openingBalance = "0"; openingBalanceType = "Dr"
                 bankAccNo = ""; bankIfsc = ""; bankName = ""; bankBranch = ""; bankSwift = ""
                 billByBill = false; creditPeriod = ""; creditLimit = ""
@@ -1216,7 +1220,7 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
                                 showDialog = false
                                 ledgerToEdit = null
                                 // Reset fields
-                                name = ""; alias = ""; mailingName = ""; address = ""; state = ""; country = ""; pincode = ""
+                                name = ""; alias = ""; mailingName = ""; address = ""; state = company.state ?: ""; country = company.country ?: ""; pincode = ""
                                 isMailingNameSynced = true
                                 panItNumber = ""; gstinUin = ""; openingBalance = "0"; openingBalanceType = "Dr"
                                 bankAccNo = ""; bankIfsc = ""; bankName = ""; bankBranch = ""; bankSwift = ""
