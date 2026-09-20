@@ -98,7 +98,7 @@ fun LedgerManagement(
         }
     ) { _, onToggleDrawer, isDesktop ->
         Scaffold(
-            containerColor = Color(0xFFF8F9FA),
+            containerColor = WptColors.AppSurface,
             topBar = {
                 TopAppBar(
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -435,7 +435,7 @@ fun LedgerGroupsTab(company: Company, period: AccountPeriod) {
                                                 }, 
                                                 modifier = Modifier.size(36.dp)
                                             ) {
-                                                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color(0xFF7C4DFF), modifier = Modifier.size(18.dp))
+                                                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = WptColors.PrimaryAccent, modifier = Modifier.size(18.dp))
                                             }
 
                                             IconButton(onClick = { groupToDelete = group }, modifier = Modifier.size(36.dp)) {
@@ -865,11 +865,11 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
                                                 }, 
                                                 modifier = Modifier.size(36.dp)
                                             ) {
-                                                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color(0xFF7C4DFF), modifier = Modifier.size(18.dp))
+                                                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = WptColors.PrimaryAccent, modifier = Modifier.size(18.dp))
                                             }
 
                                             IconButton(onClick = { ledgerToDelete = ledger }, modifier = Modifier.size(36.dp)) {
-                                                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFD32F2F), modifier = Modifier.size(18.dp))
+                                                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = WptColors.Error, modifier = Modifier.size(18.dp))
                                             }
                                         }
                                     }
@@ -885,7 +885,7 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
                         state = company.state ?: ""
                         showDialog = true 
                     },
-                    containerColor = Color(0xFF7C4DFF),
+                    containerColor = WptColors.PrimaryAccent,
                     contentColor = Color.White,
                     shape = androidx.compose.foundation.shape.CircleShape,
                     modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
@@ -999,160 +999,166 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 500.dp)
+                        .heightIn(max = 600.dp)
                         .verticalScroll(scrollState),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
                     if (saveError != null) {
-                        Text(
-                            text = saveError!!,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFDE8E8))
+                        ) {
+                            Text(
+                                text = saveError!!,
+                                color = WptColors.Error,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
                     }
 
                     // Section 1: General
-                    Column {
-                        InventoryField("Name", name) { 
-                            name = it
-                            if (isMailingNameSynced) mailingName = it
-                        }
-                        InventoryField("(alias)", alias) { alias = it }
-                        InventoryDropdown("Under", groups.map { it.group_name }, 
-                            groups.find { it.id == selectedGroupId }?.group_name ?: "") {
-                            selectedGroupId = groups.find { g -> g.group_name == it }?.id
+                    FormSectionCard(title = "General Information") {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            InventoryField("Name", name) { 
+                                name = it
+                                if (isMailingNameSynced) mailingName = it
+                            }
+                            InventoryField("(alias)", alias) { alias = it }
+                            InventoryDropdown("Under", groups.map { it.group_name }, 
+                                groups.find { it.id == selectedGroupId }?.group_name ?: "") {
+                                selectedGroupId = groups.find { g -> g.group_name == it }?.id
+                            }
                         }
                     }
 
-                    HorizontalDivider()
-
                     // Section 2: Mailing Details (Hidden for Internal accounts)
                     if (!isInternalOnly) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Mailing Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                            InventoryField("Name", mailingName) { 
-                                mailingName = it
-                                isMailingNameSynced = false
-                            }
-                            InventoryField("Address", address) { address = it }
-                            
-                            SearchableDropdown("Country", countries.map { it.country }, country) {
-                                country = it
-                                val selectedCountry = countries.find { c -> c.country == it }
-                                if (selectedCountry != null) {
-                                    val allRegions = selectedCountry.getAllRegions()
-                                    if (allRegions.none { r -> r.name == state }) {
-                                        state = ""
+                        FormSectionCard(title = "Mailing Details") {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                InventoryField("Name", mailingName) { 
+                                    mailingName = it
+                                    isMailingNameSynced = false
+                                }
+                                InventoryField("Address", address) { address = it }
+                                
+                                SearchableDropdown("Country", countries.map { it.country }, country) {
+                                    country = it
+                                    val selectedCountry = countries.find { c -> c.country == it }
+                                    if (selectedCountry != null) {
+                                        val allRegions = selectedCountry.getAllRegions()
+                                        if (allRegions.none { r -> r.name == state }) {
+                                            state = ""
+                                        }
                                     }
                                 }
-                            }
 
-                            val currentCountryStates = countries.find { it.country == country }?.getAllRegions()?.map { it.name } ?: emptyList()
-                            SearchableDropdown("State", currentCountryStates, state) {
-                                state = it
+                                val currentCountryStates = countries.find { it.country == country }?.getAllRegions()?.map { it.name } ?: emptyList()
+                                SearchableDropdown("State", currentCountryStates, state) {
+                                    state = it
+                                }
+                                
+                                InventoryField("Pincode", pincode) { pincode = it }
                             }
-                            
-                            InventoryField("Pincode", pincode) { pincode = it }
                         }
-
-                        HorizontalDivider()
 
                         // Section 3: Tax Registration (Show for Parties, Loans, Capital)
                         if (isPartyRelated || isLoanRelated || isCapital || isFixedAsset) {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text("Tax Registration Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                                InventoryField("PAN/IT No.", panItNumber) { panItNumber = it }
-                                InventoryDropdown("Registration Type", listOf("Regular", "Composition", "Consumer", "Unregistered"), gstRegistrationType) {
-                                    gstRegistrationType = it
-                                }
-                                if (gstRegistrationType == "Regular" || gstRegistrationType == "Composition") {
-                                    InventoryField("GSTIN/UIN", gstinUin) { gstinUin = it }
+                            FormSectionCard(title = "Tax Registration Details") {
+                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    InventoryField("PAN/IT No.", panItNumber) { panItNumber = it }
+                                    InventoryDropdown("Registration Type", listOf("Regular", "Composition", "Consumer", "Unregistered"), gstRegistrationType) {
+                                        gstRegistrationType = it
+                                    }
+                                    if (gstRegistrationType == "Regular" || gstRegistrationType == "Composition") {
+                                        InventoryField("GSTIN/UIN", gstinUin) { gstinUin = it }
+                                    }
                                 }
                             }
-                            HorizontalDivider()
                         }
                     }
 
                     // Section 4: Bank Details (Visible for Bank, Capital, Parties, Loans)
                     if (isBankRelated || isCapital || isPartyRelated || isLoanRelated) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Bank Account Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                            InventoryField("A/c No.", bankAccNo) { bankAccNo = it }
-                            InventoryField("IFSC Code", bankIfsc) { bankIfsc = it }
-                            InventoryField("Bank Name", bankName) { bankName = it }
-                            InventoryField("Branch", bankBranch) { bankBranch = it }
-                            InventoryField("SWIFT Code", bankSwift) { bankSwift = it }
+                        FormSectionCard(title = "Bank Account Details") {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                InventoryField("A/c No.", bankAccNo) { bankAccNo = it }
+                                InventoryField("IFSC Code", bankIfsc) { bankIfsc = it }
+                                InventoryField("Bank Name", bankName) { bankName = it }
+                                InventoryField("Branch", bankBranch) { bankBranch = it }
+                                InventoryField("SWIFT Code", bankSwift) { bankSwift = it }
+                            }
                         }
-                        HorizontalDivider()
                     }
 
                     // Section 5: Credit Control (Visible for Parties, Branches, Loans, Assets/Liabilities)
                     if (isPartyRelated || isLoanRelated) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Credit Control Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Bill-by-bill tracking", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                                Switch(checked = billByBill, onCheckedChange = { billByBill = it })
+                        FormSectionCard(title = "Credit Control Details") {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Bill-by-bill tracking", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                                    Switch(checked = billByBill, onCheckedChange = { billByBill = it })
+                                }
+                                InventoryField("Credit Period (Days)", creditPeriod) { creditPeriod = it }
+                                InventoryField("Credit Limit", creditLimit) { creditLimit = it }
                             }
-                            InventoryField("Credit Period (Days)", creditPeriod) { creditPeriod = it }
-                            InventoryField("Credit Limit", creditLimit) { creditLimit = it }
                         }
-                        HorizontalDivider()
                     }
 
                     // Section 6: Tax Details (For Duties & Taxes only)
                     if (groupName.contains("Duties & Taxes", ignoreCase = true)) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Tax Calculation Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                            InventoryDropdown("Type of Duty", listOf("GST", "TDS", "Others"), dutyTaxType) { dutyTaxType = it }
-                            if (dutyTaxType == "GST") {
-                                InventoryDropdown("Tax Type", listOf("Central Tax", "State Tax", "Integrated Tax", "Cess"), gstTaxSubType) {
-                                    gstTaxSubType = it
+                        FormSectionCard(title = "Tax Calculation Details") {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                InventoryDropdown("Type of Duty", listOf("GST", "TDS", "Others"), dutyTaxType) { dutyTaxType = it }
+                                if (dutyTaxType == "GST") {
+                                    InventoryDropdown("Tax Type", listOf("Central Tax", "State Tax", "Integrated Tax", "Cess"), gstTaxSubType) {
+                                        gstTaxSubType = it
+                                    }
                                 }
+                                InventoryField("Percentage (%)", taxRate) { taxRate = it }
                             }
-                            InventoryField("Percentage (%)", taxRate) { taxRate = it }
                         }
-                        HorizontalDivider()
                     }
 
                     // Section 7: Inventory & Costing (For Revenue and Assets)
                     if (isRevenueRelated || isFixedAsset) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Inventory & Costing", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Inventory values are affected", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                                Switch(checked = inventoryAffected, onCheckedChange = { inventoryAffected = it })
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Cost Centres are applicable", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                                Switch(checked = costCentresApplicable, onCheckedChange = { costCentresApplicable = it })
-                            }
-                            
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                            Text("Statutory Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                            InventoryDropdown("Is GST Applicable", listOf("Applicable", "Not Applicable", "Undefined"), gstApplicableType) {
-                                gstApplicableType = it
-                            }
-                            
-                            if (gstApplicableType == "Applicable") {
-                                InventoryField("HSN/SAC Code", hsnSacCode) { hsnSacCode = it }
-                                InventoryField("HSN/SAC Description", hsnSacDesc) { hsnSacDesc = it }
-                                InventoryField("GST Rate (%)", taxRate) { taxRate = it }
-                                InventoryDropdown("Type of Supply", if (isFixedAsset) listOf("Capital Goods") else listOf("Goods", "Services"), supplyType) {
-                                    supplyType = it
+                        FormSectionCard(title = "Inventory & Statutory Details") {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Inventory values are affected", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                                    Switch(checked = inventoryAffected, onCheckedChange = { inventoryAffected = it })
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Cost Centres are applicable", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                                    Switch(checked = costCentresApplicable, onCheckedChange = { costCentresApplicable = it })
+                                }
+                                
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("Statutory Details", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = WptColors.SecondaryText)
+                                
+                                InventoryDropdown("Is GST Applicable", listOf("Applicable", "Not Applicable", "Undefined"), gstApplicableType) {
+                                    gstApplicableType = it
+                                }
+                                
+                                if (gstApplicableType == "Applicable") {
+                                    InventoryField("HSN/SAC Code", hsnSacCode) { hsnSacCode = it }
+                                    InventoryField("HSN/SAC Description", hsnSacDesc) { hsnSacDesc = it }
+                                    InventoryField("GST Rate (%)", taxRate) { taxRate = it }
+                                    InventoryDropdown("Type of Supply", if (isFixedAsset) listOf("Capital Goods") else listOf("Goods", "Services"), supplyType) {
+                                        supplyType = it
+                                    }
                                 }
                             }
                         }
-                        HorizontalDivider()
                     }
 
                     // Section 8: Opening Balance
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                    FormSectionCard(title = "Opening Balance") {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             InventoryField("Opening Balance", openingBalance, modifier = Modifier.weight(1f)) { openingBalance = it }
-                            InventoryDropdown("", listOf("Dr", "Cr"), openingBalanceType, modifier = Modifier.width(80.dp)) { 
+                            InventoryDropdown("", listOf("Dr", "Cr"), openingBalanceType, modifier = Modifier.width(100.dp)) { 
                                 openingBalanceType = it 
                             }
                         }
@@ -1237,12 +1243,15 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
                             }
                         }
                     },
+                    modifier = Modifier.fillMaxWidth().height(48.dp).padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = WptColors.PrimaryAccent),
                     enabled = !isSaving
                 ) {
                     if (isSaving) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
                     } else {
-                        Text("Save")
+                        Text(if (ledgerToEdit != null) "Update Ledger" else "Create Ledger", fontWeight = FontWeight.Bold)
                     }
                 }
             },
@@ -1251,14 +1260,14 @@ fun LedgersTab(company: Company, period: AccountPeriod) {
                     showDialog = false 
                     ledgerToEdit = null
                     isMailingNameSynced = true
-                    name = ""; alias = ""; mailingName = ""; address = ""; state = ""; country = ""; pincode = ""
+                    name = ""; alias = ""; mailingName = ""; address = ""; state = company.state ?: ""; country = company.country ?: ""; pincode = ""
                     panItNumber = ""; gstinUin = ""; openingBalance = "0"; openingBalanceType = "Dr"
                     bankAccNo = ""; bankIfsc = ""; bankName = ""; bankBranch = ""; bankSwift = ""
                     billByBill = false; creditPeriod = ""; creditLimit = ""
                     taxRate = "0"
                     inventoryAffected = false; costCentresApplicable = false
                     gstApplicableType = "Applicable"; hsnSacCode = ""; hsnSacDesc = ""
-                }) { Text("Cancel") }
+                }) { Text("Cancel", color = WptColors.SecondaryText) }
             }
         )
     }
@@ -1529,7 +1538,7 @@ fun LedgerMonthlySummary(
     LaunchedEffect(ledger.id, period) { fetchData() }
     
     Scaffold(
-        containerColor = Color(0xFFF8F9FA),
+        containerColor = WptColors.AppSurface,
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -1755,7 +1764,7 @@ fun LedgerVoucherList(
     }
 
     Scaffold(
-        containerColor = Color(0xFFF8F9FA),
+        containerColor = WptColors.AppSurface,
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),

@@ -461,7 +461,7 @@ fun UnitsTab(company: Company, period: AccountPeriod) {
                                                 }, 
                                                 modifier = Modifier.size(36.dp)
                                             ) {
-                                                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color(0xFF7C4DFF), modifier = Modifier.size(18.dp))
+                                                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = WptColors.PrimaryAccent, modifier = Modifier.size(18.dp))
                                             }
 
                                             IconButton(onClick = { unitToDelete = unit }, modifier = Modifier.size(36.dp)) {
@@ -477,7 +477,7 @@ fun UnitsTab(company: Company, period: AccountPeriod) {
                 
                 FloatingActionButton(
                     onClick = { showDialog = true },
-                    containerColor = Color(0xFF7C4DFF),
+                    containerColor = WptColors.PrimaryAccent,
                     contentColor = Color.White,
                     shape = androidx.compose.foundation.shape.CircleShape,
                     modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
@@ -823,7 +823,7 @@ fun StockGroupsTab(company: Company, period: AccountPeriod) {
                                                 }, 
                                                 modifier = Modifier.size(36.dp)
                                             ) {
-                                                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color(0xFF7C4DFF), modifier = Modifier.size(18.dp))
+                                                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = WptColors.PrimaryAccent, modifier = Modifier.size(18.dp))
                                             }
                                             
                                             IconButton(onClick = { groupToDelete = group }, modifier = Modifier.size(36.dp)) {
@@ -839,7 +839,7 @@ fun StockGroupsTab(company: Company, period: AccountPeriod) {
                 
                 FloatingActionButton(
                     onClick = { showDialog = true },
-                    containerColor = Color(0xFF7C4DFF),
+                    containerColor = WptColors.PrimaryAccent,
                     contentColor = Color.White,
                     shape = androidx.compose.foundation.shape.CircleShape,
                     modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
@@ -1245,7 +1245,7 @@ fun StockItemsTab(company: Company, period: AccountPeriod) {
                                                 Icon(
                                                     Icons.Default.Edit, 
                                                     contentDescription = "Edit", 
-                                                    tint = Color(0xFF7C4DFF),
+                                                    tint = WptColors.PrimaryAccent,
                                                     modifier = Modifier.size(18.dp)
                                                 )
                                             }
@@ -1268,7 +1268,7 @@ fun StockItemsTab(company: Company, period: AccountPeriod) {
                 
                 FloatingActionButton(
                     onClick = { showDialog = true },
-                    containerColor = Color(0xFF7C4DFF),
+                    containerColor = WptColors.PrimaryAccent,
                     contentColor = Color.White,
                     shape = androidx.compose.foundation.shape.CircleShape,
                     modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
@@ -1342,73 +1342,74 @@ fun StockItemsTab(company: Company, period: AccountPeriod) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 500.dp)
+                        .heightIn(max = 600.dp)
                         .verticalScroll(scrollState),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
                     if (saveError != null) {
-                        Text(
-                            text = saveError!!,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFDE8E8))
+                        ) {
+                            Text(
+                                text = saveError!!,
+                                color = WptColors.Error,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
                     }
-
-                    // Header Section
-                    Column {
-                        InventoryField("Name", name) { name = it }
-                        InventoryField("(alias)", alias) { alias = it }
-                    }
-
-                    HorizontalDivider()
 
                     // Section 1: General
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        InventoryDropdown("Under", groups.map { it.group_name }.plus("Primary"), 
-                            groups.find { it.id == selectedGroupId }?.group_name ?: "Primary") {
-                            selectedGroupId = groups.find { g -> g.group_name == it }?.id
-                        }
-                        InventoryDropdown("Units", units.map { it.unit_symbol }, 
-                            units.find { it.id == selectedUnitId }?.unit_symbol ?: "") {
-                            selectedUnitId = units.find { u -> u.unit_symbol == it }?.id ?: ""
+                    FormSectionCard(title = "General Information") {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            InventoryField("Name", name) { name = it }
+                            InventoryField("(alias)", alias) { alias = it }
+                            
+                            InventoryDropdown("Under", groups.map { it.group_name }.plus("Primary"), 
+                                groups.find { it.id == selectedGroupId }?.group_name ?: "Primary") {
+                                selectedGroupId = groups.find { g -> g.group_name == it }?.id
+                            }
+                            InventoryDropdown("Units", units.map { it.unit_symbol }, 
+                                units.find { it.id == selectedUnitId }?.unit_symbol ?: "") {
+                                selectedUnitId = units.find { u -> u.unit_symbol == it }?.id ?: ""
+                            }
                         }
                     }
-
-                    HorizontalDivider()
 
                     // Section 2: Statutory
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Statutory Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                        InventoryDropdown("GST applicability", listOf("Applicable", "Not Applicable", "Undefined"), gstApplicability) { gstApplicability = it }
-                        
-                        if (gstApplicability == "Applicable") {
-                            Text("HSN/SAC & Related Details", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                            InventoryField("HSN/SAC", hsnNumber) { hsnNumber = it }
-                            InventoryField("Description", hsnDescription) { hsnDescription = it }
+                    FormSectionCard(title = "Statutory Details") {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            InventoryDropdown("GST applicability", listOf("Applicable", "Not Applicable", "Undefined"), gstApplicability) { gstApplicability = it }
                             
-                            Spacer(Modifier.height(8.dp))
-                            Text("GST Rate & Related Details", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                            
-                            InventoryDropdown("Taxability Type", listOf("Taxable", "Nil Rated", "Exempt"), taxabilityType) { taxabilityType = it }
-                            if (taxabilityType == "Taxable") {
-                                InventoryField("GST Rate (%)", gstRate) { gstRate = it }
+                            if (gstApplicability == "Applicable") {
+                                Text("HSN/SAC & Related Details", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = WptColors.SecondaryText)
+                                InventoryField("HSN/SAC", hsnNumber) { hsnNumber = it }
+                                InventoryField("Description", hsnDescription) { hsnDescription = it }
+                                
+                                Spacer(Modifier.height(4.dp))
+                                Text("GST Rate & Related Details", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = WptColors.SecondaryText)
+                                
+                                InventoryDropdown("Taxability Type", listOf("Taxable", "Nil Rated", "Exempt"), taxabilityType) { taxabilityType = it }
+                                if (taxabilityType == "Taxable") {
+                                    InventoryField("GST Rate (%)", gstRate) { gstRate = it }
+                                }
+                                InventoryDropdown("Type of Supply", listOf("Goods", "Services", "Capital Goods"), typeOfSupply) { typeOfSupply = it }
                             }
-                            InventoryDropdown("Type of Supply", listOf("Goods", "Services", "Capital Goods"), typeOfSupply) { typeOfSupply = it }
                         }
                     }
 
-                    HorizontalDivider()
-
                     // Section 3: Opening Balance
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text("Opening Balance", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            InventoryField("Quantity", qty, modifier = Modifier.weight(1f)) { qty = it }
-                            InventoryField("Rate", rate, modifier = Modifier.weight(1f)) { rate = it }
+                    FormSectionCard(title = "Opening Balance") {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                InventoryField("Quantity", qty, modifier = Modifier.weight(1f)) { qty = it }
+                                InventoryField("Rate", rate, modifier = Modifier.weight(1f)) { rate = it }
+                            }
                             val totalValue = (qty.toDoubleOrNull() ?: 0.0) * (rate.toDoubleOrNull() ?: 0.0)
-                            InventoryField("Value", totalValue.format(), enabled = false, modifier = Modifier.weight(1f)) { }
+                            InventoryField("Total Value", totalValue.format(), enabled = false) { }
                         }
                     }
                 }
@@ -1466,12 +1467,15 @@ fun StockItemsTab(company: Company, period: AccountPeriod) {
                             }
                         }
                     },
+                    modifier = Modifier.fillMaxWidth().height(48.dp).padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = WptColors.PrimaryAccent),
                     enabled = !isSaving
                 ) {
                     if (isSaving) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
                     } else {
-                        Text("Save")
+                        Text(if (itemToEdit != null) "Update Item" else "Create Item", fontWeight = FontWeight.Bold)
                     }
                 }
             },
@@ -1480,7 +1484,7 @@ fun StockItemsTab(company: Company, period: AccountPeriod) {
                     showDialog = false
                     itemToEdit = null
                     name = ""; alias = ""; qty = "0"; rate = "0"
-                }) { Text("Cancel") }
+                }) { Text("Cancel", color = WptColors.SecondaryText) }
             }
         )
     }
@@ -1812,7 +1816,7 @@ fun FilteredStockItemsList(
                         // Header with Back Button
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
                             IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color(0xFF7C4DFF), modifier = Modifier.size(20.dp))
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = WptColors.PrimaryAccent, modifier = Modifier.size(20.dp))
                             }
                             Text(
                                 text = title,

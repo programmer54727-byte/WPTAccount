@@ -267,7 +267,7 @@ fun VoucherEntryScreen(
                             Icon(
                                 imageVector = if (isDesktop) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Menu, 
                                 contentDescription = null,
-                                tint = Color(0xFF7C4DFF)
+                                tint = WptColors.PrimaryAccent
                             )
                         }
                     }
@@ -276,7 +276,7 @@ fun VoucherEntryScreen(
         ) { padding ->
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color(0xFF7C4DFF))
+                    CircularProgressIndicator(color = WptColors.PrimaryAccent)
                 }
             } else {
                 Column(
@@ -348,7 +348,7 @@ fun VoucherEntryScreen(
                         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Inventory Details", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF7C4DFF), modifier = Modifier.padding(bottom = 12.dp))
+                            Text("Inventory Details", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = WptColors.PrimaryAccent, modifier = Modifier.padding(bottom = 12.dp))
                             
                             val itemScrollState = rememberScrollState()
                             Column(modifier = Modifier.fillMaxWidth().horizontalScroll(itemScrollState)) {
@@ -437,7 +437,7 @@ fun VoucherEntryScreen(
                                                 },
                                                 textStyle = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.End),
                                                 singleLine = true,
-                                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF7C4DFF))
+                                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = WptColors.PrimaryAccent)
                                             )
                                             OutlinedTextField(
                                                 value = row.rate,
@@ -471,7 +471,7 @@ fun VoucherEntryScreen(
                                                 },
                                                 textStyle = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.End),
                                                 singleLine = true,
-                                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF7C4DFF))
+                                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = WptColors.PrimaryAccent)
                                             )
                                             OutlinedTextField(
                                                 value = row.amount,
@@ -505,7 +505,7 @@ fun VoucherEntryScreen(
                                                 },
                                                 textStyle = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.End, fontWeight = FontWeight.Bold),
                                                 singleLine = true,
-                                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF7C4DFF))
+                                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = WptColors.PrimaryAccent)
                                             )
 
                                             IconButton(onClick = { items.removeAt(index) }) {
@@ -516,7 +516,7 @@ fun VoucherEntryScreen(
                                 }
                             }
 
-                            TextButton(onClick = { items.add(ItemRow()) }, colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF7C4DFF))) {
+                            TextButton(onClick = { items.add(ItemRow()) }, colors = ButtonDefaults.textButtonColors(contentColor = WptColors.PrimaryAccent)) {
                                 Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text("Add Item", fontWeight = FontWeight.Bold)
@@ -532,7 +532,7 @@ fun VoucherEntryScreen(
                         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Ledger Details (Taxes/Charges)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF7C4DFF), modifier = Modifier.padding(bottom = 12.dp))
+                            Text("Ledger Details (Taxes/Charges)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = WptColors.PrimaryAccent, modifier = Modifier.padding(bottom = 12.dp))
                             
                             val ledgerScrollState = rememberScrollState()
                             Column(modifier = Modifier.fillMaxWidth().horizontalScroll(ledgerScrollState)) {
@@ -581,7 +581,7 @@ fun VoucherEntryScreen(
                                                 },
                                                 textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.End),
                                                 singleLine = true, suffix = { Text("%", style = MaterialTheme.typography.labelSmall) },
-                                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF7C4DFF))
+                                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = WptColors.PrimaryAccent)
                                             )
 
                                             Spacer(Modifier.width(80.dp)) 
@@ -594,7 +594,7 @@ fun VoucherEntryScreen(
                                                 },
                                                 textStyle = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.End, fontWeight = FontWeight.Bold),
                                                 singleLine = true,
-                                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF7C4DFF))
+                                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = WptColors.PrimaryAccent)
                                             )
 
                                             IconButton(onClick = { taxEntries.removeAt(index) }) {
@@ -605,7 +605,7 @@ fun VoucherEntryScreen(
                                 }
                             }
 
-                            TextButton(onClick = { taxEntries.add(TaxRow()) }, colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF7C4DFF))) {
+                            TextButton(onClick = { taxEntries.add(TaxRow()) }, colors = ButtonDefaults.textButtonColors(contentColor = WptColors.PrimaryAccent)) {
                                 Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text("Add Ledger", fontWeight = FontWeight.Bold)
@@ -637,7 +637,7 @@ fun VoucherEntryScreen(
                                 Spacer(Modifier.height(8.dp))
                                 Row(modifier = Modifier.width(300.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Text("Grand Total:", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1D1B20))
-                                    Text(grandTotal.format(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = Color(0xFF7C4DFF))
+                                    Text(grandTotal.format(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = WptColors.PrimaryAccent)
                                 }
                             }
                         }
@@ -689,7 +689,7 @@ fun VoucherEntryScreen(
                         },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C4DFF)),
+                        colors = ButtonDefaults.buttonColors(containerColor = WptColors.PrimaryAccent),
                         enabled = !isSaving
                     ) {
                         if (isSaving) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)

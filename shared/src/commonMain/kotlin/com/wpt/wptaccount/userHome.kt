@@ -131,7 +131,7 @@ fun UserHome(
             }
         ) { _, onToggleDrawer, isDesktop ->
             Scaffold(
-                containerColor = Color(0xFFF8F9FA),
+                containerColor = WptColors.AppSurface,
                 topBar = {
                     TopAppBar(
                         colors = TopAppBarDefaults.topAppBarColors(
@@ -145,7 +145,7 @@ fun UserHome(
                                 Icon(
                                     imageVector = Icons.Default.CorporateFare,
                                     contentDescription = null,
-                                    tint = Color(0xFF7C4DFF),
+                                    tint = WptColors.PrimaryAccent,
                                     modifier = Modifier.size(36.dp)
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
@@ -199,7 +199,7 @@ fun UserHome(
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.Assignment,
                                     contentDescription = null,
-                                    tint = Color(0xFF7C4DFF),
+                                    tint = WptColors.PrimaryAccent,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))

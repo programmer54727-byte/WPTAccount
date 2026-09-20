@@ -127,11 +127,11 @@ fun VoucherListScreen(
                     navigationIcon = {
                         if (isDesktop) {
                             IconButton(onClick = onBack) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color(0xFF7C4DFF))
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = WptColors.PrimaryAccent)
                             }
                         } else {
                             IconButton(onClick = onToggleDrawer) {
-                                Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color(0xFF7C4DFF))
+                                Icon(Icons.Default.Menu, contentDescription = "Menu", tint = WptColors.PrimaryAccent)
                             }
                         }
                     }
@@ -144,11 +144,11 @@ fun VoucherListScreen(
                     onValueChange = { searchQuery = it },
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
                     placeholder = { Text("Search by Party or Type", style = MaterialTheme.typography.bodyMedium) },
-                    leadingIcon = { Icon(Icons.Default.Search, null, tint = Color(0xFF7C4DFF)) },
+                    leadingIcon = { Icon(Icons.Default.Search, null, tint = WptColors.PrimaryAccent) },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF7C4DFF),
+                        focusedBorderColor = WptColors.PrimaryAccent,
                         unfocusedBorderColor = Color(0xFFE0E0E0),
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White
@@ -157,7 +157,7 @@ fun VoucherListScreen(
 
                 if (isLoading) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color(0xFF7C4DFF))
+                        CircularProgressIndicator(color = WptColors.PrimaryAccent)
                     }
                 } else {
                     val scrollState = rememberScrollState()
@@ -202,7 +202,7 @@ fun VoucherListScreen(
                                             "Receipt" -> Color(0xFFE53935)
                                             "Contra" -> Color(0xFF00897B)
                                             "Journal" -> Color(0xFFFFB300)
-                                            else -> Color(0xFF7C4DFF)
+                                            else -> WptColors.PrimaryAccent
                                         }
 
                                         Box(

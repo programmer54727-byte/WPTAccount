@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.RoundedCornerShape
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.launch
 
@@ -117,26 +119,30 @@ fun GstDetailsScreen(
     )
 { _, onToggleDrawer, isDesktop ->
         Scaffold(
+            containerColor = WptColors.AppSurface,
             topBar = {
                 TopAppBar(
-                    title = { Text("GST Details") },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent
+                    ),
+                    title = { 
+                        Text(
+                            "GST Details",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = WptColors.PrimaryText
+                        ) 
+                    },
                     navigationIcon = {
-                        if (isDesktop) {
-                            IconButton(onClick = onBack) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                            }
-                        } else {
-                            IconButton(onClick = onToggleDrawer) {
-                                Icon(Icons.Default.Menu, contentDescription = "Menu")
-                            }
+                        IconButton(onClick = if (isDesktop) onBack else onToggleDrawer) {
+                            Icon(
+                                if (isDesktop) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Menu, 
+                                contentDescription = if (isDesktop) "Back" else "Menu",
+                                tint = WptColors.PrimaryAccent
+                            )
                         }
                     },
                     actions = {
-                        if (!isDesktop) {
-                            IconButton(onClick = onBack) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                            }
-                        }
                         Button(
                             onClick = {
                                 scope.launch {
@@ -170,12 +176,14 @@ fun GstDetailsScreen(
                                     }
                                 }
                             },
-                            enabled = !isSaving
+                            enabled = !isSaving,
+                            colors = ButtonDefaults.buttonColors(containerColor = WptColors.PrimaryAccent),
+                            modifier = Modifier.padding(end = 8.dp)
                         ) {
                             if (isSaving) {
-                                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = Color.White)
                             } else {
-                                Text("Save")
+                                Text("Save Settings", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -183,8 +191,8 @@ fun GstDetailsScreen(
             }
         ) { padding ->
             if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = WptColors.PrimaryAccent)
                 }
             } else {
                 Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
@@ -192,50 +200,66 @@ fun GstDetailsScreen(
                         modifier = Modifier
                             .widthIn(max = 800.dp)
                             .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 16.dp)
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
                             .verticalScroll(scrollState),
-                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
                         if (saveError != null) {
-                            Text(
-                                text = saveError!!,
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodySmall,
+                            Card(
                                 modifier = Modifier.fillMaxWidth(),
-                                fontWeight = FontWeight.Bold
-                            )
+                                shape = RoundedCornerShape(8.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFDE8E8))
+                            ) {
+                                Text(
+                                    text = saveError!!,
+                                    color = WptColors.Error,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(12.dp)
+                                )
+                            }
                         }
 
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Registration status : ", modifier = Modifier.width(150.dp))
-                            Text(regStatus, fontWeight = FontWeight.Bold)
+                        FormSectionCard(title = "GST Registration Details") {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Registration status : ", modifier = Modifier.width(150.dp), style = MaterialTheme.typography.bodyMedium, color = WptColors.SecondaryText)
+                                    Text(regStatus, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = WptColors.PrimaryText)
+                                }
+                                
+                                GstField("State", state) { state = it }
+                                GstDropdown("Registration type", listOf("Regular", "Composition"), regType) { regType = it }
+                                GstSwitch("Assessee of Other Territory", isOtherTerritory) { isOtherTerritory = it }
+                                GstField("GSTIN/UIN", gstin) { gstin = it }
+                                GstDropdown("Periodicity of GSTR-1", listOf("Monthly", "Quarterly"), periodicity) { periodicity = it }
+                            }
                         }
 
-                        DividerWithLabel("GST Registration Details")
+                        FormSectionCard(title = "Connected GST Details") {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                GstField("GST Username", gstUsername) { gstUsername = it }
+                                GstField("Mode of Filing", modeOfFiling) { modeOfFiling = it }
+                            }
+                        }
+
+                        FormSectionCard(title = "e-Way Bill Details") {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                GstSwitch("e-Way Bill applicable", ewayBillApplicable) { ewayBillApplicable = it }
+                                if (ewayBillApplicable) {
+                                    GstDateField("Applicable from", ewayBillDate) { ewayBillDate = it }
+                                    GstSwitch("Applicable for intrastate", ewayBillIntrastate) { ewayBillIntrastate = it }
+                                }
+                            }
+                        }
+
+                        FormSectionCard(title = "e-Invoice & Others") {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                GstSwitch("e-Invoicing applicable", einvoiceApplicable) { einvoiceApplicable = it }
+                                GstField("Registration Name", registrationName) { registrationName = it }
+                            }
+                        }
                         
-                        GstField("State", state) { state = it }
-                        GstDropdown("Registration type", listOf("Regular", "Composition"), regType) { regType = it }
-                        GstSwitch("Assessee of Other Territory", isOtherTerritory) { isOtherTerritory = it }
-                        GstField("GSTIN/UIN", gstin) { gstin = it }
-                        GstDropdown("Periodicity of GSTR-1", listOf("Monthly", "Quarterly"), periodicity) { periodicity = it }
-
-                        DividerWithLabel("Connected GST Details")
-                        GstField("GST Username", gstUsername) { gstUsername = it }
-                        GstField("Mode of Filing", modeOfFiling) { modeOfFiling = it }
-
-                        DividerWithLabel("e-Way Bill Details")
-                        GstSwitch("e-Way Bill applicable", ewayBillApplicable) { ewayBillApplicable = it }
-                        if (ewayBillApplicable) {
-                            GstDateField("Applicable from", ewayBillDate) { ewayBillDate = it }
-                            GstSwitch("Applicable for intrastate", ewayBillIntrastate) { ewayBillIntrastate = it }
-                        }
-
-                        DividerWithLabel("e-Invoice Details")
-                        GstSwitch("e-Invoicing applicable", einvoiceApplicable) { einvoiceApplicable = it }
-
-                        GstField("Registration Name", registrationName) { registrationName = it }
-                        
-                        Spacer(modifier = Modifier.height(100.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
             }
@@ -243,13 +267,7 @@ fun GstDetailsScreen(
     }
 }
 
-@Composable
-fun DividerWithLabel(label: String) {
-    Column {
-        Text(text = label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-    }
-}
+
 
 @Composable
 fun GstDateField(label: String, value: String, onValueChange: (String) -> Unit) {

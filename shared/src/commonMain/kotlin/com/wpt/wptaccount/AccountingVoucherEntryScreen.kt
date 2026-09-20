@@ -200,7 +200,7 @@ fun AccountingVoucherEntryScreen(
         }
     ) { _, onToggleDrawer, isDesktop ->
         Scaffold(
-            containerColor = Color(0xFFF8F9FA),
+            containerColor = WptColors.AppSurface,
             topBar = {
                 TopAppBar(
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -219,7 +219,7 @@ fun AccountingVoucherEntryScreen(
                             Icon(
                                 imageVector = if (isDesktop) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Menu, 
                                 contentDescription = null,
-                                tint = Color(0xFF7C4DFF)
+                                tint = WptColors.PrimaryAccent
                             )
                         }
                     }
@@ -228,7 +228,7 @@ fun AccountingVoucherEntryScreen(
         ) { padding ->
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color(0xFF7C4DFF))
+                    CircularProgressIndicator(color = WptColors.PrimaryAccent)
                 }
             } else {
                 Column(
@@ -268,7 +268,7 @@ fun AccountingVoucherEntryScreen(
                                 text = "Accounting Details", 
                                 style = MaterialTheme.typography.titleMedium, 
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF7C4DFF),
+                                color = WptColors.PrimaryAccent,
                                 modifier = Modifier.padding(bottom = 12.dp)
                             )
 
@@ -332,7 +332,7 @@ fun AccountingVoucherEntryScreen(
                                         textStyle = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.End, fontWeight = FontWeight.Bold),
                                         singleLine = true,
                                         colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = Color(0xFF7C4DFF),
+                                            focusedBorderColor = WptColors.PrimaryAccent,
                                             unfocusedBorderColor = Color(0xFFE0E0E0)
                                         )
                                     )
@@ -345,7 +345,7 @@ fun AccountingVoucherEntryScreen(
 
                             TextButton(
                                 onClick = { entries.add(AccountingRow(entryType = if (difference > 0) "Credit" else "Debit", amount = kotlin.math.abs(difference).toString())) },
-                                colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF7C4DFF))
+                                colors = ButtonDefaults.textButtonColors(contentColor = WptColors.PrimaryAccent)
                             ) {
                                 Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(4.dp))
@@ -380,7 +380,7 @@ fun AccountingVoucherEntryScreen(
                                     Spacer(Modifier.height(4.dp))
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text("Grand Total: ", style = MaterialTheme.typography.titleMedium, color = Color(0xFF1D1B20))
-                                        Text(totalDebit.format(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = Color(0xFF7C4DFF))
+                                        Text(totalDebit.format(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = WptColors.PrimaryAccent)
                                     }
                                 }
                             }
@@ -419,7 +419,7 @@ fun AccountingVoucherEntryScreen(
                         },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C4DFF)),
+                        colors = ButtonDefaults.buttonColors(containerColor = WptColors.PrimaryAccent),
                         enabled = !isSaving
                     ) {
                         if (isSaving) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)

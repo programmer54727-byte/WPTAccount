@@ -50,7 +50,7 @@ fun AppNavigationDrawer(
                         modifier = Modifier
                             .width(260.dp)
                             .verticalScroll(scrollState),
-                        drawerContainerColor = androidx.compose.ui.graphics.Color(0xFFF5F3F8)
+                        drawerContainerColor = WptColors.NavigationBg
                     ) {
                         DrawerContent(currentScreen, companyName, onNavigate)
                     }
@@ -64,7 +64,7 @@ fun AppNavigationDrawer(
                 drawerContent = {
                     ModalDrawerSheet(
                         modifier = Modifier.verticalScroll(rememberScrollState()),
-                        drawerContainerColor = androidx.compose.ui.graphics.Color(0xFFF5F3F8)
+                        drawerContainerColor = WptColors.NavigationBg
                     ) {
                         DrawerContent(currentScreen, companyName, onNavigate)
                     }
@@ -83,7 +83,7 @@ private fun DrawerContent(
     onNavigate: (ScreenType) -> Unit
 ) {
     val drawerColors = NavigationDrawerItemDefaults.colors(
-        selectedContainerColor = androidx.compose.ui.graphics.Color(0xFF7C4DFF),
+        selectedContainerColor = WptColors.PrimaryAccent,
         unselectedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
         selectedIconColor = androidx.compose.ui.graphics.Color.White,
         unselectedIconColor = androidx.compose.ui.graphics.Color(0xFF49454F),
@@ -96,7 +96,7 @@ private fun DrawerContent(
         text = companyName,
         style = MaterialTheme.typography.titleMedium,
         modifier = Modifier.padding(horizontal = 28.dp, vertical = 16.dp),
-        color = androidx.compose.ui.graphics.Color(0xFF7C4DFF)
+        color = WptColors.PrimaryAccent
     )
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = androidx.compose.ui.graphics.Color(0xFFE0E0E0))
     
