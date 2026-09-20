@@ -62,6 +62,8 @@ fun LedgerManagement(
     onReceiptClick: () -> Unit = {},
     onContraClick: () -> Unit = {},
     onJournalClick: () -> Unit = {},
+    onBalanceSheetClick: () -> Unit = {},
+    onProfitAndLossClick: () -> Unit = {},
     onBack: () -> Unit,
     currentPeriod: AccountPeriod,
     onPeriodChange: (AccountPeriod) -> Unit
@@ -88,8 +90,8 @@ fun LedgerManagement(
                 ScreenType.Journal -> onJournalClick()
                 ScreenType.CreditNote -> { /* TODO */ }
                 ScreenType.DebitNote -> { /* TODO */ }
-                ScreenType.BalanceSheet -> { /* TODO */ }
-                ScreenType.ProfitAndLoss -> { /* TODO */ }
+                ScreenType.BalanceSheet -> onBalanceSheetClick()
+                ScreenType.ProfitAndLoss -> onProfitAndLossClick()
                 ScreenType.CashFlow -> { /* TODO */ }
                 ScreenType.Stock -> onStockSummaryClick()
                 ScreenType.Gst -> onGstDetailsClick()

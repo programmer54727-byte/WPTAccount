@@ -69,6 +69,8 @@ fun AccountingVoucherEntryScreen(
     onReceiptClick: () -> Unit = {},
     onContraClick: () -> Unit = {},
     onJournalClick: () -> Unit = {},
+    onBalanceSheetClick: () -> Unit = {},
+    onProfitAndLossClick: () -> Unit = {},
     onBack: () -> Unit,
     initialVoucher: Voucher? = null
 ) {
@@ -192,6 +194,8 @@ fun AccountingVoucherEntryScreen(
                 ScreenType.Ledger -> onLedgerClick()
                 ScreenType.Contra -> onContraClick()
                 ScreenType.Journal -> onJournalClick()
+                ScreenType.BalanceSheet -> onBalanceSheetClick()
+                ScreenType.ProfitAndLoss -> onProfitAndLossClick()
                 ScreenType.Stock -> onStockSummaryClick()
                 ScreenType.Gst -> onGstDetailsClick()
                 ScreenType.DayBook -> onVoucherListClick()

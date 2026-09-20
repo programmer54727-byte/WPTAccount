@@ -41,9 +41,12 @@ This is a modern **Kotlin Multiplatform (KMP)** application that works on **Andr
     - **Tally-Style Stock Summary:** Professional table layout displaying Particulars, HSN, and GST (formatted as %).
 - **Dynamic Reporting Engine:**
     - **Live Business Dashboard:** Integrated real-time transactional data visualization (Monthly Sales vs. Purchases) with period-filtered analytics, replacing all placeholder data.
+    - **Professional Balance Sheet:** Implements a Tally-style double column layout (Liabilities vs. Assets) with automatic "Net Profit/Loss" balancing and real-time closing stock valuation.
+    - **Comprehensive Profit & Loss Account:** Features a vertical report format with a detailed Trading Account (Gross Profit) and Income/Expenditure (Net Profit) breakdown.
     - **Intelligent Stock Summary:** Period-aware inventory calculation that accurately reflects stock balances based on historical transactions up to the selected end date.
     - **Weighted Average Cost Valuation:** Implemented professional inventory valuation using the **Weighted Average Cost** method. Average rates are dynamically calculated as `(Opening Value + Purchase Value) / (Opening Qty + Purchase Qty)`, ensuring accurate financial reporting. Sales correctly reduce quantities without skewing the cost basis.
     - **Live Monthly Summaries:** Real-time calculation of Inwards, Outwards, and rolling Closing Balances fetched directly from voucher data with defensive date filters to prevent cross-financial-year leaks.
+    - **Recursive Group Totals:** Advanced report engine that automatically rolls up ledger balances into hierarchical accounting groups (e.g., Sundry Debtors into Current Assets) for clean, high-level summaries.
     - **Accounting Precision:** Rolling balance logic for ledgers that correctly handles Debit (Dr) vs. Credit (Cr) types.
     - **Period Awareness:** Selectable accounting periods (e.g., Financial Year) that automatically calculate "Effective Opening Balances" by summing all historical transactions prior to the period start date.
 - **Professional Workflows:**

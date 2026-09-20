@@ -53,7 +53,7 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
         CompositionLocalProvider(LocalScreenOrientation provides onOrientationRequest) {
             BackHandler(enabled = currentScreen != null && currentScreen != "landing" && currentScreen != "company_list") {
                 when (currentScreen) {
-                    "inventory_management", "gst_details", "company_dashboard", "ledger_management", "voucher_list", "voucher_summary" -> currentScreen = "company_home"
+                    "balance_sheet", "profit_and_loss", "inventory_management", "gst_details", "company_dashboard", "ledger_management", "voucher_list", "voucher_summary" -> currentScreen = "company_home"
                     "voucher_month_list" -> currentScreen = "voucher_summary"
                     "voucher_sale", "voucher_purchase", "voucher_payment", "voucher_receipt", "voucher_contra", "voucher_journal" -> {
                         currentScreen = "voucher_month_list"
@@ -154,7 +154,10 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                         currentVoucherType = "Journal"
                                         currentScreen = "voucher_summary" 
                                     },
+                                    onBalanceSheetClick = { currentScreen = "balance_sheet" },
+                                    onProfitAndLossClick = { currentScreen = "profit_and_loss" },
                                     onBack = { currentScreen = "company_list" },
+
                                     currentPeriod = selectedPeriod!!,
                                     onPeriodChange = { selectedPeriod = it }
                                 )
@@ -171,6 +174,8 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                     onVoucherListClick = { currentScreen = "voucher_list" },
                                     onStockClick = { currentScreen = "inventory_management" },
                                     onGstDetailsClick = { currentScreen = "gst_details" },
+                                    onBalanceSheetClick = { currentScreen = "balance_sheet" },
+                                    onProfitAndLossClick = { currentScreen = "profit_and_loss" },
                                     onBack = { currentScreen = "company_list" }
                                 )
                             } ?: run {
@@ -192,6 +197,8 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                     onReceiptClick = { currentScreen = "voucher_receipt" },
                                     onContraClick = { currentScreen = "voucher_contra" },
                                     onJournalClick = { currentScreen = "voucher_journal" },
+                                    onBalanceSheetClick = { currentScreen = "balance_sheet" },
+                                    onProfitAndLossClick = { currentScreen = "profit_and_loss" },
                                     onBack = { currentScreen = "company_home" }
                                 )
                             } ?: run {
@@ -224,6 +231,8 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                     onReceiptClick = { currentScreen = "voucher_receipt" },
                                     onContraClick = { currentScreen = "voucher_contra" },
                                     onJournalClick = { currentScreen = "voucher_journal" },
+                                    onBalanceSheetClick = { currentScreen = "balance_sheet" },
+                                    onProfitAndLossClick = { currentScreen = "profit_and_loss" },
                                     onBack = { currentScreen = "company_home" },
                                     currentPeriod = selectedPeriod!!,
                                     onPeriodChange = { selectedPeriod = it }
@@ -250,6 +259,8 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                     onReceiptClick = { currentScreen = "voucher_receipt" },
                                     onContraClick = { currentScreen = "voucher_contra" },
                                     onJournalClick = { currentScreen = "voucher_journal" },
+                                    onBalanceSheetClick = { currentScreen = "balance_sheet" },
+                                    onProfitAndLossClick = { currentScreen = "profit_and_loss" },
                                     onBack = { 
                                         currentScreen = "voucher_month_list" 
                                         editingVoucher = null
@@ -278,6 +289,8 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                     onReceiptClick = { currentScreen = "voucher_receipt" },
                                     onContraClick = { currentScreen = "voucher_contra" },
                                     onJournalClick = { currentScreen = "voucher_journal" },
+                                    onBalanceSheetClick = { currentScreen = "balance_sheet" },
+                                    onProfitAndLossClick = { currentScreen = "profit_and_loss" },
                                     onBack = { 
                                         currentScreen = "voucher_month_list" 
                                         editingVoucher = null
@@ -306,6 +319,8 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                     onReceiptClick = { currentScreen = "voucher_receipt" },
                                     onContraClick = { currentScreen = "voucher_contra" },
                                     onJournalClick = { currentScreen = "voucher_journal" },
+                                    onBalanceSheetClick = { currentScreen = "balance_sheet" },
+                                    onProfitAndLossClick = { currentScreen = "profit_and_loss" },
                                     onBack = { 
                                         currentScreen = "voucher_month_list" 
                                         editingVoucher = null
@@ -392,6 +407,26 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                 )
                             } ?: run { currentScreen = "company_list" }
                         }
+                        "balance_sheet" -> {
+                            selectedCompany?.let { company ->
+                                BalanceSheetScreen(
+                                    company = company,
+                                    period = selectedPeriod!!,
+                                    onBack = { currentScreen = "company_home" },
+                                    onHomeClick = { currentScreen = "company_home" }
+                                )
+                            } ?: run { currentScreen = "company_list" }
+                        }
+                        "profit_and_loss" -> {
+                            selectedCompany?.let { company ->
+                                ProfitAndLossScreen(
+                                    company = company,
+                                    period = selectedPeriod!!,
+                                    onBack = { currentScreen = "company_home" },
+                                    onHomeClick = { currentScreen = "company_home" }
+                                )
+                            } ?: run { currentScreen = "company_list" }
+                        }
                         "voucher_list" -> {
                             selectedCompany?.let { company ->
                                 VoucherListScreen(
@@ -408,6 +443,8 @@ fun App(onOrientationRequest: (ScreenOrientation) -> Unit = {}) {
                                     onReceiptClick = { currentScreen = "voucher_receipt" },
                                     onContraClick = { currentScreen = "voucher_contra" },
                                     onJournalClick = { currentScreen = "voucher_journal" },
+                                    onBalanceSheetClick = { currentScreen = "balance_sheet" },
+                                    onProfitAndLossClick = { currentScreen = "profit_and_loss" },
                                     onBack = { currentScreen = "company_home" }
                                 )
                             } ?: run {

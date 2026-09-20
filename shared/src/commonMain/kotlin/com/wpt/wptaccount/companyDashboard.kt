@@ -35,6 +35,8 @@ fun CompanyDashboard(
     onVoucherListClick: () -> Unit,
     onStockClick: () -> Unit,
     onGstDetailsClick: () -> Unit,
+    onBalanceSheetClick: () -> Unit = {},
+    onProfitAndLossClick: () -> Unit = {},
     onBack: () -> Unit
 ) {
     val scrollState = rememberScrollState()
@@ -56,8 +58,8 @@ fun CompanyDashboard(
                 ScreenType.Journal -> { /* TODO */ }
                 ScreenType.CreditNote -> { /* TODO */ }
                 ScreenType.DebitNote -> { /* TODO */ }
-                ScreenType.BalanceSheet -> { /* TODO */ }
-                ScreenType.ProfitAndLoss -> { /* TODO */ }
+                ScreenType.BalanceSheet -> onBalanceSheetClick()
+                ScreenType.ProfitAndLoss -> onProfitAndLossClick()
                 ScreenType.CashFlow -> { /* TODO */ }
                 ScreenType.Stock -> onStockClick()
                 ScreenType.Gst -> onGstDetailsClick()
