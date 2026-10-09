@@ -2,7 +2,10 @@
 
 This document lists **everything that still needs to be completed** or improved, ordered by priority.
 
-**Last major update**: 20 September 2026 (evening)
+**Last major code update**: 20 September 2026  
+**Roadmap last reviewed**: 9 October 2026
+
+**Overall Progress**: ~70–75% of planned features complete.
 
 ---
 
@@ -43,8 +46,8 @@ This document lists **everything that still needs to be completed** or improved,
 - [ ] Day Book (partially exists via voucher lists – needs polish)
 
 ### 2.2 Voucher Types
-- [ ] Credit Note
-- [ ] Debit Note
+- [~] **Credit Note** – Navigation + routes added (`voucher_credit_note`), sidebar entry exists, but several screens still have `/* TODO */` and full entry flow needs completion
+- [~] **Debit Note** – Same as above (`voucher_debit_note`)
 
 ### 2.3 Company Home & Dashboard
 - [ ] Ensure all cards and charts fully follow the corporate theme
@@ -92,13 +95,13 @@ This document lists **everything that still needs to be completed** or improved,
 
 ---
 
-## Current Priority Order (Updated)
+## Current Priority Order (Updated – Oct 2026)
 
 1. ~~Fix Create Company form theme~~ → **Done**
 2. ~~Extract shared `WptColors` + `FormSectionCard`~~ → **Done**
 3. ~~Implement Balance Sheet, P&L, Cash Flow~~ → **Done**
-4. Apply theme consistently to Ledger, Inventory, Voucher & Auth screens
-5. Add Credit Note / Debit Note
+4. **Complete Credit Note & Debit Note** (finish TODO handlers + full voucher entry flow)
+5. Apply theme consistently to Ledger, Inventory, Voucher & Auth screens
 6. Polish Day Book & remaining UX details
 7. Final packaging & distribution
 
@@ -110,10 +113,10 @@ The project can be considered fully complete when:
 
 - Every screen uses the official purple corporate theme
 - Create/Edit Company form looks as polished as Company List → **Achieved**
-- All major accounting features work reliably
+- All major accounting features work reliably (including Credit/Debit Note)
 - Keyboard-first workflow is excellent on Desktop
 - App can be cleanly distributed on Windows and Android
 
 ---
 
-*Last updated: 20 September 2026 (evening)*
+*Last updated: 9 October 2026*
