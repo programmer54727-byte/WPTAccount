@@ -1,4 +1,7 @@
 -- 1. Create the atomic save function for vouchers
+-- Stock direction:
+--   Purchase, Credit Note  → quantity IN  (+)
+--   Sale, Debit Note, others → quantity OUT (-)
 CREATE OR REPLACE FUNCTION public.save_voucher_v3(
     p_voucher_id UUID,
     p_company_id UUID,
@@ -25,12 +28,15 @@ DECLARE
     v_ref RECORD;
     v_nature TEXT;
     v_adjustment DECIMAL;
+    v_stock_in BOOLEAN;
 BEGIN
+    v_stock_in := (p_voucher_type IN ('Purchase', 'Credit Note'));
+
     -- 1. UNDO EXISTING EFFECTS (If editing)
     IF p_voucher_id IS NOT NULL THEN
         -- Reverse Stock Items
         FOR v_item IN SELECT * FROM public.voucher_stock_items WHERE voucher_id = p_voucher_id LOOP
-            IF p_voucher_type = 'Purchase' THEN
+            IF v_stock_in THEN
                 UPDATE public.stock_items SET current_quantity = current_quantity - v_item.quantity WHERE id = v_item.stock_item_id;
             ELSE
                 UPDATE public.stock_items SET current_quantity = current_quantity + v_item.quantity WHERE id = v_item.stock_item_id;
@@ -87,7 +93,7 @@ BEGIN
         INSERT INTO public.voucher_stock_items (voucher_id, stock_item_id, quantity, rate, amount, hsn_code, gst_rate)
         VALUES (v_voucher_id, v_item.stock_item_id, v_item.quantity, v_item.rate, v_item.amount, v_item.hsn_code, v_item.gst_rate);
 
-        IF p_voucher_type = 'Purchase' THEN
+        IF v_stock_in THEN
             UPDATE public.stock_items SET current_quantity = current_quantity + v_item.quantity WHERE id = v_item.stock_item_id;
         ELSE
             UPDATE public.stock_items SET current_quantity = current_quantity - v_item.quantity WHERE id = v_item.stock_item_id;
@@ -136,13 +142,15 @@ DECLARE
     v_entry RECORD;
     v_voucher_type TEXT;
     v_adjustment DECIMAL;
+    v_stock_in BOOLEAN;
 BEGIN
     -- Get voucher type for stock undo
     SELECT voucher_type INTO v_voucher_type FROM public.vouchers WHERE id = p_voucher_id;
+    v_stock_in := (v_voucher_type IN ('Purchase', 'Credit Note'));
 
     -- Reverse Stock Items
     FOR v_item IN SELECT * FROM public.voucher_stock_items WHERE voucher_id = p_voucher_id LOOP
-        IF v_voucher_type = 'Purchase' THEN
+        IF v_stock_in THEN
             UPDATE public.stock_items SET current_quantity = current_quantity - v_item.quantity WHERE id = v_item.stock_item_id;
         ELSE
             UPDATE public.stock_items SET current_quantity = current_quantity + v_item.quantity WHERE id = v_item.stock_item_id;
@@ -165,8 +173,6 @@ BEGIN
         UPDATE public.ledgers SET current_balance = current_balance + v_adjustment WHERE id = v_entry.ledger_id;
     END LOOP;
 
-    -- Delete the voucher (Cascade will handle related records if FKs are set,
-    -- but we can be explicit if needed, though Cascade is safer in Postgres)
     DELETE FROM public.vouchers WHERE id = p_voucher_id;
 END;
 $$;
