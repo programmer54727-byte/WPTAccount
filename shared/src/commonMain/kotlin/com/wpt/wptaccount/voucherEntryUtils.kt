@@ -17,6 +17,9 @@ import kotlinx.serialization.json.put
  *
  * Credit Note  = Sales return  (reverse of Sale)
  * Debit Note   = Purchase return (reverse of Purchase)
+ *
+ * Stock quantity is always sent as positive absolute value.
+ * Direction is applied inside save_voucher_v3 RPC based on voucher_type.
  */
 private fun isSalesSide(voucherType: String): Boolean {
     return voucherType == "Sale" || voucherType == "Debit Note"
@@ -80,18 +83,12 @@ internal fun performSave(
                     }
                 }
 
-                // Stock quantity sign:
-                // Sale / Debit Note (out) → negative qty reduces stock
-                // Purchase / Credit Note (in) → positive qty increases stock
-                val qtySign = if (salesSide) -1.0 else 1.0
-
                 val stockItemsPayload = buildJsonArray {
                     items.forEach { row ->
                         if (row.stockItemId.isNotEmpty()) {
-                            val qty = (row.qty.toDoubleOrNull() ?: 0.0) * qtySign
                             add(buildJsonObject {
                                 put("stock_item_id", row.stockItemId)
-                                put("quantity", qty)
+                                put("quantity", row.qty.toDoubleOrNull() ?: 0.0)
                                 put("rate", row.rate.toDoubleOrNull() ?: 0.0)
                                 put("amount", row.amount.toDoubleOrNull() ?: 0.0)
                                 put("hsn_code", row.hsnCode.ifEmpty { null })
