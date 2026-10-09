@@ -2,10 +2,10 @@
 
 This document lists **everything that still needs to be completed** or improved, ordered by priority.
 
-**Last major code update**: 20 September 2026  
+**Last major code update**: 9 October 2026  
 **Roadmap last reviewed**: 9 October 2026
 
-**Overall Progress**: ~70–75% of planned features complete.
+**Overall Progress**: ~80% of planned features complete.
 
 ---
 
@@ -14,108 +14,95 @@ This document lists **everything that still needs to be completed** or improved,
 ### 1.1 Create / Edit Company Form
 **File**: `shared/.../createCompany.kt`
 
-- [x] Converted into card-based sections (General Info, Contact Details, Financial Details, Security, GST/HSN)
-- [x] Each section uses `FormSectionCard` with left purple accent strip
-- [x] Uses `WptColors` for all colors
-- [x] Consistent spacing, typography and max-width (800.dp)
-- [x] Keyboard navigation preserved
-- [x] TopAppBar updated to match corporate style
+- [x] Converted into card-based sections
+- [x] `FormSectionCard` + `WptColors`
+- [x] Keyboard navigation + TopAppBar
 
 **Status**: Completed
 
 ### 1.2 Shared Theme Extraction
-- [x] Created `WptColors` object (`ThemeComponents.kt`)
-- [x] Created reusable `FormSectionCard` component
-- [ ] Replace remaining hardcoded colors across other screens with `WptColors`
+- [x] `WptColors` + `FormSectionCard` (`ThemeComponents.kt`)
+- [ ] Replace remaining hardcoded colors across other screens
 
 ### 1.3 Other Forms Still to Audit & Fix
 - [ ] Ledger Create / Edit form
 - [ ] Inventory / Stock Item forms
 - [ ] GST Details form
-- [ ] Voucher Entry screens (Sale, Purchase, Accounting vouchers)
-- [ ] Login & SignUp screens (apply brand colors fully)
+- [ ] Voucher Entry screens theme polish
+- [ ] Login & SignUp screens (full brand colors)
 
 ---
 
 ## Phase 2: Reports & Features
 
 ### 2.1 Reports
-- [x] **Balance Sheet** (`BalanceSheetScreen.kt`) – hierarchical group totals implemented
-- [x] **Profit & Loss** (`ProfitAndLossScreen.kt`) – hierarchical group totals implemented
-- [x] **Cash Flow** (`CashFlowScreen.kt`) – Monthly Inflow / Outflow / Net Flow implemented
-- [ ] Day Book (partially exists via voucher lists – needs polish)
+- [x] **Balance Sheet**
+- [x] **Profit & Loss**
+- [x] **Cash Flow**
+- [ ] Day Book polish
 
 ### 2.2 Voucher Types
-- [~] **Credit Note** – Navigation + routes added (`voucher_credit_note`), sidebar entry exists, but several screens still have `/* TODO */` and full entry flow needs completion
-- [~] **Debit Note** – Same as above (`voucher_debit_note`)
+- [x] **Credit Note** – routes + `VoucherEntryScreen` + correct entry_type (Party Credit / Sales Debit) + RPC stock IN
+- [x] **Debit Note** – routes + `VoucherEntryScreen` + correct entry_type (Party Debit / Purchase Credit) + RPC stock OUT
+- [ ] Optional UI polish (ScreenType highlight / Sales-Purchase ledger labels in entry screen)
+- [ ] Clear remaining `/* TODO */` navigation stubs on secondary screens
 
 ### 2.3 Company Home & Dashboard
-- [ ] Ensure all cards and charts fully follow the corporate theme
-- [ ] Verify period selection works correctly everywhere
+- [ ] Full corporate theme on all cards/charts
+- [ ] Period selection verification everywhere
 
 ### 2.4 Inventory & Ledgers
-- [ ] Final polish of monthly summary cards
-- [ ] Ensure Weighted Average Cost calculations are fully accurate
-- [ ] On-the-fly creation (Alt+C) consistency across all screens
+- [ ] Monthly summary polish
+- [ ] Weighted Average Cost verification
+- [ ] Alt+C consistency
 
 ---
 
 ## Phase 3: Quality & Polish
 
 ### 3.1 Keyboard & UX
-- [ ] Full Enter-as-Tab behavior on every form
+- [ ] Enter-as-Tab on every form
 - [ ] Consistent focus order
-- [ ] Smart date field used everywhere dates are entered
-- [ ] Searchable dropdowns behave identically across the app
+- [ ] Smart date field everywhere
 
 ### 3.2 Error Handling
-- [ ] All user-facing errors are sanitized (no technical SQL/Ktor messages)
-- [ ] Consistent error UI (snackbars or inline messages)
+- [ ] Sanitized user-facing errors everywhere
+- [ ] Consistent error UI
 
 ### 3.3 Responsive Behavior
-- [ ] Forms remain usable on narrow screens
-- [ ] Tables support horizontal scroll where needed
-- [ ] Sidebar / Drawer transition is smooth
+- [ ] Narrow screens + table scroll
 
 ### 3.4 Packaging & Distribution
-- [ ] Windows MSI / EXE packaging verified
-- [ ] Android release build with proper versioning
-- [ ] Icons and branding consistent on all platforms
+- [ ] Windows MSI/EXE verified
+- [ ] Android release build
 
 ---
 
-## Phase 4: Documentation & Maintainability
+## Phase 4: Documentation
 
-- [x] VISION.md
-- [x] THEME.md
-- [x] DESIGN_STRUCTURE.md
-- [x] COMPLETION_ROADMAP.md (this file)
-- [x] docs/README.md
-- [ ] Keep main README.md in sync with major feature changes
+- [x] VISION / THEME / DESIGN_STRUCTURE / COMPLETION_ROADMAP / docs README
+- [ ] Main README sync with new features
 
 ---
 
-## Current Priority Order (Updated – Oct 2026)
+## Important – Supabase RPC
 
-1. ~~Fix Create Company form theme~~ → **Done**
-2. ~~Extract shared `WptColors` + `FormSectionCard`~~ → **Done**
-3. ~~Implement Balance Sheet, P&L, Cash Flow~~ → **Done**
-4. **Complete Credit Note & Debit Note** (finish TODO handlers + full voucher entry flow)
-5. Apply theme consistently to Ledger, Inventory, Voucher & Auth screens
-6. Polish Day Book & remaining UX details
-7. Final packaging & distribution
+After pulling latest code, **re-run** `voucher_management_rpc.sql` in Supabase SQL Editor so Credit Note / Debit Note stock direction works:
+
+- `Purchase` + `Credit Note` → stock **IN**
+- `Sale` + `Debit Note` → stock **OUT**
 
 ---
 
-## Definition of Done
+## Current Priority Order
 
-The project can be considered fully complete when:
-
-- Every screen uses the official purple corporate theme
-- Create/Edit Company form looks as polished as Company List → **Achieved**
-- All major accounting features work reliably (including Credit/Debit Note)
-- Keyboard-first workflow is excellent on Desktop
-- App can be cleanly distributed on Windows and Android
+1. ~~Create Company theme~~ Done
+2. ~~WptColors + FormSectionCard~~ Done
+3. ~~Balance Sheet, P&L, Cash Flow~~ Done
+4. ~~Credit Note & Debit Note accounting + RPC~~ Done (9 Oct 2026)
+5. Theme polish on remaining forms
+6. Day Book + UX polish
+7. Packaging
 
 ---
 
