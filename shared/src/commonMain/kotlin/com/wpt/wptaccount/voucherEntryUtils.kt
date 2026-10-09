@@ -10,6 +10,18 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
+/**
+ * Accounting entry direction:
+ * - Sale / Debit Note  → Party Debit, Income/Expense/Tax Credit
+ * - Purchase / Credit Note → Party Credit, Income/Expense/Tax Debit
+ *
+ * Credit Note  = Sales return  (reverse of Sale)
+ * Debit Note   = Purchase return (reverse of Purchase)
+ */
+private fun isSalesSide(voucherType: String): Boolean {
+    return voucherType == "Sale" || voucherType == "Debit Note"
+}
+
 internal fun performSave(
     scope: kotlinx.coroutines.CoroutineScope,
     company: Company,
@@ -41,19 +53,20 @@ internal fun performSave(
             withContext(NonCancellable) {
                 val dbDate = date.toDbDate()
                 val dbInvoiceDate = invoiceDate.toDbDate()
+                val salesSide = isSalesSide(voucherType)
 
                 val entriesPayload = buildJsonArray {
                     // Party Entry
                     add(buildJsonObject {
                         put("ledger_id", selectedPartyId!!)
                         put("amount", grandTotal)
-                        put("entry_type", if (voucherType == "Sale") "Debit" else "Credit")
+                        put("entry_type", if (salesSide) "Debit" else "Credit")
                     })
-                    // Sales/Purchase Entry
+                    // Sales / Purchase / Return ledger entry
                     add(buildJsonObject {
                         put("ledger_id", selectedLedgerId!!)
                         put("amount", itemSubTotal)
-                        put("entry_type", if (voucherType == "Sale") "Credit" else "Debit")
+                        put("entry_type", if (salesSide) "Credit" else "Debit")
                     })
                     // Tax Entries
                     taxEntries.forEach { tax ->
@@ -61,18 +74,24 @@ internal fun performSave(
                             add(buildJsonObject {
                                 put("ledger_id", tax.ledgerId)
                                 put("amount", tax.amount)
-                                put("entry_type", if (voucherType == "Sale") "Credit" else "Debit")
+                                put("entry_type", if (salesSide) "Credit" else "Debit")
                             })
                         }
                     }
                 }
 
+                // Stock quantity sign:
+                // Sale / Debit Note (out) → negative qty reduces stock
+                // Purchase / Credit Note (in) → positive qty increases stock
+                val qtySign = if (salesSide) -1.0 else 1.0
+
                 val stockItemsPayload = buildJsonArray {
                     items.forEach { row ->
                         if (row.stockItemId.isNotEmpty()) {
+                            val qty = (row.qty.toDoubleOrNull() ?: 0.0) * qtySign
                             add(buildJsonObject {
                                 put("stock_item_id", row.stockItemId)
-                                put("quantity", row.qty.toDoubleOrNull() ?: 0.0)
+                                put("quantity", qty)
                                 put("rate", row.rate.toDoubleOrNull() ?: 0.0)
                                 put("amount", row.amount.toDoubleOrNull() ?: 0.0)
                                 put("hsn_code", row.hsnCode.ifEmpty { null })
